@@ -12,11 +12,11 @@ interface ScannerProps {
 
 const Scanner: React.FC<ScannerProps> = ({ onScan, scanPrompt, mode }) => {
   const renderDevButtons = () => {
-    if (mode === "INBOUND") {
+    if (mode === "INBOUND" || mode === "TRANSFER") {
       return (
         <>
           <h3 className="text-sm font-bold text-center text-gray-600">
-            GIẢ LẬP NHẬP KHO
+            GIẢ LẬP NHẬP/CHUYỂN KHO
           </h3>
           <button
             onClick={() => onScan("ITEM_QR_FAB_001")}
@@ -34,7 +34,13 @@ const Scanner: React.FC<ScannerProps> = ({ onScan, scanPrompt, mode }) => {
             onClick={() => onScan("LOC_QR_A_01_B")}
             className="w-full bg-teal-500 text-white py-2 rounded-md"
           >
-            Quét Vị trí Kho Vải
+            Quét Vị trí Kho A-01-B
+          </button>
+          <button
+            onClick={() => onScan("LOC_QR_C_03_A")}
+            className="w-full bg-teal-500 text-white py-2 rounded-md"
+          >
+            Quét Vị trí Kho C-03-A
           </button>
         </>
       );

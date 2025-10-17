@@ -1,61 +1,8 @@
-
-
-**Directory Tree:**
-
-```
-issue-accessory-form/
-├── data.ts
-├── IssueAccessoryFormPage.tsx
-├── types.ts
-└── components/
-    ├── AccessoryRequestTable.tsx
-    ├── ActionToolbar.tsx
-    ├── FormHeader.tsx
-    └── PageHeader.tsx
-```
-
---- D:\WATATECH\WH\src\pages\issue-accessory-form\data.ts ---
-
-// Path: src/pages/issue-accessory-form/data.ts
-
-import type { Accessory } from "./types";
-
-// Danh sách các phụ liệu có trong kho
-export const mockAccessories: Accessory[] = [
-  { sku: 'BTN-001', name: 'Nút áo 4 lỗ màu trắng', uom: 'Cái', stock: 15000 },
-  { sku: 'BTN-002', name: 'Nút quần jean đồng', uom: 'Cái', stock: 8500 },
-  { sku: 'ZIP-001', name: 'Dây kéo YKK 20cm màu đen', uom: 'Cái', stock: 4200 },
-  { sku: 'THR-001', name: 'Chỉ may 5000m màu trắng', uom: 'Cuộn', stock: 350 },
-  { sku: 'THR-002', name: 'Chỉ may 5000m màu đen', uom: 'Cuộn', stock: 410 },
-  { sku: 'LBL-001', name: 'Nhãn size M', uom: 'Cái', stock: 22000 },
-  { sku: 'LBL-002', name: 'Nhãn size L', uom: 'Cái', stock: 25000 },
-];
-
-// Danh sách các lệnh sản xuất
-export const mockProductionOrders: string[] = ["PO-2023-001", "PO-2023-002", "PO-2023-003"];
-
-// Định mức nguyên vật liệu (BOM) cho từng lệnh sản xuất
-export const mockBOMs: Record<string, { sku: string; quantity: number }[]> = {
-  "PO-2023-001": [
-    { sku: "BTN-001", quantity: 5000 },
-    { sku: "THR-001", quantity: 25 },
-    { sku: "LBL-001", quantity: 2500 },
-    { sku: "LBL-002", quantity: 2500 },
-  ],
-  "PO-2023-002": [
-    { sku: "BTN-002", quantity: 1200 },
-    { sku: "ZIP-001", quantity: 1200 },
-    { sku: "THR-002", quantity: 15 },
-  ],
-  "PO-2023-003": [], // Lệnh SX này không có BOM định sẵn
-};
-
-
 --- D:\WATATECH\WH\src\pages\issue-accessory-form\IssueAccessoryFormPage.tsx ---
 
 // Path: src/pages/issue-accessory-form/IssueAccessoryFormPage.tsx
 
-import React, { useState } from "react";
+import { useState } from "react";
 import type { AccessoryRequestFormState, AccessoryRequestItem } from "./types";
 import PageHeader from "./components/PageHeader";
 import FormHeader from "./components/FormHeader";
@@ -76,12 +23,12 @@ const IssueAccessoryFormPage = () => {
   const [formData, setFormData] =
     useState<AccessoryRequestFormState>(initialState);
 
-  const handleFieldChange = (
-    field: keyof AccessoryRequestFormState,
-    value: any
-  ) => {
+  function handleFieldChange<K extends keyof AccessoryRequestFormState>(
+    field: K,
+    value: AccessoryRequestFormState[K]
+  ) {
     setFormData((prev) => ({ ...prev, [field]: value }));
-  };
+  }
 
   const handleProductionOrderChange = (po: string) => {
     setFormData((prev) => {
@@ -115,10 +62,10 @@ const IssueAccessoryFormPage = () => {
     setFormData((prev) => ({ ...prev, items: [...prev.items, newItem] }));
   };
 
-  const handleItemChange = (
+  const handleItemChange = <K extends keyof AccessoryRequestItem>(
     id: string,
-    field: keyof AccessoryRequestItem,
-    value: any
+    field: K,
+    value: AccessoryRequestItem[K]
   ) => {
     setFormData((prev) => ({
       ...prev,
@@ -168,39 +115,6 @@ const IssueAccessoryFormPage = () => {
 export default IssueAccessoryFormPage;
 
 
---- D:\WATATECH\WH\src\pages\issue-accessory-form\types.ts ---
-
-// Path: src/pages/issue-accessory-form/types.ts
-
-// Đại diện cho một phụ liệu trong kho
-export interface Accessory {
-  sku: string;
-  name: string;
-  uom: 'Cái' | 'Cuộn' | 'Hộp' | 'Bộ';
-  stock: number;
-}
-
-// Đại diện cho một dòng yêu cầu phụ liệu trong form
-export interface AccessoryRequestItem {
-  id: string; // ID tạm để xử lý trong UI
-  sku: string;
-  name: string;
-  uom: string;
-  stock: number;
-  quantity: number;
-}
-
-// Đại diện cho toàn bộ dữ liệu của form
-export interface AccessoryRequestFormState {
-  productionOrder: string;
-  requestor: string;
-  department: string;
-  requiredDate: string | null;
-  notes: string;
-  items: AccessoryRequestItem[];
-}
-
-
 --- D:\WATATECH\WH\src\pages\issue-accessory-form\components\AccessoryRequestTable.tsx ---
 
 // Path: src/pages/issue-accessory-form/components/AccessoryRequestTable.tsx
@@ -216,7 +130,7 @@ interface AccessoryRequestTableProps {
   handleItemChange: (
     id: string,
     field: keyof AccessoryRequestItem,
-    value: any
+    value: AccessoryRequestItem[keyof AccessoryRequestItem]
   ) => void;
   handleRemoveItem: (id: string) => void;
 }
@@ -288,8 +202,8 @@ const AccessoryRequestTable: React.FC<AccessoryRequestTableProps> = ({
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {items.map((item, index) => {
-              const quantityExceedsStock =
+            {items.map((item) => {
+              const quantityExceedsStock = 
                 item.quantity > item.stock && item.stock > 0;
               return (
                 <tr key={item.id}>
@@ -385,7 +299,7 @@ interface ActionToolbarProps {
   onSubmit: () => void;
 }
 
-const ActionToolbar: React.FC<ActionToolbarProps> = ({ 
+const ActionToolbar: React.FC<ActionToolbarProps> = ({
   onSaveDraft,
   onSubmit,
 }) => {
@@ -424,14 +338,14 @@ import type { AccessoryRequestFormState } from "../types";
 
 interface FormHeaderProps {
   formData: AccessoryRequestFormState;
-  handleFieldChange: (
-    field: keyof AccessoryRequestFormState,
-    value: any
+  handleFieldChange: <K extends keyof AccessoryRequestFormState>(
+    field: K,
+    value: AccessoryRequestFormState[K]
   ) => void;
   handleProductionOrderChange: (po: string) => void;
 }
 
-const FormHeader: React.FC<FormHeaderProps> = ({ 
+const FormHeader: React.FC<FormHeaderProps> = ({
   formData,
   handleFieldChange,
   handleProductionOrderChange,
@@ -539,7 +453,6 @@ export default FormHeader;
 
 // Path: src/pages/issue-accessory-form/components/PageHeader.tsx
 
-import React from "react";
 import { Boxes } from "lucide-react";
 
 const PageHeader = () => {
@@ -562,8 +475,78 @@ const PageHeader = () => {
 
 export default PageHeader;
 
---- D:\WATATECH\WH\src\App.tsx ---
 
+--- D:\WATATECH\WH\src\pages\issue-accessory-form\data.ts ---
+
+// Path: src/pages/issue-accessory-form/data.ts
+
+import type { Accessory } from "./types";
+
+// Danh sách các phụ liệu có trong kho
+export const mockAccessories: Accessory[] = [
+  { sku: 'BTN-001', name: 'Nút áo 4 lỗ màu trắng', uom: 'Cái', stock: 15000 },
+  { sku: 'BTN-002', name: 'Nút quần jean đồng', uom: 'Cái', stock: 8500 },
+  { sku: 'ZIP-001', name: 'Dây kéo YKK 20cm màu đen', uom: 'Cái', stock: 4200 },
+  { sku: 'THR-001', name: 'Chỉ may 5000m màu trắng', uom: 'Cuộn', stock: 350 },
+  { sku: 'THR-002', name: 'Chỉ may 5000m màu đen', uom: 'Cuộn', stock: 410 },
+  { sku: 'LBL-001', name: 'Nhãn size M', uom: 'Cái', stock: 22000 },
+  { sku: 'LBL-002', name: 'Nhãn size L', uom: 'Cái', stock: 25000 },
+];
+
+// Danh sách các lệnh sản xuất
+export const mockProductionOrders: string[] = ["PO-2023-001", "PO-2023-002", "PO-2023-003"];
+
+// Định mức nguyên vật liệu (BOM) cho từng lệnh sản xuất
+export const mockBOMs: Record<string, { sku: string; quantity: number }[]> = {
+  "PO-2023-001": [
+    { sku: "BTN-001", quantity: 5000 },
+    { sku: "THR-001", quantity: 25 },
+    { sku: "LBL-001", quantity: 2500 },
+    { sku: "LBL-002", quantity: 2500 },
+  ],
+  "PO-2023-002": [
+    { sku: "BTN-002", quantity: 1200 },
+    { sku: "ZIP-001", quantity: 1200 },
+    { sku: "THR-002", quantity: 15 },
+  ],
+  "PO-2023-003": [], // Lệnh SX này không có BOM định sẵn
+};
+
+--- D:\WATATECH\WH\src\pages\issue-accessory-form\types.ts ---
+
+// Path: src/pages/issue-accessory-form/types.ts
+
+// Đại diện cho một phụ liệu trong kho
+export interface Accessory {
+  sku: string;
+  name: string;
+  uom: 'Cái' | 'Cuộn' | 'Hộp' | 'Bộ';
+  stock: number;
+}
+
+// Đại diện cho một dòng yêu cầu phụ liệu trong form
+export interface AccessoryRequestItem {
+  id: string; // ID tạm để xử lý trong UI
+  sku: string;
+  name: string;
+  uom: string;
+  stock: number;
+  quantity: number;
+}
+
+// Đại diện cho toàn bộ dữ liệu của form
+export interface AccessoryRequestFormState {
+  productionOrder: string;
+  requestor: string;
+  department: string;
+  requiredDate: string | null;
+  notes: string;
+  items: AccessoryRequestItem[];
+}
+
+
+
+# File src/App.tsx
 // Path: src/App.tsx
 
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -578,7 +561,8 @@ import QRScanInterfacePage from "./pages/qr-scan/QRScanInterfacePage";
 import IssueFabricFormPage from "./pages/issue-fabric-form/IssueFabricFormPage";
 import IssueAccessoryFormPage from "./pages/issue-accessory-form/IssueAccessoryFormPage";
 import IssuePackagingFormPage from "./pages/issue-packaging-form/IssuePackagingFormPage";
-import IssueTransactionReportsPage from "./pages/issue-transaction-reports/IssueTransactionReportsPage"; // <-- Import trang mới
+import IssueTransactionReportsPage from "./pages/issue-transaction-reports/IssueTransactionReportsPage";
+import PackingListManagementPage from "./pages/packing-list-management/PackingListManagementPage";
 
 function App() {
   return (
@@ -609,6 +593,8 @@ function App() {
             path="reports/issues"
             element={<IssueTransactionReportsPage />}
           />
+
+          <Route path="packing-list" element={<PackingListManagementPage />} />
         </Route>
 
         {/* Bạn có thể thêm các route không cần layout ở đây, ví dụ trang Login */}
@@ -621,11 +607,23 @@ function App() {
 export default App;
 
 
---- D:\WATATECH\WH\src\layouts\MainLayout.tsx ---
 
+
+
+
+
+
+
+
+
+
+
+
+
+# File src/layouts/MainLayout.tsx
 // Path: src/layouts/MainLayout.tsx
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import {
   Menu,
@@ -641,6 +639,8 @@ import {
   Boxes,
   Package,
   ScrollText,
+  ListPlus,
+  Upload,
 } from "lucide-react";
 
 const Sidebar = () => {
@@ -661,6 +661,16 @@ const Sidebar = () => {
         >
           <LayoutDashboard className="w-5 h-5 mr-3" />
           Dashboard Hàng Nhập
+        </NavLink>
+
+        <NavLink
+          to="/packing-list"
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <ListPlus className="w-5 h-5 mr-3" />
+          QL Packing List / In QR
         </NavLink>
 
         <NavLink
@@ -690,7 +700,7 @@ const Sidebar = () => {
           }
         >
           <Truck className="w-5 h-5 mr-3" />
-          Shipment
+          Chi tiết lô hàng
         </NavLink>
 
         <NavLink
@@ -751,6 +761,16 @@ const Sidebar = () => {
         >
           <ScrollText className="w-5 h-5 mr-3" />
           Báo cáo Xuất Kho
+        </NavLink>
+
+        <NavLink
+          to="/import-packing-list" // <-- Route mới
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <Upload className="w-5 h-5 mr-3" />
+          Upfile Packing List
         </NavLink>
       </nav>
     </div>
@@ -819,3 +839,4 @@ const MainLayout = () => {
 };
 
 export default MainLayout;
+

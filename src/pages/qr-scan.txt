@@ -1,55 +1,4 @@
-// Path: src/pages/qr-scan/types.ts
-
-// Chế độ hoạt động chính của màn hình
-export type OperationMode = 'INBOUND' | 'OUTBOUND';
-
-// --- Types cho luồng Nhập Kho (Inbound) ---
-export type InboundScanState = 'SCANNING_ITEM' | 'ITEM_SCANNED' | 'SCANNING_LOCATION' | 'PROCESSING' | 'SUCCESS' | 'ERROR';
-export type ScanAction = 'PUT_AWAY' | 'TRANSFER' | 'STOCK_COUNT' | 'VIEW_DETAIL';
-
-// --- Types cho luồng Xuất Kho (Outbound) ---
-export type OutboundScanState = 'SCANNING_REQUEST' | 'REQUEST_LOADED' | 'SCANNING_ITEM_FOR_ISSUE' | 'AWAITING_QUANTITY' | 'PROCESSING_ISSUE' | 'ISSUE_SUCCESS' | 'ISSUE_ERROR';
-
-export type PickingListItem = {
-  sku: string;
-  name: string;
-  uom: 'Cây' | 'Thùng' | 'Mét' | 'Cái';
-  requiredQuantity: number;
-  pickedQuantity: number;
-  locations: string[]; // Gợi ý vị trí lấy hàng
-};
-
-export type IssueRequest = {
-  qrCode: string; // Mã QR của phiếu yêu cầu
-  type: 'issue_request';
-  id: string;
-  destination: string; // Nơi nhận hàng (VD: Bộ phận Cắt)
-  status: 'new' | 'in_progress' | 'completed';
-  pickingList: PickingListItem[];
-};
-
-
-// --- Types chung ---
-export type ScannedItem = {
-  qrCode: string;
-  type: 'item';
-  sku:string;
-  name: string;
-  quantity: number; // Số lượng gốc của đơn vị này (vd: 150m vải)
-  uom: string;
-  currentLocation: string | null;
-  shipmentId: string; // Thuộc lô hàng nào
-};
-
-export type ScannedLocation = {
-  qrCode: string;
-  type: 'location';
-  locationCode: string;
-  description: string;
-};
-
-// Dữ liệu trả về sau khi quét có thể là 1 trong 3 loại này
-export type ScannedData = ScannedItem | ScannedLocation | IssueRequest;
+--- D:\WATATECH\WH\src\pages\qr-scan\QRScanInterfacePage.tsx ---
 
 // Path: src/pages/qr-scan/QRScanInterfacePage.tsx
 
@@ -71,22 +20,27 @@ import {
   submitIssueAction,
 } from "./data";
 import Scanner from "./components/Scanner";
-import ScanResult from "./components/ScanResult";
+// REMOVED: ScanResult không còn dùng cho Inbound
 import ActionFeedback from "./components/ActionFeedback";
 import ModeSelector from "./components/ModeSelector";
 import PickingList from "./components/PickingList";
 import IssueQuantityInput from "./components/IssueQuantityInput";
+// NEW: Import component mới
+import InboundPutAway from "./components/InboundPutAway";
 
 const QRScanInterfacePage: React.FC = () => {
   // State chung
   const [mode, setMode] = useState<OperationMode | "SELECT">("SELECT");
   const [feedback, setFeedback] = useState({ status: "HIDDEN", message: "" });
 
-  // State cho luồng Nhập Kho (Inbound)
+  // State cho luồng Nhập Kho (Inbound) - Cập nhật lại
   const [inboundState, setInboundState] =
-    useState<InboundScanState>("SCANNING_ITEM");
-  const [scannedInboundItem, setScannedInboundItem] =
-    useState<ScannedItem | null>(null);
+    useState<InboundScanState>("SCANNING_LOCATION");
+  const [scannedInboundLocation, setScannedInboundLocation] =
+    useState<ScannedLocation | null>(null);
+  const [scannedItemsForPutAway, setScannedItemsForPutAway] = useState<
+    ScannedItem[]
+  >([]);
 
   // State cho luồng Xuất Kho (Outbound)
   const [outboundState, setOutboundState] =
@@ -97,18 +51,23 @@ const QRScanInterfacePage: React.FC = () => {
   const [currentItemPickingInfo, setCurrentItemPickingInfo] =
     useState<PickingListItem | null>(null);
 
+  const resetInboundState = useCallback(() => {
+    setInboundState("SCANNING_LOCATION");
+    setScannedInboundLocation(null);
+    setScannedItemsForPutAway([]);
+  }, []);
+
   const resetAllStates = useCallback(() => {
     setMode("SELECT");
     setFeedback({ status: "HIDDEN", message: "" });
     // Reset Inbound
-    setInboundState("SCANNING_ITEM");
-    setScannedInboundItem(null);
+    resetInboundState();
     // Reset Outbound
     setOutboundState("SCANNING_REQUEST");
     setIssueRequest(null);
     setScannedOutboundItem(null);
     setCurrentItemPickingInfo(null);
-  }, []);
+  }, [resetInboundState]);
 
   const handleError = (error: unknown) => {
     const errorMessage = (error as Error).message;
@@ -116,35 +75,38 @@ const QRScanInterfacePage: React.FC = () => {
     setFeedback({ status: "ERROR", message: errorMessage });
   };
 
-  // --- LOGIC CHO LUỒNG NHẬP KHO (INBOUND) ---
+  // --- LOGIC CHO LUỒNG NHẬP KHO (INBOUND) - VIẾT LẠI HOÀN TOÀN ---
   const handleInboundScan = async (qrCode: string) => {
     try {
       const data = await fetchScannedData(qrCode);
-      if (inboundState === "SCANNING_ITEM") {
+      if (inboundState === "SCANNING_LOCATION") {
+        if (data.type === "location") {
+          setScannedInboundLocation(data as ScannedLocation);
+          setInboundState("AWAITING_ITEMS");
+          toast.success(`Đã chọn vị trí: ${data.locationCode}`);
+        } else {
+          toast.error("Vui lòng quét mã VỊ TRÍ KHO trước.");
+        }
+      } else if (inboundState === "AWAITING_ITEMS") {
         if (data.type === "item") {
-          setScannedInboundItem(data as ScannedItem);
-          setInboundState("ITEM_SCANNED");
+          // Kiểm tra xem item đã được quét chưa
+          if (
+            scannedItemsForPutAway.some((item) => item.qrCode === data.qrCode)
+          ) {
+            toast.error("Vật tư này đã được quét rồi.");
+            return;
+          }
+          if ((data as ScannedItem).currentLocation) {
+            toast.error(
+              `Cảnh báo: Vật tư này đã có vị trí (${(
+                data as ScannedItem
+              ).currentLocation}).`
+            );
+          }
+          setScannedItemsForPutAway((prev) => [...prev, data as ScannedItem]);
           toast.success(`Đã quét vật tư: ${data.sku}`);
         } else {
-          toast.error("Vui lòng quét mã VẬT TƯ trước.");
-        }
-      } else if (inboundState === "SCANNING_LOCATION") {
-        if (data.type === "location" && scannedInboundItem) {
-          setInboundState("PROCESSING");
-          setFeedback({
-            status: "PROCESSING",
-            message: "Đang cập nhật vị trí...",
-          });
-          const result = await submitPutAwayAction(
-            scannedInboundItem,
-            data as ScannedLocation
-          );
-          setFeedback({
-            status: result.success ? "SUCCESS" : "ERROR",
-            message: result.message,
-          });
-        } else {
-          toast.error("Vui lòng quét mã VỊ TRÍ hợp lệ.");
+          toast.error("Vui lòng quét mã VẬT TƯ (cuộn vải, thùng hàng...)." );
         }
       }
     } catch (error) {
@@ -152,7 +114,31 @@ const QRScanInterfacePage: React.FC = () => {
     }
   };
 
-  // --- LOGIC CHO LUỒNG XUẤT KHO (OUTBOUND) ---
+  const handlePutAwaySubmit = async () => {
+    if (!scannedInboundLocation || scannedItemsForPutAway.length === 0) {
+      toast.error("Chưa có vật tư nào để cất vào kho.");
+      return;
+    }
+    setInboundState("PROCESSING");
+    setFeedback({
+      status: "PROCESSING",
+      message: "Đang cập nhật vị trí cho các vật tư...",
+    });
+    try {
+      const result = await submitPutAwayAction(
+        scannedItemsForPutAway,
+        scannedInboundLocation
+      );
+      setFeedback({
+        status: result.success ? "SUCCESS" : "ERROR",
+        message: result.message,
+      });
+    } catch (error) {
+      handleError(error);
+    }
+  };
+
+  // --- LOGIC CHO LUỒNG XUẤT KHO (OUTBOUND) - Không thay đổi ---
   const handleOutboundScan = async (qrCode: string) => {
     try {
       const data = await fetchScannedData(qrCode);
@@ -222,7 +208,7 @@ const QRScanInterfacePage: React.FC = () => {
           onClose={() => {
             // Sau khi xử lý xong, quay lại bước phù hợp
             if (mode === "INBOUND") {
-              setInboundState("SCANNING_ITEM");
+              resetInboundState(); // Quay lại bước quét vị trí
             }
             if (mode === "OUTBOUND") {
               setOutboundState("REQUEST_LOADED"); // Quay lại màn hình picking list
@@ -239,41 +225,35 @@ const QRScanInterfacePage: React.FC = () => {
       return <ModeSelector onSelectMode={setMode} />;
     }
 
-    // --- RENDER LUỒNG NHẬP KHO ---
+    // --- RENDER LUỒNG NHẬP KHO - Cập nhật lại ---
     if (mode === "INBOUND") {
       switch (inboundState) {
-        case "SCANNING_ITEM":
-          return (
-            <Scanner
-              onScan={handleInboundScan}
-              scanPrompt="NHẬP KHO: Vui lòng quét mã QR trên sản phẩm"
-              mode={mode}
-            />
-          );
-        case "ITEM_SCANNED":
-          return (
-            scannedInboundItem && (
-              <ScanResult
-                item={scannedInboundItem}
-                onActionSelect={() => setInboundState("SCANNING_LOCATION")}
-                onCancel={() => setInboundState("SCANNING_ITEM")}
-              />
-            )
-          );
         case "SCANNING_LOCATION":
           return (
             <Scanner
               onScan={handleInboundScan}
-              scanPrompt={`Cất hàng "${scannedInboundItem?.sku}". Vui lòng quét mã QR của VỊ TRÍ ĐÍCH`}
+              scanPrompt="NHẬP KHO: Vui lòng quét mã QR của VỊ TRÍ KHO"
               mode={mode}
             />
+          );
+        case "AWAITING_ITEMS":
+          return (
+            scannedInboundLocation && (
+              <InboundPutAway
+                location={scannedInboundLocation}
+                scannedItems={scannedItemsForPutAway}
+                onScanItem={handleInboundScan}
+                onSubmit={handlePutAwaySubmit}
+                onCancel={resetInboundState} // Nút Hủy sẽ reset lại từ đầu
+              />
+            )
           );
         default:
           return <div>Trạng thái không xác định</div>;
       }
     }
 
-    // --- RENDER LUỒNG XUẤT KHO ---
+    // --- RENDER LUỒNG XUẤT KHO - Không thay đổi ---
     if (mode === "OUTBOUND") {
       switch (outboundState) {
         case "SCANNING_REQUEST":
@@ -345,99 +325,9 @@ const QRScanInterfacePage: React.FC = () => {
 };
 
 export default QRScanInterfacePage;
- 
 
- // Path: src/pages/qr-scan/data.ts
 
-import type { ScannedData, ScannedItem, ScannedLocation, IssueRequest } from './types';
-
-// Giả lập cơ sở dữ liệu kho
-const MOCK_INVENTORY_DB: { [key: string]: ScannedData } = {
-  // Items - Mỗi QR code là duy nhất cho từng đơn vị (từng cây vải, từng thùng hàng)
-  "ITEM_QR_FAB_001": {
-    qrCode: "ITEM_QR_FAB_001", type: 'item', sku: 'FVN-102-BLUE', name: 'Vải Cotton Xanh Navy (Lô 1)',
-    quantity: 150, uom: 'Mét', currentLocation: null, shipmentId: 'SH-001'
-  },
-  "ITEM_QR_FAB_002": {
-    qrCode: "ITEM_QR_FAB_002", type: 'item', sku: 'FVN-102-BLUE', name: 'Vải Cotton Xanh Navy (Lô 1)',
-    quantity: 148.5, uom: 'Mét', currentLocation: 'FBWH-A-01-A', shipmentId: 'SH-001'
-  },
-  "ITEM_QR_ACC_003": {
-    qrCode: "ITEM_QR_ACC_003", type: 'item', sku: 'BTN-005-WHITE', name: 'Thùng Nút Áo Trắng (5000 cái)',
-    quantity: 5000, uom: 'Cái', currentLocation: 'ACCWH-C-05-D', shipmentId: 'SH-002'
-  },
-  // Locations
-  "LOC_QR_A_01_B": {
-    qrCode: "LOC_QR_A_01_B", type: 'location', locationCode: 'FBWH-A-01-B',
-    description: 'Kho Vải, Khu A, Dãy 01, Kệ B',
-  },
-  "LOC_QR_C_05_D": {
-    qrCode: "LOC_QR_C_05_D", type: 'location', locationCode: 'ACCWH-C-05-D',
-    description: 'Kho Phụ Liệu, Khu C, Dãy 05, Kệ D',
-  },
-  // Issue Requests
-  "ISSUE_REQ_001": {
-    qrCode: "ISSUE_REQ_001", type: 'issue_request', id: 'YR-2024-001', destination: 'Bộ phận Cắt',
-    status: 'new',
-    pickingList: [
-      { sku: 'FVN-102-BLUE', name: 'Vải Cotton Xanh Navy', uom: 'Mét', requiredQuantity: 250, pickedQuantity: 0, locations: ['FBWH-A-01-A'] },
-      { sku: 'BTN-005-WHITE', name: 'Nút Áo Trắng', uom: 'Cái', requiredQuantity: 1000, pickedQuantity: 0, locations: ['ACCWH-C-05-D'] },
-    ]
-  }
-};
-
-// Hàm giả lập gọi API để lấy thông tin từ QR code
-export const fetchScannedData = (qrCode: string): Promise<ScannedData> => {
-  console.log(`Simulating API call for QR: ${qrCode}`);
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      const data = MOCK_INVENTORY_DB[qrCode];
-      if (data) {
-        // Trả về một bản sao để tránh thay đổi trực tiếp DB mock
-        resolve(JSON.parse(JSON.stringify(data)));
-      } else {
-        reject(new Error("Mã QR không hợp lệ hoặc không tìm thấy."));
-      }
-    }, 300);
-  });
-};
-
-// Hàm giả lập API cất hàng (Nhập kho)
-export const submitPutAwayAction = (item: ScannedItem, location: ScannedLocation): Promise<{ success: boolean; message: string }> => {
-    console.log(`Simulating ACTION [INBOUND]: Moving ${item.sku} to ${location.locationCode}`);
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            // Cập nhật DB giả
-            const dbItem = MOCK_INVENTORY_DB[item.qrCode] as ScannedItem;
-            if (dbItem) dbItem.currentLocation = location.locationCode;
-            resolve({ success: true, message: `Đã cất hàng ${item.sku} vào vị trí ${location.locationCode} thành công!` });
-        }, 500);
-    });
-}
-
-// Hàm giả lập API xuất kho
-export const submitIssueAction = (request: IssueRequest, item: ScannedItem, issuedQuantity: number): Promise<{ success: boolean; message: string; updatedRequest: IssueRequest }> => {
-  console.log(`Simulating ACTION [OUTBOUND]: Issuing ${issuedQuantity} ${item.uom} of ${item.sku} for request ${request.id}`);
-  return new Promise((resolve, reject) => {
-      setTimeout(() => {
-          const itemInPickingList = request.pickingList.find(p => p.sku === item.sku);
-          const dbItem = MOCK_INVENTORY_DB[item.qrCode] as ScannedItem;
-
-          if (!itemInPickingList || !dbItem) {
-            return reject({ success: false, message: "Lỗi hệ thống: Không tìm thấy vật tư trong phiếu hoặc DB." });
-          }
-
-          // Cập nhật số lượng đã lấy trong phiếu
-          itemInPickingList.pickedQuantity += issuedQuantity;
-          
-          // Trừ tồn kho của cây vải/thùng hàng
-          dbItem.quantity -= issuedQuantity;
-
-          const message = `Xuất thành công ${issuedQuantity} ${item.uom} của ${item.sku}. Tồn kho còn lại của cuộn/thùng: ${dbItem.quantity} ${item.uom}.`;
-          resolve({ success: true, message: message, updatedRequest: request });
-      }, 700);
-  });
-}
+--- D:\WATATECH\WH\src\pages\qr-scan\components\ActionFeedback.tsx ---
 
 // Path: src/pages/qr-scan/components/ActionFeedback.tsx
 
@@ -450,8 +340,7 @@ interface ActionFeedbackProps {
   onClose: () => void;
 }
 
-const ActionFeedback: React.FC<ActionFeedbackProps> = ({
-  status,
+const ActionFeedback: React.FC<ActionFeedbackProps> = ({ status,
   message,
   onClose,
 }) => {
@@ -509,6 +398,99 @@ const ActionFeedback: React.FC<ActionFeedbackProps> = ({
 
 export default ActionFeedback;
 
+
+--- D:\WATATECH\WH\src\pages\qr-scan\components\InboundPutAway.tsx ---
+
+// Path: src/pages/qr-scan/components/InboundPutAway.tsx
+
+import React from "react";
+import { Check, X, Warehouse } from "lucide-react";
+import type { ScannedItem, ScannedLocation } from "../types";
+import Scanner from "./Scanner";
+
+interface InboundPutAwayProps {
+  location: ScannedLocation;
+  scannedItems: ScannedItem[];
+  onScanItem: (qrCode: string) => void;
+  onSubmit: () => void;
+  onCancel: () => void;
+}
+
+const InboundPutAway: React.FC<InboundPutAwayProps> = ({ location,
+  scannedItems,
+  onScanItem,
+  onSubmit,
+  onCancel,
+}) => {
+  return (
+    <div className="w-full max-w-lg mx-auto p-4 animate-fade-in">
+      <div className="bg-white rounded-lg shadow-lg p-6 border border-gray-200">
+        <div className="text-center mb-4 border-b pb-4">
+          <Warehouse className="mx-auto h-12 w-12 text-blue-500 mb-2" />
+          <h2 className="text-xl font-bold text-gray-800">Cất Hàng Vào Kho</h2>
+          <p className="text-sm text-gray-500">Vị trí đã chọn:</p>
+          <p className="font-mono text-blue-600 bg-blue-100 px-3 py-1 rounded-full inline-block mt-1">
+            {location.locationCode}
+          </p>
+        </div>
+
+        {/* Danh sách các vật tư đã quét */}
+        <div className="mb-4">
+          <h3 className="font-semibold text-gray-700 mb-2">
+            Các vật tư đã quét ({scannedItems.length}):
+          </h3>
+          <div className="max-h-40 overflow-y-auto space-y-2 pr-2">
+            {scannedItems.length === 0 ? (
+              <p className="text-center text-gray-500 italic py-4">
+                Chưa có vật tư nào được quét.
+              </p>
+            ) : (
+              scannedItems.map((item) => (
+                <div
+                  key={item.qrCode}
+                  className="p-2 bg-gray-50 rounded-md border text-sm"
+                >
+                  <p className="font-bold text-gray-800">{item.name}</p>
+                  <p className="text-xs text-gray-500">SKU: {item.sku}</p>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Khu vực quét */}
+        <div className="mt-4">
+          <Scanner
+            onScan={onScanItem}
+            scanPrompt="Tiếp tục quét mã QR trên các cuộn vải/thùng hàng"
+            mode="INBOUND"
+          />
+        </div>
+      </div>
+
+      <div className="mt-6 flex space-x-3">
+        <button
+          onClick={onCancel}
+          className="w-1/3 text-lg bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center shadow-md"
+        >
+          <X className="mr-2" /> Hủy
+        </button>
+        <button
+          onClick={onSubmit}
+          disabled={scannedItems.length === 0}
+          className="w-2/3 text-lg bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed"
+        >
+          <Check className="mr-2" /> Hoàn Tất
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default InboundPutAway;
+
+
+--- D:\WATATECH\WH\src\pages\qr-scan\components\IssueQuantityInput.tsx ---
 
 // Path: src/pages/qr-scan/components/IssueQuantityInput.tsx
 
@@ -623,6 +605,7 @@ const IssueQuantityInput: React.FC<IssueQuantityInputProps> = ({
 
 export default IssueQuantityInput;
 
+--- D:\WATATECH\WH\src\pages\qr-scan\components\ModeSelector.tsx ---
 
 // Path: src/pages/qr-scan/components/ModeSelector.tsx
 
@@ -670,6 +653,9 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({ onSelectMode }) => {
 };
 
 export default ModeSelector;
+
+
+--- D:\WATATECH\WH\src\pages\qr-scan\components\PickingList.tsx ---
 
 // Path: src/pages/qr-scan/components/PickingList.tsx
 
@@ -766,6 +752,9 @@ const PickingList: React.FC<PickingListProps> = ({
 };
 
 export default PickingList;
+
+
+--- D:\WATATECH\WH\src\pages\qr-scan\components\Scanner.tsx ---
 
 // Path: src/pages/qr-scan/components/Scanner.tsx
 
@@ -870,11 +859,14 @@ const Scanner: React.FC<ScannerProps> = ({ onScan, scanPrompt, mode }) => {
 
 export default Scanner;
 
+
+--- D:\WATATECH\WH\src\pages\qr-scan\components\ScanResult.tsx ---
+
 // Path: src/pages/qr-scan/components/ScanResult.tsx
 
 import React from "react";
 import type { ScannedItem, ScanAction } from "../types";
-import { Move, CheckSquare, XCircle } from "lucide-react";
+import { Move, XCircle } from "lucide-react"; // Bỏ CheckSquare
 
 interface ScanResultProps {
   item: ScannedItem;
@@ -932,12 +924,7 @@ const ScanResult: React.FC<ScanResultProps> = ({
             <Move className="mr-3" /> Chuyển Vị Trí
           </button>
         )}
-        <button
-          onClick={() => onActionSelect("STOCK_COUNT")}
-          className="w-full text-lg bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-4 px-4 rounded-lg flex items-center justify-center shadow-md"
-        >
-          <CheckSquare className="mr-3" /> Kiểm Kê
-        </button>
+        {/* REMOVED: Nút Kiểm Kê đã bị xóa */}
       </div>
 
       <div className="mt-8 text-center">
@@ -953,3 +940,359 @@ const ScanResult: React.FC<ScanResultProps> = ({
 };
 
 export default ScanResult;
+
+--- D:\WATATECH\WH\src\pages\qr-scan\types.ts ---
+
+// Path: src/pages/qr-scan/types.ts
+// Path: src/pages/qr-scan/types.ts
+
+// Chế độ hoạt động chính của màn hình
+export type OperationMode = 'INBOUND' | 'OUTBOUND';
+
+// --- Types cho luồng Nhập Kho (Inbound) ---
+// NEW: Cập nhật trạng thái cho luồng Nhập Kho mới
+export type InboundScanState = 'SCANNING_LOCATION' | 'AWAITING_ITEMS' | 'PROCESSING' | 'SUCCESS' | 'ERROR';
+
+// UPDATED: Bỏ 'STOCK_COUNT'
+export type ScanAction = 'PUT_AWAY' | 'TRANSFER' | 'VIEW_DETAIL';
+
+// --- Types cho luồng Xuất Kho (Outbound) ---
+export type OutboundScanState = 'SCANNING_REQUEST' | 'REQUEST_LOADED' | 'SCANNING_ITEM_FOR_ISSUE' | 'AWAITING_QUANTITY' | 'PROCESSING_ISSUE' | 'ISSUE_SUCCESS' | 'ISSUE_ERROR';
+
+export type PickingListItem = {
+  sku: string;
+  name: string;
+  uom: 'Cây' | 'Thùng' | 'Mét' | 'Cái';
+  requiredQuantity: number;
+  pickedQuantity: number;
+  locations: string[]; // Gợi ý vị trí lấy hàng
+};
+
+export type IssueRequest = {
+  qrCode: string; // Mã QR của phiếu yêu cầu
+  type: 'issue_request';
+  id: string;
+  destination: string; // Nơi nhận hàng (VD: Bộ phận Cắt)
+  status: 'new' | 'in_progress' | 'completed';
+  pickingList: PickingListItem[];
+};
+
+
+// --- Types chung ---
+export type ScannedItem = {
+  qrCode: string;
+  type: 'item';
+  sku:string;
+  name: string;
+  quantity: number; // Số lượng gốc của đơn vị này (vd: 150m vải)
+  uom: string;
+  currentLocation: string | null;
+  shipmentId: string; // Thuộc lô hàng nào
+};
+
+export type ScannedLocation = {
+  qrCode: string;
+  type: 'location';
+  locationCode: string;
+  description: string;
+};
+
+// Dữ liệu trả về sau khi quét có thể là 1 trong 3 loại này
+export type ScannedData = ScannedItem | ScannedLocation | IssueRequest;
+
+
+
+# File src/App.tsx
+// Path: src/App.tsx
+
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import MainLayout from "./layouts/MainLayout";
+import InboundDashboardPage from "./pages/inbound-dashboard/InboundDashboardPage";
+import InventoryListPage from "./pages/inventory-list/InventoryListPage";
+import KanbanBoardPage from "./pages/kanban-board/KanbanBoardPage";
+import ImportPackingListFormPage from "./pages/import-packing-list/ImportPackingListFormPage";
+import ShipmentDetailPage from "./pages/shipment-detail/ShipmentDetailPage";
+import LocationManagementPage from "./pages/location-management/LocationManagementPage";
+import QRScanInterfacePage from "./pages/qr-scan/QRScanInterfacePage";
+import IssueFabricFormPage from "./pages/issue-fabric-form/IssueFabricFormPage";
+import IssueAccessoryFormPage from "./pages/issue-accessory-form/IssueAccessoryFormPage";
+import IssuePackagingFormPage from "./pages/issue-packaging-form/IssuePackagingFormPage";
+import IssueTransactionReportsPage from "./pages/issue-transaction-reports/IssueTransactionReportsPage";
+import PackingListManagementPage from "./pages/packing-list-management/PackingListManagementPage";
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        {/* Tất cả các route bên trong đây sẽ sử dụng MainLayout */}
+        <Route path="/" element={<MainLayout />}>
+          <Route index element={<InboundDashboardPage />} />
+          <Route path="dashboard" element={<InboundDashboardPage />} />
+          <Route path="inventory" element={<InventoryListPage />} />
+          <Route path="kanban" element={<KanbanBoardPage />} />
+          <Route
+            path="import-packing-list"
+            element={<ImportPackingListFormPage />}
+          />
+          <Route
+            path="shipments/:shipmentId"
+            element={<ShipmentDetailPage />}
+          />
+          <Route path="locations" element={<LocationManagementPage />} />
+          <Route path="qr-scan" element={<QRScanInterfacePage />} />
+          <Route path="issue/fabric" element={<IssueFabricFormPage />} />
+
+          <Route path="issue/accessory" element={<IssueAccessoryFormPage />} />
+          <Route path="issue/packaging" element={<IssuePackagingFormPage />} />
+
+          <Route
+            path="reports/issues"
+            element={<IssueTransactionReportsPage />}
+          />
+
+          <Route path="packing-list" element={<PackingListManagementPage />} />
+        </Route>
+
+        {/* Bạn có thể thêm các route không cần layout ở đây, ví dụ trang Login */}
+        {/* <Route path="/login" element={<LoginPage />} /> */}
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+export default App;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# File src/layouts/MainLayout.tsx
+// Path: src/layouts/MainLayout.tsx
+
+import { useState } from "react";
+import { NavLink, Outlet } from "react-router-dom";
+import {
+  Menu,
+  X,
+  LayoutDashboard,
+  Truck,
+  Bell,
+  User,
+  KanbanSquare,
+  Network,
+  QrCode,
+  FileOutput,
+  Boxes,
+  Package,
+  ScrollText,
+  ListPlus,
+  Upload,
+} from "lucide-react";
+
+const Sidebar = () => {
+  // Style chung cho NavLink
+  const linkClasses = "flex items-center px-4 py-2.5 rounded-lg";
+  const inactiveClasses = "text-gray-300 hover:bg-gray-700";
+  const activeClasses = "bg-gray-700 font-semibold text-white";
+
+  return (
+    <div className="bg-gray-800 text-white w-64 space-y-2 p-4 flex-shrink-0">
+      <div className="text-2xl font-bold mb-6">Kho Hàng Pro</div>
+      <nav>
+        <NavLink
+          to="/dashboard"
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <LayoutDashboard className="w-5 h-5 mr-3" />
+          Dashboard Hàng Nhập
+        </NavLink>
+
+        <NavLink
+          to="/packing-list"
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <ListPlus className="w-5 h-5 mr-3" />
+          QL Packing List / In QR
+        </NavLink>
+
+        <NavLink
+          to="/inventory" // <--- THAY ĐỔI LINK
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <Truck className="w-5 h-5 mr-3" />
+          Quản lý Tồn kho
+        </NavLink>
+
+        <NavLink
+          to="/kanban"
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <KanbanSquare className="w-5 h-5 mr-3" />
+          Bảng Kanban
+        </NavLink>
+
+        <NavLink
+          to="/shipments/7c3b9a1d"
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <Truck className="w-5 h-5 mr-3" />
+          Chi tiết lô hàng
+        </NavLink>
+
+        <NavLink
+          to="/locations"
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <Network className="w-5 h-5 mr-3" />
+          Quản lý Vị trí
+        </NavLink>
+
+        <NavLink
+          to="/qr-scan"
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <QrCode className="w-5 h-5 mr-3" />
+          Quét Mã QR
+        </NavLink>
+
+        <NavLink
+          to="/issue/fabric"
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <FileOutput className="w-5 h-5 mr-3" />
+          Tạo Phiếu Xuất Vải
+        </NavLink>
+
+        <NavLink
+          to="/issue/accessory" // <--- Route mới
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <Boxes className="w-5 h-5 mr-3" />
+          Tạo Phiếu Xuất Phụ liệu
+        </NavLink>
+
+        <NavLink
+          to="/issue/packaging"
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <Package className="w-5 h-5 mr-3" />
+          Tạo Phiếu Xuất Đóng Gói
+        </NavLink>
+
+        <NavLink
+          to="/reports/issues" // <-- Route mới
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <ScrollText className="w-5 h-5 mr-3" />
+          Báo cáo Xuất Kho
+        </NavLink>
+
+        <NavLink
+          to="/import-packing-list" // <-- Route mới
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <Upload className="w-5 h-5 mr-3" />
+          Upfile Packing List
+        </NavLink>
+      </nav>
+    </div>
+  );
+};
+
+// Component Header đơn giản
+const Header = ({ onMenuClick }: { onMenuClick: () => void }) => (
+  <header className="bg-white border-b border-gray-200 p-4 flex justify-between items-center">
+    {/* Nút Menu cho mobile */}
+    <button onClick={onMenuClick} className="lg:hidden text-gray-600">
+      <Menu className="w-6 h-6" />
+    </button>
+    <div className="hidden lg:block">
+      {/* Placeholder, có thể là thanh search hoặc title */}
+    </div>
+    <div className="flex items-center space-x-4">
+      <button className="text-gray-500 hover:text-gray-700">
+        <Bell className="w-6 h-6" />
+      </button>
+      <div className="flex items-center space-x-2">
+        <User className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 p-1" />
+        <span className="text-sm font-medium text-gray-700">Admin</span>
+      </div>
+    </div>
+  </header>
+);
+
+const MainLayout = () => {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  return (
+    <div className="flex h-screen bg-gray-100">
+      {/* Sidebar cho Desktop */}
+      <div className="hidden lg:flex">
+        <Sidebar />
+      </div>
+
+      {/* Sidebar cho Mobile (Overlay) */}
+      {sidebarOpen && (
+        <div className="lg:hidden fixed inset-0 flex z-40">
+          <div
+            className="fixed inset-0 bg-black opacity-30"
+            onClick={() => setSidebarOpen(false)}
+          ></div>
+          <Sidebar />
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="absolute top-4 right-4 text-white"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+      )}
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Header onMenuClick={() => setSidebarOpen(true)} />
+        <main className="flex-1 overflow-x-hidden overflow-y-auto">
+          {/* Đây là nơi các trang con sẽ được render */}
+          <Outlet />
+        </main>
+      </div>
+    </div>
+  );
+};
+
+export default MainLayout;
+

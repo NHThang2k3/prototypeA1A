@@ -1,62 +1,5 @@
-
-
-**Directory Tree:**
-
-```
-kanban-board/
-├── data.ts
-├── KanbanBoardPage.tsx
-├── types.ts
-└── components/
-    ├── AssigneeAvatar.tsx
-    ├── KanbanCard.tsx
-    ├── KanbanColumn.tsx
-    └── PriorityTag.tsx
-```
-
---- D:\WATATECH\WH\src\pages\kanban-board\data.ts ---
-
-// Path: src/pages/kanban-board/data.ts
-
-import type { KanbanBoard } from "./types";
-
-export const mockBoards: KanbanBoard[] = [
-  {
-    id: "fabric-to-cutting",
-    name: "Kho Vải -> Cắt",
-    tasks: [
-      { id: 'task-1', requestId: 'RF-0123', title: 'Vải FVN-102-BLUE', details: '5 cây / 750m', department: 'Phòng Cắt', priority: 'Khẩn cấp', dueDate: '28/10/2023', assignee: { id: 'user-1', name: 'Văn A' } },
-      { id: 'task-2', requestId: 'RF-0124', title: 'Vải KTG-05-RED', details: '2 cây / 310m', department: 'Phòng Cắt', priority: 'Thường', dueDate: '29/10/2023' },
-      { id: 'task-3', requestId: 'RF-0125', title: 'Vải Denim-WASH', details: '10 cây / 1200m', department: 'Phòng Cắt', priority: 'Cao', dueDate: '28/10/2023', assignee: { id: 'user-2', name: 'Thị B' } },
-      { id: 'task-4', requestId: 'RF-0126', title: 'Vải Cotton 100%', details: '3 cây / 450m', department: 'Phòng Cắt', priority: 'Thường', dueDate: '30/10/2023', assignee: { id: 'user-2', name: 'Thị B' } },
-    ],
-    columns: [
-      { id: 'col-1', title: 'Yêu cầu mới', taskIds: ['task-1', 'task-2'] },
-      { id: 'col-2', title: 'Đang chuẩn bị', taskIds: ['task-3'] },
-      { id: 'col-3', title: 'Sẵn sàng giao', taskIds: ['task-4'] },
-      { id: 'col-4', title: 'Đã giao', taskIds: [] },
-    ],
-  },
-  {
-    id: "sewing-to-acc",
-    name: "May -> Kho Phụ Liệu",
-    tasks: [
-        { id: 'task-5', requestId: 'RA-551', title: 'Nút áo sơ mi', details: '5,000 cái', department: 'Chuyền May 1', priority: 'Cao', dueDate: '28/10/2023', assignee: { id: 'user-3', name: 'Văn C' } },
-        { id: 'task-6', requestId: 'RA-552', title: 'Chỉ may vắt sổ', details: '20 cuộn', department: 'Chuyền May 3', priority: 'Thường', dueDate: '29/10/2023', assignee: { id: 'user-3', name: 'Văn C' } },
-    ],
-    columns: [
-        { id: 'col-5', title: 'Yêu cầu mới', taskIds: ['task-5'] },
-        { id: 'col-6', title: 'Đang soạn hàng', taskIds: ['task-6'] },
-        { id: 'col-7', title: 'Đã giao', taskIds: [] },
-    ],
-  },
-];
-
-
---- D:\WATATECH\WH\src\pages\kanban-board\KanbanBoardPage.tsx ---
-
 // Path: src/pages/kanban-board/KanbanBoardPage.tsx
-import React, { useState } from "react";
+import { useState } from "react";
 import { DndContext, closestCorners } from "@dnd-kit/core";
 import type { DragEndEvent } from "@dnd-kit/core";
 import { mockBoards } from "./data";
@@ -153,7 +96,7 @@ const KanbanBoardPage = () => {
             <button
               key={board.id}
               onClick={() => setActiveBoardId(board.id)}
-              className={`${`
+              className={`${ 
                 board.id === activeBoardId
                   ? "border-blue-500 text-blue-600"
                   : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
@@ -184,43 +127,6 @@ const KanbanBoardPage = () => {
 };
 
 export default KanbanBoardPage;
-
-
---- D:\WATATECH\WH\src\pages\kanban-board\types.ts ---
-
-// Path: src/pages/kanban-board/types.ts
-
-export interface Assignee {
-  id: string;
-  name: string;
-  avatarUrl?: string; // URL ảnh đại diện
-}
-
-export type Priority = 'Khẩn cấp' | 'Cao' | 'Thường';
-
-export interface KanbanTask {
-  id: string;
-  requestId: string; // VD: "RF-0123"
-  title: string; // VD: "Vải FVN-102-BLUE"
-  details: string; // VD: "5 cây / 750m"
-  department: string; // VD: "Phòng Cắt"
-  priority: Priority;
-  assignee?: Assignee;
-  dueDate: string; // Ngày cần hàng
-}
-
-export interface KanbanColumn {
-  id: string; // VD: "todo", "inprogress", "done"
-  title: string;
-  taskIds: string[]; // Mảng chứa ID của các task trong cột này
-}
-
-export interface KanbanBoard {
-  id: string; // VD: "fabric-to-cutting"
-  name: string; // VD: "Kho Vải -> Cắt"
-  columns: KanbanColumn[];
-  tasks: KanbanTask[];
-}
 
 
 --- D:\WATATECH\WH\src\pages\kanban-board\components\AssigneeAvatar.tsx ---
@@ -383,8 +289,84 @@ const PriorityTag: React.FC<Props> = ({ priority }) => {
 
 export default PriorityTag;
 
---- D:\WATATECH\WH\src\App.tsx ---
 
+--- D:\WATATECH\WH\src\pages\kanban-board\data.ts ---
+
+// Path: src/pages/kanban-board/data.ts
+
+import type { KanbanBoard } from "./types";
+
+export const mockBoards: KanbanBoard[] = [
+  {
+    id: "fabric-to-cutting",
+    name: "Kho Vải -> Cắt",
+    tasks: [
+      { id: 'task-1', requestId: 'RF-0123', title: 'Vải FVN-102-BLUE', details: '5 cây / 750m', department: 'Phòng Cắt', priority: 'Khẩn cấp', dueDate: '28/10/2023', assignee: { id: 'user-1', name: 'Văn A' } },
+      { id: 'task-2', requestId: 'RF-0124', title: 'Vải KTG-05-RED', details: '2 cây / 310m', department: 'Phòng Cắt', priority: 'Thường', dueDate: '29/10/2023' },
+      { id: 'task-3', requestId: 'RF-0125', title: 'Vải Denim-WASH', details: '10 cây / 1200m', department: 'Phòng Cắt', priority: 'Cao', dueDate: '28/10/2023', assignee: { id: 'user-2', name: 'Thị B' } },
+      { id: 'task-4', requestId: 'RF-0126', title: 'Vải Cotton 100%', details: '3 cây / 450m', department: 'Phòng Cắt', priority: 'Thường', dueDate: '30/10/2023', assignee: { id: 'user-2', name: 'Thị B' } },
+    ],
+    columns: [
+      { id: 'col-1', title: 'Yêu cầu mới', taskIds: ['task-1', 'task-2'] },
+      { id: 'col-2', title: 'Đang chuẩn bị', taskIds: ['task-3'] },
+      { id: 'col-3', title: 'Sẵn sàng giao', taskIds: ['task-4'] },
+      { id: 'col-4', title: 'Đã giao', taskIds: [] },
+    ],
+  },
+  {
+    id: "sewing-to-acc",
+    name: "May -> Kho Phụ Liệu",
+    tasks: [
+        { id: 'task-5', requestId: 'RA-551', title: 'Nút áo sơ mi', details: '5,000 cái', department: 'Chuyền May 1', priority: 'Cao', dueDate: '28/10/2023', assignee: { id: 'user-3', name: 'Văn C' } },
+        { id: 'task-6', requestId: 'RA-552', title: 'Chỉ may vắt sổ', details: '20 cuộn', department: 'Chuyền May 3', priority: 'Thường', dueDate: '29/10/2023', assignee: { id: 'user-3', name: 'Văn C' } },
+    ],
+    columns: [
+        { id: 'col-5', title: 'Yêu cầu mới', taskIds: ['task-5'] },
+        { id: 'col-6', title: 'Đang soạn hàng', taskIds: ['task-6'] },
+        { id: 'col-7', title: 'Đã giao', taskIds: [] },
+    ],
+  },
+];
+
+
+--- D:\WATATECH\WH\src\pages\kanban-board\types.ts ---
+
+// Path: src/pages/kanban-board/types.ts
+
+export interface Assignee {
+  id: string;
+  name: string;
+  avatarUrl?: string; // URL ảnh đại diện
+}
+
+export type Priority = 'Khẩn cấp' | 'Cao' | 'Thường';
+
+export interface KanbanTask {
+  id: string;
+  requestId: string; // VD: "RF-0123"
+  title: string; // VD: "Vải FVN-102-BLUE"
+  details: string; // VD: "5 cây / 750m"
+  department: string; // VD: "Phòng Cắt"
+  priority: Priority;
+  assignee?: Assignee;
+  dueDate: string; // Ngày cần hàng
+}
+
+export interface KanbanColumn {
+  id: string; // VD: "todo", "inprogress", "done"
+  title: string;
+  taskIds: string[]; // Mảng chứa ID của các task trong cột này
+}
+
+export interface KanbanBoard {
+  id: string; // VD: "fabric-to-cutting"
+  name: string; // VD: "Kho Vải -> Cắt"
+  columns: KanbanColumn[];
+  tasks: KanbanTask[];
+}
+
+
+# File src/App.tsx
 // Path: src/App.tsx
 
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -399,7 +381,8 @@ import QRScanInterfacePage from "./pages/qr-scan/QRScanInterfacePage";
 import IssueFabricFormPage from "./pages/issue-fabric-form/IssueFabricFormPage";
 import IssueAccessoryFormPage from "./pages/issue-accessory-form/IssueAccessoryFormPage";
 import IssuePackagingFormPage from "./pages/issue-packaging-form/IssuePackagingFormPage";
-import IssueTransactionReportsPage from "./pages/issue-transaction-reports/IssueTransactionReportsPage"; // <-- Import trang mới
+import IssueTransactionReportsPage from "./pages/issue-transaction-reports/IssueTransactionReportsPage";
+import PackingListManagementPage from "./pages/packing-list-management/PackingListManagementPage";
 
 function App() {
   return (
@@ -430,6 +413,8 @@ function App() {
             path="reports/issues"
             element={<IssueTransactionReportsPage />}
           />
+
+          <Route path="packing-list" element={<PackingListManagementPage />} />
         </Route>
 
         {/* Bạn có thể thêm các route không cần layout ở đây, ví dụ trang Login */}
@@ -442,11 +427,23 @@ function App() {
 export default App;
 
 
---- D:\WATATECH\WH\src\layouts\MainLayout.tsx ---
 
+
+
+
+
+
+
+
+
+
+
+
+
+# File src/layouts/MainLayout.tsx
 // Path: src/layouts/MainLayout.tsx
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import {
   Menu,
@@ -462,6 +459,8 @@ import {
   Boxes,
   Package,
   ScrollText,
+  ListPlus,
+  Upload,
 } from "lucide-react";
 
 const Sidebar = () => {
@@ -482,6 +481,16 @@ const Sidebar = () => {
         >
           <LayoutDashboard className="w-5 h-5 mr-3" />
           Dashboard Hàng Nhập
+        </NavLink>
+
+        <NavLink
+          to="/packing-list"
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <ListPlus className="w-5 h-5 mr-3" />
+          QL Packing List / In QR
         </NavLink>
 
         <NavLink
@@ -511,7 +520,7 @@ const Sidebar = () => {
           }
         >
           <Truck className="w-5 h-5 mr-3" />
-          Shipment
+          Chi tiết lô hàng
         </NavLink>
 
         <NavLink
@@ -572,6 +581,16 @@ const Sidebar = () => {
         >
           <ScrollText className="w-5 h-5 mr-3" />
           Báo cáo Xuất Kho
+        </NavLink>
+
+        <NavLink
+          to="/import-packing-list" // <-- Route mới
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <Upload className="w-5 h-5 mr-3" />
+          Upfile Packing List
         </NavLink>
       </nav>
     </div>
@@ -640,3 +659,4 @@ const MainLayout = () => {
 };
 
 export default MainLayout;
+

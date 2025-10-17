@@ -1,26 +1,8 @@
-
-
-**Directory Tree:**
-
-```
-inventory-list/
-├── InventoryListPage.tsx
-├── types.ts
-└── components/
-    ├── InventoryFilters.tsx
-    ├── InventoryHeader.tsx
-    ├── InventoryTable.tsx
-    ├── StatusBadge.tsx
-    └── skeletons/
-        ├── FilterSkeleton.tsx
-        └── TableSkeleton.tsx
-```
-
 --- D:\WATATECH\WH\src\pages\inventory-list\InventoryListPage.tsx ---
 
 // Path: src/pages/inventory-list/InventoryListPage.tsx
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { InventoryHeader } from "./components/InventoryHeader";
 import { InventoryFilters } from "./components/InventoryFilters";
 import { InventoryTable } from "./components/InventoryTable";
@@ -152,30 +134,10 @@ const InventoryListPage = () => {
 export default InventoryListPage;
 
 
---- D:\WATATECH\WH\src\pages\inventory-list\types.ts ---
-
-// Path: src/pages/inventory-list/types.ts
-
-export type InventoryStatus = 'in-stock' | 'low-stock' | 'out-of-stock';
-
-export interface InventoryItem {
-  id: string;
-  sku: string;
-  name: string;
-  uom: string; // Unit of Measure (Đơn vị tính)
-  warehouse: string;
-  location: string;
-  quantityInStock: number;
-  quantityAvailable: number;
-  status: InventoryStatus;
-}
-
-
 --- D:\WATATECH\WH\src\pages\inventory-list\components\InventoryFilters.tsx ---
 
 // Path: src/pages/inventory-list/components/InventoryFilters.tsx
 
-import React from "react";
 import { Search, SlidersHorizontal } from "lucide-react";
 
 export const InventoryFilters = () => {
@@ -295,7 +257,6 @@ export const InventoryFilters = () => {
 
 // Path: src/pages/inventory-list/components/InventoryHeader.tsx
 
-import React from "react";
 import { ChevronRight, FileDown, ClipboardList } from "lucide-react";
 
 export const InventoryHeader = () => (
@@ -417,124 +378,301 @@ export const InventoryTable: React.FC<InventoryTableProps> = ({ items }) => {
       {/* Pagination */}
       <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
         <p className="text-sm text-gray-700">
-          Hiển thị <span className="font-medium">1</span> đến{" "}
-          <span className="font-medium">10</span> của{" "}
-          <span className="font-medium">97</span> kết quả
-        </p>
-        <div className="flex items-center space-x-2">
-          <button className="px-3 py-1 border border-gray-300 rounded-md text-sm text-gray-600 hover:bg-gray-50">
-            Trước
-          </button>
-          <button className="px-3 py-1 border border-gray-300 rounded-md text-sm text-gray-600 hover:bg-gray-50">
-            Sau
-          </button>
-        </div>
-      </div>
-    </div>
+          Hiển thị <span className="font-medium">1</span> đến{
+
+
+
+# File src/App.tsx
+// Path: src/App.tsx
+
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import MainLayout from "./layouts/MainLayout";
+import InboundDashboardPage from "./pages/inbound-dashboard/InboundDashboardPage";
+import InventoryListPage from "./pages/inventory-list/InventoryListPage";
+import KanbanBoardPage from "./pages/kanban-board/KanbanBoardPage";
+import ImportPackingListFormPage from "./pages/import-packing-list/ImportPackingListFormPage";
+import ShipmentDetailPage from "./pages/shipment-detail/ShipmentDetailPage";
+import LocationManagementPage from "./pages/location-management/LocationManagementPage";
+import QRScanInterfacePage from "./pages/qr-scan/QRScanInterfacePage";
+import IssueFabricFormPage from "./pages/issue-fabric-form/IssueFabricFormPage";
+import IssueAccessoryFormPage from "./pages/issue-accessory-form/IssueAccessoryFormPage";
+import IssuePackagingFormPage from "./pages/issue-packaging-form/IssuePackagingFormPage";
+import IssueTransactionReportsPage from "./pages/issue-transaction-reports/IssueTransactionReportsPage";
+import PackingListManagementPage from "./pages/packing-list-management/PackingListManagementPage";
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        {/* Tất cả các route bên trong đây sẽ sử dụng MainLayout */}
+        <Route path="/" element={<MainLayout />}>
+          <Route index element={<InboundDashboardPage />} />
+          <Route path="dashboard" element={<InboundDashboardPage />} />
+          <Route path="inventory" element={<InventoryListPage />} />
+          <Route path="kanban" element={<KanbanBoardPage />} />
+          <Route
+            path="import-packing-list"
+            element={<ImportPackingListFormPage />}
+          />
+          <Route
+            path="shipments/:shipmentId"
+            element={<ShipmentDetailPage />}
+          />
+          <Route path="locations" element={<LocationManagementPage />} />
+          <Route path="qr-scan" element={<QRScanInterfacePage />} />
+          <Route path="issue/fabric" element={<IssueFabricFormPage />} />
+
+          <Route path="issue/accessory" element={<IssueAccessoryFormPage />} />
+          <Route path="issue/packaging" element={<IssuePackagingFormPage />} />
+
+          <Route
+            path="reports/issues"
+            element={<IssueTransactionReportsPage />}
+          />
+
+          <Route path="packing-list" element={<PackingListManagementPage />} />
+        </Route>
+
+        {/* Bạn có thể thêm các route không cần layout ở đây, ví dụ trang Login */}
+        {/* <Route path="/login" element={<LoginPage />} /> */}
+      </Routes>
+    </BrowserRouter>
   );
-};
-
-
---- D:\WATATECH\WH\src\pages\inventory-list\components\StatusBadge.tsx ---
-
-// Path: src/pages/inventory-list/components/StatusBadge.tsx
-
-import React from "react";
-import type { InventoryStatus } from "../types";
-
-interface StatusBadgeProps {
-  status: InventoryStatus;
 }
 
-const statusMap: Record<InventoryStatus, { text: string; className: string }> =
-  {
-    "in-stock": { text: "Còn hàng", className: "bg-green-100 text-green-800" },
-    "low-stock": {
-      text: "Sắp hết",
-      className: "bg-yellow-100 text-yellow-800",
-    },
-    "out-of-stock": { text: "Hết hàng", className: "bg-red-100 text-red-800" },
-  };
+export default App;
 
-export const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
-  const { text, className } = statusMap[status] || {
-    text: "Không rõ",
-    className: "bg-gray-100 text-gray-800",
-  };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# File src/layouts/MainLayout.tsx
+// Path: src/layouts/MainLayout.tsx
+
+import { useState } from "react";
+import { NavLink, Outlet } from "react-router-dom";
+import {
+  Menu,
+  X,
+  LayoutDashboard,
+  Truck,
+  Bell,
+  User,
+  KanbanSquare,
+  Network,
+  QrCode,
+  FileOutput,
+  Boxes,
+  Package,
+  ScrollText,
+  ListPlus,
+  Upload,
+} from "lucide-react";
+
+const Sidebar = () => {
+  // Style chung cho NavLink
+  const linkClasses = "flex items-center px-4 py-2.5 rounded-lg";
+  const inactiveClasses = "text-gray-300 hover:bg-gray-700";
+  const activeClasses = "bg-gray-700 font-semibold text-white";
 
   return (
-    <span
-      className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${className}`}
-    >
-      {text}
-    </span>
+    <div className="bg-gray-800 text-white w-64 space-y-2 p-4 flex-shrink-0">
+      <div className="text-2xl font-bold mb-6">Kho Hàng Pro</div>
+      <nav>
+        <NavLink
+          to="/dashboard"
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <LayoutDashboard className="w-5 h-5 mr-3" />
+          Dashboard Hàng Nhập
+        </NavLink>
+
+        <NavLink
+          to="/packing-list"
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <ListPlus className="w-5 h-5 mr-3" />
+          QL Packing List / In QR
+        </NavLink>
+
+        <NavLink
+          to="/inventory" // <--- THAY ĐỔI LINK
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <Truck className="w-5 h-5 mr-3" />
+          Quản lý Tồn kho
+        </NavLink>
+
+        <NavLink
+          to="/kanban"
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <KanbanSquare className="w-5 h-5 mr-3" />
+          Bảng Kanban
+        </NavLink>
+
+        <NavLink
+          to="/shipments/7c3b9a1d"
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <Truck className="w-5 h-5 mr-3" />
+          Chi tiết lô hàng
+        </NavLink>
+
+        <NavLink
+          to="/locations"
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <Network className="w-5 h-5 mr-3" />
+          Quản lý Vị trí
+        </NavLink>
+
+        <NavLink
+          to="/qr-scan"
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <QrCode className="w-5 h-5 mr-3" />
+          Quét Mã QR
+        </NavLink>
+
+        <NavLink
+          to="/issue/fabric"
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <FileOutput className="w-5 h-5 mr-3" />
+          Tạo Phiếu Xuất Vải
+        </NavLink>
+
+        <NavLink
+          to="/issue/accessory" // <--- Route mới
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <Boxes className="w-5 h-5 mr-3" />
+          Tạo Phiếu Xuất Phụ liệu
+        </NavLink>
+
+        <NavLink
+          to="/issue/packaging"
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <Package className="w-5 h-5 mr-3" />
+          Tạo Phiếu Xuất Đóng Gói
+        </NavLink>
+
+        <NavLink
+          to="/reports/issues" // <-- Route mới
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <ScrollText className="w-5 h-5 mr-3" />
+          Báo cáo Xuất Kho
+        </NavLink>
+
+        <NavLink
+          to="/import-packing-list" // <-- Route mới
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <Upload className="w-5 h-5 mr-3" />
+          Upfile Packing List
+        </NavLink>
+      </nav>
+    </div>
   );
 };
 
-
---- D:\WATATECH\WH\src\pages\inventory-list\components\skeletons\FilterSkeleton.tsx ---
-
-// Path: src/pages/inventory-list/components/skeletons/FilterSkeleton.tsx
-
-import React from "react";
-
-export const FilterSkeleton = () => (
-  <div className="bg-white p-6 rounded-lg shadow space-y-6 animate-pulse">
-    {[...Array(5)].map((_, i) => (
-      <div key={i} className="space-y-2">
-        <div className="h-4 bg-gray-200 rounded w-1/3"></div>
-        <div className="h-10 bg-gray-200 rounded w-full"></div>
-      </div>
-    ))}
-    <div className="h-10 bg-gray-200 rounded w-full mt-4"></div>
-  </div>
-);
-
-
---- D:\WATATECH\WH\src\pages\inventory-list\components\skeletons\TableSkeleton.tsx ---
-
-// Path: src/pages/inventory-list/components/skeletons/TableSkeleton.tsx
-
-import React from "react";
-
-export const TableSkeleton = () => (
-  <div className="bg-white p-6 rounded-lg shadow animate-pulse">
-    {/* Header Skeleton */}
-    <div className="flex justify-between items-center mb-6">
-      <div className="space-y-2">
-        <div className="h-4 bg-gray-200 rounded w-32"></div>
-        <div className="h-8 bg-gray-200 rounded w-48"></div>
-      </div>
-      <div className="flex space-x-2">
-        <div className="h-10 bg-gray-200 rounded w-28"></div>
-        <div className="h-10 bg-gray-200 rounded w-28"></div>
+// Component Header đơn giản
+const Header = ({ onMenuClick }: { onMenuClick: () => void }) => (
+  <header className="bg-white border-b border-gray-200 p-4 flex justify-between items-center">
+    {/* Nút Menu cho mobile */}
+    <button onClick={onMenuClick} className="lg:hidden text-gray-600">
+      <Menu className="w-6 h-6" />
+    </button>
+    <div className="hidden lg:block">
+      {/* Placeholder, có thể là thanh search hoặc title */}
+    </div>
+    <div className="flex items-center space-x-4">
+      <button className="text-gray-500 hover:text-gray-700">
+        <Bell className="w-6 h-6" />
+      </button>
+      <div className="flex items-center space-x-2">
+        <User className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 p-1" />
+        <span className="text-sm font-medium text-gray-700">Admin</span>
       </div>
     </div>
+  </header>
+);
 
-    {/* Table Content Skeleton */}
-    <div className="w-full">
-      <div className="flex bg-gray-50 p-4 rounded-t-lg">
-        {[...Array(8)].map((_, i) => (
-          <div key={i} className="flex-1 h-6 bg-gray-200 rounded mx-2"></div>
-        ))}
+const MainLayout = () => {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  return (
+    <div className="flex h-screen bg-gray-100">
+      {/* Sidebar cho Desktop */}
+      <div className="hidden lg:flex">
+        <Sidebar />
       </div>
-      <div className="space-y-2 mt-2">
-        {[...Array(10)].map((_, i) => (
+
+      {/* Sidebar cho Mobile (Overlay) */}
+      {sidebarOpen && (
+        <div className="lg:hidden fixed inset-0 flex z-40">
           <div
-            key={i}
-            className="flex items-center p-4 border-b border-gray-100"
+            className="fixed inset-0 bg-black opacity-30"
+            onClick={() => setSidebarOpen(false)}
+          ></div>
+          <Sidebar />
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="absolute top-4 right-4 text-white"
           >
-            {[...Array(8)].map((_, j) => (
-              <div
-                key={j}
-                className="flex-1 h-6 bg-gray-200 rounded mx-2"
-              ></div>
-            ))}
-          </div>
-        ))}
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+      )}
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Header onMenuClick={() => setSidebarOpen(true)} />
+        <main className="flex-1 overflow-x-hidden overflow-y-auto">
+          {/* Đây là nơi các trang con sẽ được render */}
+          <Outlet />
+        </main>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
----
+export default MainLayout;
+

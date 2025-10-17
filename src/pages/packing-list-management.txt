@@ -1,86 +1,136 @@
-// path: src/pages/packing-list-management/data.ts
+// path: src/pages/packing-list-management/PackingListManagementPage.tsx
 
-import type { PurchaseOrderSummary } from "./types";
-
-export const mockPurchaseOrders: PurchaseOrderSummary[] = [
-  {
-    id: '1',
-    poNumber: 'PO-2023-00123',
-    supplier: 'Vải Sợi Miền Nam',
-    eta: '2023-11-15',
-    status: 'READY_TO_PRINT',
-    itemCount: 150, // 100 cuộn vải, 50 thùng phụ liệu
-  },
-  {
-    id: '2',
-    poNumber: 'PO-2023-00124',
-    supplier: 'Phụ Liệu May Mặc An Phước',
-    eta: '2023-11-18',
-    status: 'PRINT_COMPLETED',
-    itemCount: null,
-  },
-  {
-    id: '3',
-    poNumber: 'PO-2023-00125',
-    supplier: 'Dệt May Thành Công',
-    eta: '2023-11-20',
-    status: 'PRINT_COMPLETED',
-    itemCount: 85,
-  },
-    {
-    id: '4',
-    poNumber: 'PO-2023-00126',
-    supplier: 'Vải Sợi Thế Kỷ',
-    eta: '2023-11-22',
-    status: 'PRINT_COMPLETED',
-    itemCount: null,
-  },
-  {
-    id: '5',
-    poNumber: 'PO-2023-00127',
-    supplier: 'Công ty TNHH Sợi An An',
-    eta: '2023-11-25',
-    status: 'READY_TO_PRINT',
-    itemCount: 210,
-  },
-];
-
-// src/pages/packing-list-management/PackingListManagementPage.tsx
-
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import PageHeader from "./components/PageHeader";
 import PackingListFilters from "./components/PackingListFilters";
 import PackingListTable from "./components/PackingListTable";
 import TableSkeleton from "./components/skeletons/TableSkeleton";
-import { mockPurchaseOrders } from "./data";
-import type { PurchaseOrderSummary } from "./types";
+import BreakdownModal from "./components/BreakdownModal"; // Import modal
+import { mockPackingList } from "./data";
+import type {
+  PackingListDetails,
+  PackingListItem,
+  BreakdownUnit,
+} from "./types";
 
 const PackingListManagementPage = () => {
   const [loading, setLoading] = useState(true);
-  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrderSummary[]>(
-    []
-  );
+  const [packingListDetails, setPackingListDetails] =
+    useState<PackingListDetails | null>(null);
+
+  // State cho modal
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentItem, setCurrentItem] = useState<PackingListItem | null>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setPurchaseOrders(mockPurchaseOrders);
+      setPackingListDetails(mockPackingList);
       setLoading(false);
     }, 1000);
-
     return () => clearTimeout(timer);
   }, []);
 
+  // Hàm mở modal và set item hiện tại
+  const handleOpenBreakdownModal = (item: PackingListItem) => {
+    setCurrentItem(item);
+    setIsModalOpen(true);
+  };
+
+  // Hàm đóng modal
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setCurrentItem(null);
+  };
+
+  // Hàm lưu dữ liệu từ modal
+  const handleSaveBreakdown = (itemId: string, units: BreakdownUnit[]) => {
+    setPackingListDetails((prevDetails) => {
+      if (!prevDetails) return null;
+
+      const newItems = prevDetails.items.map((item) => {
+        if (item.id === itemId) {
+          return { ...item, breakdownUnits: units };
+        }
+        return item;
+      });
+
+      return { ...prevDetails, items: newItems };
+    });
+  };
+
+  // Hàm xử lý logic in
+  const handlePrintItems = (itemIds: Set<string>) => {
+    const unreadyItems: string[] = [];
+
+    const newDetails = JSON.parse(
+      JSON.stringify(packingListDetails)
+    ) as PackingListDetails;
+
+    itemIds.forEach((id) => {
+      const item = newDetails.items.find((i) => i.id === id);
+      if (item) {
+        if (item.breakdownUnits.length === 0) {
+          unreadyItems.push(item.itemCode);
+        } else {
+          item.printStatus = "PRINTED";
+          item.breakdownUnits.forEach((unit) => {
+            // Sinh QR Code nếu chưa có
+            if (!unit.qrCode) {
+              unit.qrCode = `QR_${item.itemCode}_${unit.name.replace(
+                /\s/g,
+                ""
+              )}_${Date.now()}`;
+            }
+          });
+        }
+      }
+    });
+
+    if (unreadyItems.length > 0) {
+      alert(
+        `Các vật tư sau chưa được phân rã và không thể in: ${unreadyItems.join(
+          ", "
+        )}`
+      );
+    } else {
+      setPackingListDetails(newDetails);
+      const printedItemCodes = newDetails.items
+        .filter((item) => itemIds.has(item.id))
+        .map((item) => item.itemCode)
+        .join(", ");
+      alert(
+        `Đã gửi lệnh in cho các vật tư: ${printedItemCodes}\n(Trong thực tế, đây là lúc gọi API in ấn và lưu dữ liệu QR vào DB).`
+      );
+    }
+  };
+
   return (
     <div className="p-4 md:p-6 lg:p-8 bg-gray-50 min-h-full">
-      <PageHeader />
+      <PageHeader
+        poNumber={loading ? "..." : packingListDetails?.poNumber ?? ""}
+      />
+
       <PackingListFilters />
 
       {loading ? (
         <TableSkeleton />
+      ) : packingListDetails ? (
+        <PackingListTable
+          items={packingListDetails.items}
+          onBreakdown={handleOpenBreakdownModal}
+          onPrint={handlePrintItems}
+        />
       ) : (
-        // BỎ prop onImportClick
-        <PackingListTable purchaseOrders={purchaseOrders} />
+        <p>Không tìm thấy dữ liệu Packing List.</p>
       )}
+
+      {/* Render Modal */}
+      <BreakdownModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        onSave={handleSaveBreakdown}
+        item={currentItem}
+      />
     </div>
   );
 };
@@ -88,352 +138,402 @@ const PackingListManagementPage = () => {
 export default PackingListManagementPage;
 
 
-// src/pages/packing-list-management/types.ts
+--- D:\WATATECH\WH\src\pages\packing-list-management\components\BreakdownModal.tsx ---
 
-// Định nghĩa các trạng thái của một PO trong quy trình này
-export type POStatus = 'PENDING_PACKING_LIST' | 'READY_TO_PRINT' | 'PRINT_COMPLETED';
+// path: src/pages/packing-list-management/components/BreakdownModal.tsx
 
-// Dữ liệu tóm tắt của một Purchase Order hiển thị trên bảng
-export interface PurchaseOrderSummary {
-  id: string;
-  poNumber: string;
-  supplier: string;
-  eta: string; // Expected Time of Arrival
-  status: POStatus;
-  itemCount: number | null; // Số lượng mục hàng sau khi import, có thể là null ban đầu
-}
-
-// src/pages/packing-list-management/components/StatusBadge.tsx
-
-import React from "react";
-import type { POStatus } from "../types";
-import { CheckCircle, Clock, FileUp } from "lucide-react";
-
-interface StatusBadgeProps {
-  status: POStatus;
-}
-
-const statusConfig = {
-  PENDING_PACKING_LIST: {
-    label: "Chưa có Packing List",
-    bgColor: "bg-yellow-100",
-    textColor: "text-yellow-800",
-    icon: <FileUp className="w-4 h-4" />,
-  },
-  READY_TO_PRINT: {
-    label: "Sẵn sàng in QR",
-    bgColor: "bg-blue-100",
-    textColor: "text-blue-800",
-    icon: <Clock className="w-4 h-4" />,
-  },
-  PRINT_COMPLETED: {
-    label: "Đã hoàn tất in",
-    bgColor: "bg-green-100",
-    textColor: "text-green-800",
-    icon: <CheckCircle className="w-4 h-4" />,
-  },
-};
-
-const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
-  const config = statusConfig[status];
-
-  if (!config) {
-    return null;
-  }
-
-  return (
-    <span
-      className={`inline-flex items-center gap-x-1.5 py-1 px-2.5 rounded-full text-xs font-medium ${config.bgColor} ${config.textColor}`}
-    >
-      {config.icon}
-      {config.label}
-    </span>
-  );
-};
-
-export default StatusBadge;
-
-// src/pages/packing-list-management/components/PageHeader.tsx
-
-const PageHeader = () => {
-  return (
-    <div className="flex justify-between items-center mb-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-800">
-          Quản lý Packing List & In QR Code
-        </h1>
-        <p className="text-gray-500 mt-1">
-          Nhập thông tin lô hàng và tạo mã QR để theo dõi.
-        </p>
-      </div>
-    </div>
-  );
-};
-
-export default PageHeader;
-
-
-// src/pages/packing-list-management/components/PackingListTable.tsx
-
-import React from "react";
-import { useNavigate } from "react-router-dom";
-import type { PurchaseOrderSummary } from "../types";
-import StatusBadge from "./StatusBadge";
+import React, { useState, useEffect, useMemo } from "react";
+import type { PackingListItem, BreakdownUnit } from "../types";
 import { Button } from "../../../components/ui/button";
-import { QrCode, Eye } from "lucide-react"; // Bỏ UploadCloud
+import { Input } from "../../../components/ui/input";
+import { X, Plus, Trash2 } from "lucide-react";
+import { v4 as uuidv4 } from "uuid"; // Cần cài đặt thư viện: npm install uuid
 
-// Bỏ prop onImportClick
-interface PackingListTableProps {
-  purchaseOrders: PurchaseOrderSummary[];
+interface BreakdownModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (itemId: string, units: BreakdownUnit[]) => void;
+  item: PackingListItem | null;
 }
 
-const PackingListTable: React.FC<PackingListTableProps> = ({
-  purchaseOrders,
+const BreakdownModal: React.FC<BreakdownModalProps> = ({ 
+  isOpen,
+  onClose,
+  onSave,
+  item,
 }) => {
-  const navigate = useNavigate();
+  const [units, setUnits] = useState<BreakdownUnit[]>([]);
+  const [newUnitQty, setNewUnitQty] = useState("");
 
-  // THAY ĐỔI LOGIC CỦA HÀM NÀY
-  const getActionButton = (po: PurchaseOrderSummary) => {
-    // Tất cả các hành động đều điều hướng đến trang chi tiết
-    const actionHandler = () => navigate(`/shipments/${po.poNumber}`);
-
-    switch (po.status) {
-      case "READY_TO_PRINT":
-        return (
-          <Button size="sm" onClick={actionHandler}>
-            <QrCode className="w-4 h-4 mr-2" />
-            Xem & In QR
-          </Button>
-        );
-      // Gộp 2 trường hợp này vì chúng có cùng hành động
-      case "PENDING_PACKING_LIST":
-      case "PRINT_COMPLETED":
-        return (
-          <Button variant="secondary" size="sm" onClick={actionHandler}>
-            <Eye className="w-4 h-4 mr-2" />
-            Xem chi tiết
-          </Button>
-        );
-      default:
-        return null;
+  useEffect(() => {
+    // Khởi tạo danh sách units khi modal mở hoặc item thay đổi
+    if (item) {
+      setUnits(item.breakdownUnits || []);
+    } else {
+      setUnits([]);
     }
+    setNewUnitQty("");
+  }, [item]);
+
+  const totalBrokenDownQty = useMemo(() => {
+    return units.reduce((total, unit) => total + unit.quantity, 0);
+  }, [units]);
+
+  const remainingQty = useMemo(() => {
+    if (!item) return 0;
+    return item.quantity - totalBrokenDownQty;
+  }, [item, totalBrokenDownQty]);
+
+  const handleAddUnit = () => {
+    const quantity = parseFloat(newUnitQty);
+    if (!item || isNaN(quantity) || quantity <= 0 || quantity > remainingQty) {
+      alert("Số lượng không hợp lệ hoặc vượt quá số lượng còn lại.");
+      return;
+    }
+
+    const newUnit: BreakdownUnit = {
+      id: uuidv4(),
+      parentItemId: item.id,
+      name: `${item.unit === "m" ? "Cuộn" : "Thùng"} ${units.length + 1}`,
+      quantity: quantity,
+      qrCode: null,
+    };
+
+    setUnits([...units, newUnit]);
+    setNewUnitQty("");
   };
 
+  const handleRemoveUnit = (unitId: string) => {
+    setUnits(units.filter((unit) => unit.id !== unitId));
+  };
+
+  const handleSave = () => {
+    if (!item) return;
+    if (remainingQty < 0) {
+      alert("Tổng số lượng phân rã không được lớn hơn số lượng ban đầu.");
+      return;
+    }
+    onSave(item.id, units);
+    onClose();
+  };
+
+  if (!isOpen || !item) return null;
+
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            {/* Thead không thay đổi */}
-            <tr>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Mã PO
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Nhà cung cấp
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Ngày dự kiến đến
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Số lượng mục
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Trạng thái
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Hành động
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {purchaseOrders.map((po) => (
-              <tr key={po.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {po.poNumber}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {po.supplier}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {po.eta}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {po.itemCount ?? "N/A"}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                  <StatusBadge status={po.status} />
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-center">
-                  {/* Hàm này đã được cập nhật */}
-                  {getActionButton(po)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-};
-
-export default PackingListTable;
-
-
-// src/pages/packing-list-management/components/PackingListFilters.tsx
-
-import { Input } from "../../../components/ui/input"; // Giả sử bạn có component Input
-import { Button } from "../../../components/ui/button";
-import { Search, Filter } from "lucide-react";
-
-const PackingListFilters = () => {
-  return (
-    <div className="mb-4 p-4 bg-white rounded-lg shadow-sm border border-gray-200">
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        <div className="lg:col-span-2">
-          <label
-            htmlFor="po-search"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            Tìm kiếm PO
-          </label>
-          <div className="relative">
-            <Input
-              id="po-search"
-              placeholder="Nhập mã PO, nhà cung cấp..."
-              className="pl-10"
-            />
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-          </div>
-        </div>
-        <div>
-          <label
-            htmlFor="status-filter"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            Trạng thái
-          </label>
-          <select
-            id="status-filter"
-            className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-          >
-            <option value="">Tất cả trạng thái</option>
-            <option value="PENDING_PACKING_LIST">Chưa có Packing List</option>
-            <option value="READY_TO_PRINT">Sẵn sàng in QR</option>
-            <option value="PRINT_COMPLETED">Đã hoàn tất in</option>
-          </select>
-        </div>
-        <div className="self-end">
-          <Button className="w-full">
-            <Filter className="w-4 h-4 mr-2" />
-            Lọc
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+        <div className="flex justify-between items-center p-4 border-b">
+          <h2 className="text-xl font-semibold text-gray-800">
+            Phân rã Lô hàng: {item.itemCode}
+          </h2>
+          <Button variant="ghost" size="icon" onClick={onClose}>
+            <X className="h-5 w-5" />
           </Button>
         </div>
-      </div>
-    </div>
+
+        <div className="p-6 overflow-y-auto">
+          <div className="grid grid-cols-3 gap-4 mb-4 p-4 bg-gray-50 rounded-md">
+            <div>
+              <span className="font-medium">Mô tả:</span> {item.description}
+            </div>
+            <div>
+              <span className="font-medium">Tổng SL:</span> {item.quantity}{
+
+
+
+
+                
+# File src/App.tsx
+// Path: src/App.tsx
+
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import MainLayout from "./layouts/MainLayout";
+import InboundDashboardPage from "./pages/inbound-dashboard/InboundDashboardPage";
+import InventoryListPage from "./pages/inventory-list/InventoryListPage";
+import KanbanBoardPage from "./pages/kanban-board/KanbanBoardPage";
+import ImportPackingListFormPage from "./pages/import-packing-list/ImportPackingListFormPage";
+import ShipmentDetailPage from "./pages/shipment-detail/ShipmentDetailPage";
+import LocationManagementPage from "./pages/location-management/LocationManagementPage";
+import QRScanInterfacePage from "./pages/qr-scan/QRScanInterfacePage";
+import IssueFabricFormPage from "./pages/issue-fabric-form/IssueFabricFormPage";
+import IssueAccessoryFormPage from "./pages/issue-accessory-form/IssueAccessoryFormPage";
+import IssuePackagingFormPage from "./pages/issue-packaging-form/IssuePackagingFormPage";
+import IssueTransactionReportsPage from "./pages/issue-transaction-reports/IssueTransactionReportsPage";
+import PackingListManagementPage from "./pages/packing-list-management/PackingListManagementPage";
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        {/* Tất cả các route bên trong đây sẽ sử dụng MainLayout */}
+        <Route path="/" element={<MainLayout />}>
+          <Route index element={<InboundDashboardPage />} />
+          <Route path="dashboard" element={<InboundDashboardPage />} />
+          <Route path="inventory" element={<InventoryListPage />} />
+          <Route path="kanban" element={<KanbanBoardPage />} />
+          <Route
+            path="import-packing-list"
+            element={<ImportPackingListFormPage />}
+          />
+          <Route
+            path="shipments/:shipmentId"
+            element={<ShipmentDetailPage />}
+          />
+          <Route path="locations" element={<LocationManagementPage />} />
+          <Route path="qr-scan" element={<QRScanInterfacePage />} />
+          <Route path="issue/fabric" element={<IssueFabricFormPage />} />
+
+          <Route path="issue/accessory" element={<IssueAccessoryFormPage />} />
+          <Route path="issue/packaging" element={<IssuePackagingFormPage />} />
+
+          <Route
+            path="reports/issues"
+            element={<IssueTransactionReportsPage />}
+          />
+
+          <Route path="packing-list" element={<PackingListManagementPage />} />
+        </Route>
+
+        {/* Bạn có thể thêm các route không cần layout ở đây, ví dụ trang Login */}
+        {/* <Route path="/login" element={<LoginPage />} /> */}
+      </Routes>
+    </BrowserRouter>
   );
-};
+}
 
-export default PackingListFilters;
+export default App;
 
-// src/pages/packing-list-management/components/skeletons/TableSkeleton.tsx
 
-const TableSkeleton = () => {
-  const SkeletonRow = () => (
-    <tr className="animate-pulse">
-      <td className="px-6 py-4">
-        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-      </td>
-      <td className="px-6 py-4">
-        <div className="h-4 bg-gray-200 rounded w-full"></div>
-      </td>
-      <td className="px-6 py-4">
-        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-      </td>
-      <td className="px-6 py-4">
-        <div className="h-4 bg-gray-200 rounded w-1/4"></div>
-      </td>
-      <td className="px-6 py-4">
-        <div className="h-6 bg-gray-200 rounded-full w-32"></div>
-      </td>
-      <td className="px-6 py-4 text-center">
-        <div className="h-8 bg-gray-200 rounded w-28 mx-auto"></div>
-      </td>
-    </tr>
-  );
+
+
+
+
+
+
+
+
+
+
+
+
+
+# File src/layouts/MainLayout.tsx
+// Path: src/layouts/MainLayout.tsx
+
+import { useState } from "react";
+import { NavLink, Outlet } from "react-router-dom";
+import {
+  Menu,
+  X,
+  LayoutDashboard,
+  Truck,
+  Bell,
+  User,
+  KanbanSquare,
+  Network,
+  QrCode,
+  FileOutput,
+  Boxes,
+  Package,
+  ScrollText,
+  ListPlus,
+  Upload,
+} from "lucide-react";
+
+const Sidebar = () => {
+  // Style chung cho NavLink
+  const linkClasses = "flex items-center px-4 py-2.5 rounded-lg";
+  const inactiveClasses = "text-gray-300 hover:bg-gray-700";
+  const activeClasses = "bg-gray-700 font-semibold text-white";
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            {/* ... copy thead from PackingListTable ... */}
-            <tr>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Mã PO
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Nhà cung cấp
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Ngày dự kiến đến
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Số lượng mục
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Trạng thái
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Hành động
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <SkeletonRow key={i} />
-            ))}
-          </tbody>
-        </table>
+    <div className="bg-gray-800 text-white w-64 space-y-2 p-4 flex-shrink-0">
+      <div className="text-2xl font-bold mb-6">Kho Hàng Pro</div>
+      <nav>
+        <NavLink
+          to="/dashboard"
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <LayoutDashboard className="w-5 h-5 mr-3" />
+          Dashboard Hàng Nhập
+        </NavLink>
+
+        <NavLink
+          to="/packing-list"
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <ListPlus className="w-5 h-5 mr-3" />
+          QL Packing List / In QR
+        </NavLink>
+
+        <NavLink
+          to="/inventory" // <--- THAY ĐỔI LINK
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <Truck className="w-5 h-5 mr-3" />
+          Quản lý Tồn kho
+        </NavLink>
+
+        <NavLink
+          to="/kanban"
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <KanbanSquare className="w-5 h-5 mr-3" />
+          Bảng Kanban
+        </NavLink>
+
+        <NavLink
+          to="/shipments/7c3b9a1d"
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <Truck className="w-5 h-5 mr-3" />
+          Chi tiết lô hàng
+        </NavLink>
+
+        <NavLink
+          to="/locations"
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <Network className="w-5 h-5 mr-3" />
+          Quản lý Vị trí
+        </NavLink>
+
+        <NavLink
+          to="/qr-scan"
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <QrCode className="w-5 h-5 mr-3" />
+          Quét Mã QR
+        </NavLink>
+
+        <NavLink
+          to="/issue/fabric"
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <FileOutput className="w-5 h-5 mr-3" />
+          Tạo Phiếu Xuất Vải
+        </NavLink>
+
+        <NavLink
+          to="/issue/accessory" // <--- Route mới
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <Boxes className="w-5 h-5 mr-3" />
+          Tạo Phiếu Xuất Phụ liệu
+        </NavLink>
+
+        <NavLink
+          to="/issue/packaging"
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <Package className="w-5 h-5 mr-3" />
+          Tạo Phiếu Xuất Đóng Gói
+        </NavLink>
+
+        <NavLink
+          to="/reports/issues" // <-- Route mới
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <ScrollText className="w-5 h-5 mr-3" />
+          Báo cáo Xuất Kho
+        </NavLink>
+
+        <NavLink
+          to="/import-packing-list" // <-- Route mới
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <Upload className="w-5 h-5 mr-3" />
+          Upfile Packing List
+        </NavLink>
+      </nav>
+    </div>
+  );
+};
+
+// Component Header đơn giản
+const Header = ({ onMenuClick }: { onMenuClick: () => void }) => (
+  <header className="bg-white border-b border-gray-200 p-4 flex justify-between items-center">
+    {/* Nút Menu cho mobile */}
+    <button onClick={onMenuClick} className="lg:hidden text-gray-600">
+      <Menu className="w-6 h-6" />
+    </button>
+    <div className="hidden lg:block">
+      {/* Placeholder, có thể là thanh search hoặc title */}
+    </div>
+    <div className="flex items-center space-x-4">
+      <button className="text-gray-500 hover:text-gray-700">
+        <Bell className="w-6 h-6" />
+      </button>
+      <div className="flex items-center space-x-2">
+        <User className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 p-1" />
+        <span className="text-sm font-medium text-gray-700">Admin</span>
+      </div>
+    </div>
+  </header>
+);
+
+const MainLayout = () => {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  return (
+    <div className="flex h-screen bg-gray-100">
+      {/* Sidebar cho Desktop */}
+      <div className="hidden lg:flex">
+        <Sidebar />
+      </div>
+
+      {/* Sidebar cho Mobile (Overlay) */}
+      {sidebarOpen && (
+        <div className="lg:hidden fixed inset-0 flex z-40">
+          <div
+            className="fixed inset-0 bg-black opacity-30"
+            onClick={() => setSidebarOpen(false)}
+          ></div>
+          <Sidebar />
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="absolute top-4 right-4 text-white"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+      )}
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Header onMenuClick={() => setSidebarOpen(true)} />
+        <main className="flex-1 overflow-x-hidden overflow-y-auto">
+          {/* Đây là nơi các trang con sẽ được render */}
+          <Outlet />
+        </main>
       </div>
     </div>
   );
 };
 
-export default TableSkeleton;
+export default MainLayout;
+

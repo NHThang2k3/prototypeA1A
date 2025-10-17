@@ -1,124 +1,3 @@
-# Cấu trúc thư mục của dự án hiện tại và các file chính:
-
-src/
-├── components/ # Các component dùng chung
-│   └── ui
-        └── button.tsx
-├── layouts/
-│   └── MainLayout.tsx # Layout chung (Sidebar, Header, Content)
-├── pages/
-│   └── inbound-dashboard/
-│   │   ├── components/
-│   │   │   ├── DashboardHeader.tsx
-│   │   │   ├── SummaryCard.tsx
-│   │   │   ├── ShipmentFilters.tsx
-│   │   │   ├── ShipmentsTable.tsx
-│   │   │   ├── StatusBadge.tsx
-│   │   │   └── skeletons/
-│   │   │       ├── CardSkeleton.tsx
-│   │   │       └── TableSkeleton.tsx
-│   │   ├── InboundDashboardPage.tsx
-│   │   └── types.ts
-│   └── inventory-list/           
-│   │   ├── components/          
-│   │   │   ├── InventoryHeader.tsx
-│   │   │   ├── InventoryFilters.tsx
-│   │   │   ├── InventoryTable.tsx
-│   │   │   ├── StatusBadge.tsx
-│   │   │   └── skeletons/
-│   │   │       ├── FilterSkeleton.tsx
-│   │   │       └── TableSkeleton.tsx
-│   │   ├── InventoryListPage.tsx 
-│   │   └── types.ts 
-│   └── kanban-board/               
-│   │       ├── components/             
-│   │       │   ├── AssigneeAvatar.tsx
-│   │       │   ├── KanbanCard.tsx
-│   │       │   ├── KanbanColumn.tsx
-│   │       │   └── PriorityTag.tsx
-│   │       ├── data.ts                 
-│   │       ├── KanbanBoardPage.tsx     
-│   │       └── types.ts               
-│   └── import-packing-list/        
-│           ├── components/                
-│           │   ├── ActionToolbar.tsx
-│           │   ├── FileUploadZone.tsx
-│           │   ├── FormHeader.tsx
-│           │   └── ManualItemsTable.tsx
-│           ├── ImportPackingListFormPage.tsx 
-│           └── types.ts  
-│   └── shipment-detail/
-│   │       ├── components/
-│   │       │   ├── ItemsToPrintTable.tsx
-│   │       │   ├── PageHeader.tsx
-│   │       │   ├── PrintToolbar.tsx
-│   │       │   ├── ShipmentSummary.tsx
-│   │       │   └── StatusBadge.tsx
-│   │       ├── data.ts
-│   │       ├── ShipmentDetailPage.tsx
-│   │       └── types.ts   
-    └── location-management/
-            ├── components/
-            │   ├── LocationDetail.tsx      # Panel chi tiết bên phải
-            │   ├── LocationFormModal.tsx   # Modal để thêm/sửa vị trí
-            │   ├── LocationTree.tsx        # Panel cây cấu trúc bên trái
-            │   ├── PageHeader.tsx          # Header của trang
-            │   └── skeletons/
-            │       ├── DetailSkeleton.tsx
-            │       └── TreeSkeleton.tsx
-            ├── data.ts                     # Dữ liệu giả (mock data)
-            ├── LocationManagementPage.tsx  # Component trang chính
-            └── types.ts                    # Các định nghĩa TypeScript    
-    └── qr-scan/
-+       ├── components/
-+       │   ├── ActionFeedback.tsx  # Component hiển thị feedback (loading, success, error)
-+       │   ├── ScanResult.tsx      # Component hiển thị kết quả quét và các nút hành động
-+       │   └── Scanner.tsx         # Component giả lập camera để quét
-+       ├── data.ts                 # Dữ liệu giả cho việc quét QR
-+       ├── QRScanInterfacePage.tsx # Component trang chính, quản lý state machine
-+       └── types.ts                # Các định nghĩa TypeScript  
-+   └── issue-fabric-form/
-+       ├── components/
-+       │   ├── ActionToolbar.tsx      # Thanh công cụ Lưu, Gửi Yêu cầu
-+       │   ├── FabricRequestTable.tsx # Bảng thêm/sửa các loại vải
-+       │   ├── FormHeader.tsx         # Phần thông tin chung của form
-+       │   ├── PageHeader.tsx         # Tiêu đề trang và breadcrumb
-+       │   └── RollSelectionModal.tsx # Modal chọn cây vải chi tiết
-+       ├── data.ts                    # Dữ liệu giả (mock data)
-+       ├── IssueFabricFormPage.tsx    # Component trang chính
-+       └── types.ts                   # Các định nghĩa TypeScript       
-    └── issue-accessory-form/
-        ├── components/
-        │   ├── ActionToolbar.tsx
-        │   ├── AccessoryRequestTable.tsx
-        │   ├── FormHeader.tsx
-        │   └── PageHeader.tsx
-        ├── data.ts
-        ├── IssueAccessoryFormPage.tsx
-        └── types.ts 
-+   └── issue-packaging-form/
-+       ├── components/
-+       │   ├── ActionToolbar.tsx
-+       │   ├── FormHeader.tsx
-+       │   ├── PageHeader.tsx
-+       │   └── PackagingRequestTable.tsx
-+       ├── data.ts
-+       ├── IssuePackagingFormPage.tsx
-+       └── types.ts
-+   └── issue-transaction-reports/
-+       ├── components/
-+       │   ├── PageHeader.tsx              # Tiêu đề trang & nút Export
-+       │   ├── ReportFilters.tsx           # Khu vực chứa các bộ lọc
-+       │   ├── StatusBadge.tsx             # Component hiển thị trạng thái (tái sử dụng)
-+       │   ├── TransactionsTable.tsx       # Bảng hiển thị danh sách giao dịch
-+       │   └── skeletons/
-+       │       └── TableSkeleton.tsx       # Skeleton loading cho bảng (tái sử dụng)
-+       ├── data.ts                         # Dữ liệu giả (mock data)
-+       ├── IssueTransactionReportsPage.tsx # Component trang chính
-+       └── types.ts                        # Các định nghĩa TypeScript
-└── App.tsx # Cấu hình routing
-└── main.tsx # Điểm khởi đầu của React
-
 
 # File src/App.tsx
 // Path: src/App.tsx
@@ -135,6 +14,8 @@ import QRScanInterfacePage from "./pages/qr-scan/QRScanInterfacePage";
 import IssueFabricFormPage from "./pages/issue-fabric-form/IssueFabricFormPage";
 import IssueAccessoryFormPage from "./pages/issue-accessory-form/IssueAccessoryFormPage";
 import IssuePackagingFormPage from "./pages/issue-packaging-form/IssuePackagingFormPage";
+import IssueTransactionReportsPage from "./pages/issue-transaction-reports/IssueTransactionReportsPage";
+import PackingListManagementPage from "./pages/packing-list-management/PackingListManagementPage";
 
 function App() {
   return (
@@ -160,6 +41,13 @@ function App() {
 
           <Route path="issue/accessory" element={<IssueAccessoryFormPage />} />
           <Route path="issue/packaging" element={<IssuePackagingFormPage />} />
+
+          <Route
+            path="reports/issues"
+            element={<IssueTransactionReportsPage />}
+          />
+
+          <Route path="packing-list" element={<PackingListManagementPage />} />
         </Route>
 
         {/* Bạn có thể thêm các route không cần layout ở đây, ví dụ trang Login */}
@@ -184,10 +72,11 @@ export default App;
 
 
 
+
 # File src/layouts/MainLayout.tsx
 // Path: src/layouts/MainLayout.tsx
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import {
   Menu,
@@ -202,6 +91,9 @@ import {
   FileOutput,
   Boxes,
   Package,
+  ScrollText,
+  ListPlus,
+  Upload,
 } from "lucide-react";
 
 const Sidebar = () => {
@@ -223,6 +115,17 @@ const Sidebar = () => {
           <LayoutDashboard className="w-5 h-5 mr-3" />
           Dashboard Hàng Nhập
         </NavLink>
+
+        <NavLink
+          to="/packing-list"
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <ListPlus className="w-5 h-5 mr-3" />
+          QL Packing List / In QR
+        </NavLink>
+
         <NavLink
           to="/inventory" // <--- THAY ĐỔI LINK
           className={({ isActive }) =>
@@ -232,6 +135,7 @@ const Sidebar = () => {
           <Truck className="w-5 h-5 mr-3" />
           Quản lý Tồn kho
         </NavLink>
+
         <NavLink
           to="/kanban"
           className={({ isActive }) =>
@@ -240,6 +144,16 @@ const Sidebar = () => {
         >
           <KanbanSquare className="w-5 h-5 mr-3" />
           Bảng Kanban
+        </NavLink>
+
+        <NavLink
+          to="/shipments/7c3b9a1d"
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <Truck className="w-5 h-5 mr-3" />
+          Chi tiết lô hàng
         </NavLink>
 
         <NavLink
@@ -290,6 +204,26 @@ const Sidebar = () => {
         >
           <Package className="w-5 h-5 mr-3" />
           Tạo Phiếu Xuất Đóng Gói
+        </NavLink>
+
+        <NavLink
+          to="/reports/issues" // <-- Route mới
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <ScrollText className="w-5 h-5 mr-3" />
+          Báo cáo Xuất Kho
+        </NavLink>
+
+        <NavLink
+          to="/import-packing-list" // <-- Route mới
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <Upload className="w-5 h-5 mr-3" />
+          Upfile Packing List
         </NavLink>
       </nav>
     </div>

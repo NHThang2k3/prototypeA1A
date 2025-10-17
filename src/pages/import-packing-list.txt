@@ -1,57 +1,44 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import FormHeader from "./components/FormHeader";
-import ManualItemsTable from "./components/ManualItemsTable";
+// import FormHeader from "./components/FormHeader"; // Bỏ import FormHeader
 import FileUploadZone from "./components/FileUploadZone";
 import ActionToolbar from "./components/ActionToolbar";
-import type { ShipmentHeader, ShipmentItem } from "./types";
+import type { ShipmentItem } from "./types"; // ShipmentHeader không còn cần ở đây
 
 const ImportPackingListFormPage: React.FC = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<"manual" | "file">("manual");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [headerData, setHeaderData] = useState<ShipmentHeader>({
-    supplier: "",
-    poNumber: "",
-    packingListNo: "",
-    etd: "",
-    eta: "",
-    notes: "",
-  });
+  // Bỏ state headerData
+  // const [headerData, setHeaderData] = useState<ShipmentHeader>({ ... });
 
-  const [items, setItems] = useState<ShipmentItem[]>([
-    { id: "initial-1", sku: "", name: "", quantity: 0, uom: "", batch: "" },
-  ]);
+  // Dữ liệu items sẽ được điền từ file upload
+  const [items, setItems] = useState<ShipmentItem[]>([]);
 
-  const handleHeaderChange = (field: keyof ShipmentHeader, value: string) => {
-    setHeaderData((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const handleSaveDraft = () => {
-    console.log("Saving draft:", { headerData, items });
-    // TODO: Call API to save draft
-    alert("Đã lưu nháp!");
-  };
+  // Bỏ hàm handleHeaderChange
+  // const handleHeaderChange = (field: keyof ShipmentHeader, value: string) => { ... };
 
   const handleSubmit = () => {
-    console.log("Submitting form:", { headerData, items });
-    // TODO: Validate form before submitting
-    // TODO: Call API to submit form
+    // Cập nhật: chỉ gửi đi items
+    console.log("Submitting form:", { items });
+
+    // Validate form before submitting
+    if (items.length === 0) {
+      alert("Vui lòng tải lên file chứa danh sách hàng hóa.");
+      return;
+    }
+
     setIsSubmitting(true);
     setTimeout(() => {
       setIsSubmitting(false);
-      alert(`Đã tạo thành công phiếu nhập kho ${headerData.packingListNo}!`);
-      // Sau khi thành công, chuyển hướng đến màn hình chi tiết & in tem (SCR-05)
-      // Giả sử đường dẫn là /shipments/:id
-      navigate(`/shipments/${headerData.packingListNo}`);
+      // Cập nhật thông báo và điều hướng vì không còn packingListNo
+      const newShipmentId = `PNK-${Date.now()}`; // Giả lập ID mới từ server trả về
+      alert(`Đã tạo thành công phiếu nhập kho ${newShipmentId}!`);
+
+      // Chuyển hướng đến màn hình chi tiết với ID mới
+      navigate(`/shipments/${newShipmentId}`);
     }, 1500);
   };
-
-  const tabClasses = "px-4 py-2 text-sm font-medium rounded-md";
-  const activeTabClasses = "bg-blue-100 text-blue-700";
-  const inactiveTabClasses =
-    "text-gray-500 hover:text-gray-700 hover:bg-gray-100";
 
   return (
     <div className="relative">
@@ -60,58 +47,30 @@ const ImportPackingListFormPage: React.FC = () => {
         <div className="flex flex-col md:flex-row justify-between md:items-center">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              Tạo Phiếu Nhập Kho Mới
+              Nhập Kho Từ File Packing List
             </h1>
             <p className="mt-1 text-sm text-gray-500">
-              Nhập thông tin từ Packing List để theo dõi lô hàng.
+              Tải lên file Excel hoặc CSV để tạo phiếu nhập kho hàng loạt.
             </p>
           </div>
         </div>
 
-        {/* Form Header */}
-        <FormHeader data={headerData} onChange={handleHeaderChange} />
+        {/* Bỏ hoàn toàn Form Header */}
+        {/* <FormHeader data={headerData} onChange={handleHeaderChange} /> */}
 
         {/* Item Details */}
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h2 className="text-xl font-semibold text-gray-800 mb-4">
-            2. Chi tiết hàng hóa
+            Tải lên danh sách hàng hóa
           </h2>
-          {/* Tabs */}
-          <div className="mb-6 border-b border-gray-200">
-            <nav className="flex space-x-2" aria-label="Tabs">
-              <button
-                onClick={() => setActiveTab("manual")}
-                className={`${tabClasses} ${activeTab === "manual" ? activeTabClasses : inactiveTabClasses}`}
-              >
-                Nhập liệu thủ công
-              </button>
-              <button
-                onClick={() => setActiveTab("file")}
-                className={`${tabClasses} ${activeTab === "file" ? activeTabClasses : inactiveTabClasses}`}
-              >
-                Tải lên từ file
-              </button>
-            </nav>
-          </div>
-
-          {/* Tab Content */}
           <div>
-            {activeTab === "manual" && (
-              <ManualItemsTable items={items} onItemsChange={setItems} />
-            )}
-            {activeTab === "file" && (
-              <FileUploadZone onItemsChange={setItems} />
-            )}
+            <FileUploadZone onItemsChange={setItems} />
           </div>
         </div>
       </div>
 
       {/* Action Toolbar */}
-      <ActionToolbar
-        onSaveDraft={handleSaveDraft}
-        onSubmit={handleSubmit}
-        isSubmitting={isSubmitting}
-      />
+      <ActionToolbar onSubmit={handleSubmit} isSubmitting={isSubmitting} />
     </div>
   );
 };
@@ -119,56 +78,28 @@ const ImportPackingListFormPage: React.FC = () => {
 export default ImportPackingListFormPage;
 
 
---- D:\WATATECH\WH\src\pages\import-packing-list\types.ts ---
-
-// Định nghĩa cho một dòng hàng hóa trong phiếu nhập
-export interface ShipmentItem {
-  id: string; // ID tạm thời ở client để xử lý key trong list
-  sku: string;
-  name: string;
-  quantity: number;
-  uom: string; // Unit of Measure - Đơn vị tính
-  batch?: string; // Số lô/batch, không bắt buộc
-}
-
-// Định nghĩa cho thông tin chung của phiếu nhập
-export interface ShipmentHeader {
-  supplier: string;
-  poNumber: string;
-  packingListNo: string;
-  etd: string; // Expected Time of Departure
-  eta: string; // Expected Time of Arrival
-  notes: string;
-}
-
-
 --- D:\WATATECH\WH\src\pages\import-packing-list\components\ActionToolbar.tsx ---
 
 import React from "react";
 
 interface ActionToolbarProps {
-  onSaveDraft: () => void;
   onSubmit: () => void;
   isSubmitting: boolean;
 }
 
-const ActionToolbar: React.FC<ActionToolbarProps> = ({ onSaveDraft, onSubmit, isSubmitting }) => {
+const ActionToolbar: React.FC<ActionToolbarProps> = ({ 
+  onSubmit,
+  isSubmitting,
+}) => {
   return (
     <div className="sticky bottom-0 bg-white bg-opacity-90 backdrop-blur-sm border-t border-gray-200 p-4 z-10">
       <div className="max-w-7xl mx-auto flex justify-end items-center space-x-4">
-        <button
-          onClick={onSaveDraft}
-          disabled={isSubmitting}
-          className="px-6 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50"
-        >
-          Lưu nháp
-        </button>
         <button
           onClick={onSubmit}
           disabled={isSubmitting}
           className="inline-flex justify-center px-6 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isSubmitting ? "Đang xử lý..." : "Hoàn tất & Tạo phiếu"}
+          {isSubmitting ? "Đang xử lý..." : "Hoàn tất"}
         </button>
       </div>
     </div>
@@ -182,7 +113,7 @@ export default ActionToolbar;
 
 import React, { useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
-import { UploadCloud, FileText, Download } from "lucide-react";
+import { UploadCloud, FileText } from "lucide-react";
 import type { ShipmentItem } from "../types";
 
 interface FileUploadZoneProps {
@@ -260,14 +191,14 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onItemsChange }) => {
           <p className="text-sm">Hỗ trợ các định dạng: CSV, XLS, XLSX</p>
         </div>
       </div>
-      <a
+      {/* <a
         href="/templates/packing-list-template.xlsx"
         download
         className="mt-4 flex items-center text-sm font-medium text-blue-600 hover:underline"
       >
         <Download className="w-4 h-4 mr-1" />
         Tải về file mẫu
-      </a>
+      </a> */}
       {uploadedFile && (
         <div className="mt-6 w-full max-w-md bg-gray-100 p-4 rounded-md flex items-center justify-between">
           <div className="flex items-center">
@@ -445,7 +376,10 @@ interface ManualItemsTableProps {
   onItemsChange: (items: ShipmentItem[]) => void;
 }
 
-const ManualItemsTable: React.FC<ManualItemsTableProps> = ({ items, onItemsChange }) => {
+const ManualItemsTable: React.FC<ManualItemsTableProps> = ({ 
+  items,
+  onItemsChange,
+}) => {
   const handleItemChange = (
     index: number,
     field: keyof ShipmentItem,
@@ -594,8 +528,31 @@ const ManualItemsTable: React.FC<ManualItemsTableProps> = ({ items, onItemsChang
 
 export default ManualItemsTable;
 
---- D:\WATATECH\WH\src\App.tsx ---
 
+--- D:\WATATECH\WH\src\pages\import-packing-list\types.ts ---
+
+// Định nghĩa cho một dòng hàng hóa trong phiếu nhập
+export interface ShipmentItem {
+  id: string; // ID tạm thời ở client để xử lý key trong list
+  sku: string;
+  name: string;
+  quantity: number;
+  uom: string; // Unit of Measure - Đơn vị tính
+  batch?: string; // Số lô/batch, không bắt buộc
+}
+
+// Định nghĩa cho thông tin chung của phiếu nhập
+export interface ShipmentHeader {
+  supplier: string;
+  poNumber: string;
+  packingListNo: string;
+  etd: string; // Expected Time of Departure
+  eta: string; // Expected Time of Arrival
+  notes: string;
+}
+
+
+# File src/App.tsx
 // Path: src/App.tsx
 
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -610,7 +567,8 @@ import QRScanInterfacePage from "./pages/qr-scan/QRScanInterfacePage";
 import IssueFabricFormPage from "./pages/issue-fabric-form/IssueFabricFormPage";
 import IssueAccessoryFormPage from "./pages/issue-accessory-form/IssueAccessoryFormPage";
 import IssuePackagingFormPage from "./pages/issue-packaging-form/IssuePackagingFormPage";
-import IssueTransactionReportsPage from "./pages/issue-transaction-reports/IssueTransactionReportsPage"; // <-- Import trang mới
+import IssueTransactionReportsPage from "./pages/issue-transaction-reports/IssueTransactionReportsPage";
+import PackingListManagementPage from "./pages/packing-list-management/PackingListManagementPage";
 
 function App() {
   return (
@@ -641,6 +599,8 @@ function App() {
             path="reports/issues"
             element={<IssueTransactionReportsPage />}
           />
+
+          <Route path="packing-list" element={<PackingListManagementPage />} />
         </Route>
 
         {/* Bạn có thể thêm các route không cần layout ở đây, ví dụ trang Login */}
@@ -653,11 +613,23 @@ function App() {
 export default App;
 
 
---- D:\WATATECH\WH\src\layouts\MainLayout.tsx ---
 
+
+
+
+
+
+
+
+
+
+
+
+
+# File src/layouts/MainLayout.tsx
 // Path: src/layouts/MainLayout.tsx
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import {
   Menu,
@@ -673,6 +645,8 @@ import {
   Boxes,
   Package,
   ScrollText,
+  ListPlus,
+  Upload,
 } from "lucide-react";
 
 const Sidebar = () => {
@@ -693,6 +667,16 @@ const Sidebar = () => {
         >
           <LayoutDashboard className="w-5 h-5 mr-3" />
           Dashboard Hàng Nhập
+        </NavLink>
+
+        <NavLink
+          to="/packing-list"
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <ListPlus className="w-5 h-5 mr-3" />
+          QL Packing List / In QR
         </NavLink>
 
         <NavLink
@@ -722,7 +706,7 @@ const Sidebar = () => {
           }
         >
           <Truck className="w-5 h-5 mr-3" />
-          Shipment
+          Chi tiết lô hàng
         </NavLink>
 
         <NavLink
@@ -783,6 +767,16 @@ const Sidebar = () => {
         >
           <ScrollText className="w-5 h-5 mr-3" />
           Báo cáo Xuất Kho
+        </NavLink>
+
+        <NavLink
+          to="/import-packing-list" // <-- Route mới
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <Upload className="w-5 h-5 mr-3" />
+          Upfile Packing List
         </NavLink>
       </nav>
     </div>
@@ -851,3 +845,4 @@ const MainLayout = () => {
 };
 
 export default MainLayout;
+

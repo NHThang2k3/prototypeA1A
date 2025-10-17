@@ -1,22 +1,26 @@
 // Path: src/pages/qr-scan/types.ts
 
 // Chế độ hoạt động chính của màn hình
-export type OperationMode = 'INBOUND' | 'OUTBOUND';
+export type OperationMode = 'INBOUND' | 'OUTBOUND' | 'TRANSFER';
+
+// NEW: Định nghĩa các loại vật tư có thể xuất kho
+export type ItemCategory = 'FABRIC' | 'ACCESSORY' | 'PACKAGING';
 
 // --- Types cho luồng Nhập Kho (Inbound) ---
-// NEW: Cập nhật trạng thái cho luồng Nhập Kho mới
-export type InboundScanState = 'SCANNING_LOCATION' | 'AWAITING_ITEMS' | 'PROCESSING' | 'SUCCESS' | 'ERROR';
+export type InboundScanState = 'SCANNING_LOCATION' | 'AWAITING_ITEMS' | 'PROCESSING';
 
-// UPDATED: Bỏ 'STOCK_COUNT'
-export type ScanAction = 'PUT_AWAY' | 'TRANSFER' | 'VIEW_DETAIL';
+// --- Types cho luồng Chuyển Kho (Transfer) ---
+export type TransferScanState = 'SCANNING_ITEM_TO_MOVE' | 'SCANNING_NEW_LOCATION' | 'PROCESSING';
 
 // --- Types cho luồng Xuất Kho (Outbound) ---
-export type OutboundScanState = 'SCANNING_REQUEST' | 'REQUEST_LOADED' | 'SCANNING_ITEM_FOR_ISSUE' | 'AWAITING_QUANTITY' | 'PROCESSING_ISSUE' | 'ISSUE_SUCCESS' | 'ISSUE_ERROR';
+// UPDATED: Thêm trạng thái 'SELECTING_CATEGORY'
+export type OutboundScanState = 'SELECTING_CATEGORY' | 'SCANNING_REQUEST' | 'REQUEST_LOADED' | 'SCANNING_ITEM_FOR_ISSUE' | 'PROCESSING_ISSUE';
 
+// --- Types chung không thay đổi nhiều ---
 export type PickingListItem = {
   sku: string;
   name: string;
-  uom: 'Cây' | 'Thùng' | 'Mét' | 'Cái';
+  uom: 'Cây' | 'Th thùng' | 'Mét' | 'Cái';
   requiredQuantity: number;
   pickedQuantity: number;
   locations: string[]; // Gợi ý vị trí lấy hàng
@@ -29,10 +33,10 @@ export type IssueRequest = {
   destination: string; // Nơi nhận hàng (VD: Bộ phận Cắt)
   status: 'new' | 'in_progress' | 'completed';
   pickingList: PickingListItem[];
+  // NEW: Thêm category để có thể lọc phiếu yêu cầu sau này
+  category: ItemCategory; 
 };
 
-
-// --- Types chung ---
 export type ScannedItem = {
   qrCode: string;
   type: 'item';

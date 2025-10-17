@@ -1,41 +1,3 @@
-
-
-**Directory Tree:**
-
-```
-issue-packaging-form/
-├── data.ts
-├── IssuePackagingFormPage.tsx
-├── types.ts
-└── components/
-    ├── ActionToolbar.tsx
-    ├── FormHeader.tsx
-    ├── PackagingRequestTable.tsx
-    └── PageHeader.tsx
-```
-
---- D:\WATATECH\WH\src\pages\issue-packaging-form\data.ts ---
-
-import type { PackagingMaterial, ProductionOrder } from "./types";
-
-// Dữ liệu giả cho các vật tư đóng gói có sẵn trong kho
-export const availablePackagingMaterials: PackagingMaterial[] = [
-  { id: 1, sku: 'HGT-001-S', name: 'Thẻ bài logo size S', uom: 'Cái', stock: 15000 },
-  { id: 2, sku: 'HGT-001-M', name: 'Thẻ bài logo size M', uom: 'Cái', stock: 25000 },
-  { id: 3, sku: 'POLY-30x40', name: 'Túi Poly 30x40cm', uom: 'Cái', stock: 8000 },
-  { id: 4, sku: 'CTN-S-STD', name: 'Thùng carton size S', uom: 'Thùng', stock: 500 },
-  { id: 5, sku: 'STICKER-SIZE-M', name: 'Nhãn dán size M', uom: 'Cái', stock: 18000 },
-  { id: 6, sku: 'TAPE-CLEAR-5CM', name: 'Băng keo trong 5cm', uom: 'Cuộn', stock: 250 },
-];
-
-// Dữ liệu giả cho các lệnh sản xuất
-export const productionOrders: ProductionOrder[] = [
-    { id: 101, name: 'PO-2023-456 (Áo Sơ Mi Trắng)'},
-    { id: 102, name: 'PO-2023-457 (Quần Jean Xanh)'},
-    { id: 103, name: 'PO-2023-458 (Váy Hoa Mùa Hè)'},
-]
-
-
 --- D:\WATATECH\WH\src\pages\issue-packaging-form\IssuePackagingFormPage.tsx ---
 
 import { useState } from "react";
@@ -98,35 +60,6 @@ const IssuePackagingFormPage = () => {
 };
 
 export default IssuePackagingFormPage;
-
-
---- D:\WATATECH\WH\src\pages\issue-packaging-form\types.ts ---
-
-// Định nghĩa cho một vật tư đóng gói có trong kho
-export interface PackagingMaterial {
-  id: number;
-  sku: string;
-  name: string;
-  uom: 'Cái' | 'Bộ' | 'Cuộn' | 'Thùng'; // Đơn vị tính
-  stock: number;
-}
-
-// Định nghĩa cho một dòng yêu cầu trong form
-export interface RequestItem {
-  id: string; // ID tạm thời ở client để làm key
-  materialId: number | null;
-  sku: string;
-  name: string;
-  uom: string;
-  stock: number;
-  quantity: number;
-}
-
-// Định nghĩa cho một lệnh sản xuất
-export interface ProductionOrder {
-  id: number;
-  name: string;
-}
 
 
 --- D:\WATATECH\WH\src\pages\issue-packaging-form\components\ActionToolbar.tsx ---
@@ -246,7 +179,11 @@ import type { RequestItem } from "../types";
 
 interface PackagingRequestTableProps {
   items: RequestItem[];
-  onItemChange: (id: string, field: keyof RequestItem, value: any) => void;
+  onItemChange: (
+    id: string,
+    field: keyof RequestItem,
+    value: RequestItem[keyof RequestItem]
+  ) => void;
   onRemoveItem: (id: string) => void;
   onAddItem: () => void;
 }
@@ -414,8 +351,59 @@ const PageHeader = () => {
 
 export default PageHeader;
 
---- D:\WATATECH\WH\src\App.tsx ---
 
+--- D:\WATATECH\WH\src\pages\issue-packaging-form\data.ts ---
+
+import type { PackagingMaterial, ProductionOrder } from "./types";
+
+// Dữ liệu giả cho các vật tư đóng gói có sẵn trong kho
+export const availablePackagingMaterials: PackagingMaterial[] = [
+  { id: 1, sku: 'HGT-001-S', name: 'Thẻ bài logo size S', uom: 'Cái', stock: 15000 },
+  { id: 2, sku: 'HGT-001-M', name: 'Thẻ bài logo size M', uom: 'Cái', stock: 25000 },
+  { id: 3, sku: 'POLY-30x40', name: 'Túi Poly 30x40cm', uom: 'Cái', stock: 8000 },
+  { id: 4, sku: 'CTN-S-STD', name: 'Thùng carton size S', uom: 'Thùng', stock: 500 },
+  { id: 5, sku: 'STICKER-SIZE-M', name: 'Nhãn dán size M', uom: 'Cái', stock: 18000 },
+  { id: 6, sku: 'TAPE-CLEAR-5CM', name: 'Băng keo trong 5cm', uom: 'Cuộn', stock: 250 },
+];
+
+// Dữ liệu giả cho các lệnh sản xuất
+export const productionOrders: ProductionOrder[] = [
+    { id: 101, name: 'PO-2023-456 (Áo Sơ Mi Trắng)'},
+    { id: 102, name: 'PO-2023-457 (Quần Jean Xanh)'},
+    { id: 103, name: 'PO-2023-458 (Váy Hoa Mùa Hè)'},
+]
+
+--- D:\WATATECH\WH\src\pages\issue-packaging-form\types.ts ---
+
+// Định nghĩa cho một vật tư đóng gói có trong kho
+export interface PackagingMaterial {
+  id: number;
+  sku: string;
+  name: string;
+  uom: 'Cái' | 'Bộ' | 'Cuộn' | 'Thùng'; // Đơn vị tính
+  stock: number;
+}
+
+// Định nghĩa cho một dòng yêu cầu trong form
+export interface RequestItem {
+  id: string; // ID tạm thời ở client để làm key
+  materialId: number | null;
+  sku: string;
+  name: string;
+  uom: string;
+  stock: number;
+  quantity: number;
+}
+
+// Định nghĩa cho một lệnh sản xuất
+export interface ProductionOrder {
+  id: number;
+  name: string;
+}
+
+
+
+# File src/App.tsx
 // Path: src/App.tsx
 
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -430,7 +418,8 @@ import QRScanInterfacePage from "./pages/qr-scan/QRScanInterfacePage";
 import IssueFabricFormPage from "./pages/issue-fabric-form/IssueFabricFormPage";
 import IssueAccessoryFormPage from "./pages/issue-accessory-form/IssueAccessoryFormPage";
 import IssuePackagingFormPage from "./pages/issue-packaging-form/IssuePackagingFormPage";
-import IssueTransactionReportsPage from "./pages/issue-transaction-reports/IssueTransactionReportsPage"; // <-- Import trang mới
+import IssueTransactionReportsPage from "./pages/issue-transaction-reports/IssueTransactionReportsPage";
+import PackingListManagementPage from "./pages/packing-list-management/PackingListManagementPage";
 
 function App() {
   return (
@@ -461,6 +450,8 @@ function App() {
             path="reports/issues"
             element={<IssueTransactionReportsPage />}
           />
+
+          <Route path="packing-list" element={<PackingListManagementPage />} />
         </Route>
 
         {/* Bạn có thể thêm các route không cần layout ở đây, ví dụ trang Login */}
@@ -473,11 +464,23 @@ function App() {
 export default App;
 
 
---- D:\WATATECH\WH\src\layouts\MainLayout.tsx ---
 
+
+
+
+
+
+
+
+
+
+
+
+
+# File src/layouts/MainLayout.tsx
 // Path: src/layouts/MainLayout.tsx
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import {
   Menu,
@@ -493,6 +496,8 @@ import {
   Boxes,
   Package,
   ScrollText,
+  ListPlus,
+  Upload,
 } from "lucide-react";
 
 const Sidebar = () => {
@@ -513,6 +518,16 @@ const Sidebar = () => {
         >
           <LayoutDashboard className="w-5 h-5 mr-3" />
           Dashboard Hàng Nhập
+        </NavLink>
+
+        <NavLink
+          to="/packing-list"
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <ListPlus className="w-5 h-5 mr-3" />
+          QL Packing List / In QR
         </NavLink>
 
         <NavLink
@@ -542,7 +557,7 @@ const Sidebar = () => {
           }
         >
           <Truck className="w-5 h-5 mr-3" />
-          Shipment
+          Chi tiết lô hàng
         </NavLink>
 
         <NavLink
@@ -603,6 +618,16 @@ const Sidebar = () => {
         >
           <ScrollText className="w-5 h-5 mr-3" />
           Báo cáo Xuất Kho
+        </NavLink>
+
+        <NavLink
+          to="/import-packing-list" // <-- Route mới
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <Upload className="w-5 h-5 mr-3" />
+          Upfile Packing List
         </NavLink>
       </nav>
     </div>
@@ -671,3 +696,4 @@ const MainLayout = () => {
 };
 
 export default MainLayout;
+

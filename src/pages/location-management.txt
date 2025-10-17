@@ -1,97 +1,8 @@
-**Directory Tree:**
-
-```
-location-management/
-├── data.ts
-├── LocationManagementPage.tsx
-├── types.ts
-└── components/
-    ├── LocationDetail.tsx
-    ├── LocationFormModal.tsx
-    ├── LocationTree.tsx
-    ├── PageHeader.tsx
-    └── skeletons/
-        ├── DetailSkeleton.tsx
-        └── TreeSkeleton.tsx
-```
-
---- D:\WATATECH\WH\src\pages\location-management\data.ts ---
-
-// Path: src/pages/location-management/data.ts
-
-import type { LocationNode } from './types';
-
-export const warehouseData: LocationNode = {
-  id: 'FBWH',
-  name: 'Kho Vải (FBWH)',
-  type: 'WAREHOUSE',
-  status: 'ACTIVE',
-  items: [],
-  children: [
-    {
-      id: 'FBWH-A',
-      name: 'Khu A',
-      type: 'ZONE',
-      status: 'ACTIVE',
-      items: [],
-      children: [
-        {
-          id: 'FBWH-A-01',
-          name: 'Dãy 01',
-          type: 'AISLE',
-          status: 'ACTIVE',
-          items: [],
-          children: [
-            {
-              id: 'FBWH-A-01-S1',
-              name: 'Kệ 01-S1',
-              type: 'SHELF',
-              status: 'ACTIVE',
-              capacity: 10,
-              items: [
-                { id: 'ROLL-001', sku: 'FAB-001', name: 'Vải Cotton Xanh', quantity: 2, uom: 'Cây' },
-                { id: 'ROLL-002', sku: 'FAB-002', name: 'Vải Kate Trắng', quantity: 3, uom: 'Cây' },
-              ],
-              children: [],
-            },
-            {
-              id: 'FBWH-A-01-S2',
-              name: 'Kệ 01-S2',
-              type: 'SHELF',
-              status: 'LOCKED',
-              capacity: 10,
-              items: [],
-              children: [],
-            },
-          ],
-        },
-        {
-          id: 'FBWH-A-02',
-          name: 'Dãy 02',
-          type: 'AISLE',
-          status: 'ACTIVE',
-          items: [],
-          children: [],
-        }
-      ],
-    },
-    {
-      id: 'FBWH-B',
-      name: 'Khu B',
-      type: 'ZONE',
-      status: 'ACTIVE',
-      items: [],
-      children: [],
-    }
-  ],
-};
-
-
 --- D:\WATATECH\WH\src\pages\location-management\LocationManagementPage.tsx ---
 
 // Path: src/pages/location-management/LocationManagementPage.tsx
 
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import LocationTree from "./components/LocationTree";
 import LocationDetail from "./components/LocationDetail";
 import PageHeader from "./components/PageHeader";
@@ -162,7 +73,7 @@ const LocationManagementPage = () => {
   );
   const [modalParentId, setModalParentId] = useState<string | null>(null);
 
-  const selectedLocation = 
+  const selectedLocation =
     selectedNodeId && locations
       ? findNodeById(locations, selectedNodeId)
       : null;
@@ -264,7 +175,7 @@ const LocationManagementPage = () => {
           <LocationDetail
             location={selectedLocation}
             onEdit={handleOpenEditModal}
-            onAddChild={() => 
+            onAddChild={() =>
               selectedNodeId && handleOpenAddModal(selectedNodeId)
             }
           />
@@ -283,37 +194,6 @@ const LocationManagementPage = () => {
 };
 
 export default LocationManagementPage;
-
-
---- D:\WATATECH\WH\src\pages\location-management\types.ts ---
-
-// Path: src/pages/location-management/types.ts
-
-// Loại của một vị trí trong kho
-export type LocationType = 'WAREHOUSE' | 'ZONE' | 'AISLE' | 'SHELF' | 'BIN';
-
-// Trạng thái của vị trí
-export type LocationStatus = 'ACTIVE' | 'LOCKED';
-
-// Một mặt hàng tồn kho đơn giản
-export interface InventoryItem {
-  id: string;
-  sku: string;
-  name: string;
-  quantity: number;
-  uom: string; // Đơn vị tính
-}
-
-// Cấu trúc một node (vị trí) trong cây kho
-export interface LocationNode {
-  id: string;
-  name: string;
-  type: LocationType;
-  status: LocationStatus;
-  capacity?: number; // Sức chứa (tùy chọn)
-  items: InventoryItem[]; // Các mặt hàng đang có tại vị trí này
-  children: LocationNode[]; // Các vị trí con
-}
 
 
 --- D:\WATATECH\WH\src\pages\location-management\components\LocationDetail.tsx ---
@@ -785,8 +665,6 @@ export default PageHeader;
 
 // Path: src/pages/location-management/components/skeletons/DetailSkeleton.tsx
 
-import React from "react";
-
 const DetailSkeleton = () => {
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm h-full overflow-y-auto animate-pulse">
@@ -839,8 +717,6 @@ export default DetailSkeleton;
 
 // Path: src/pages/location-management/components/skeletons/TreeSkeleton.tsx
 
-import React from "react";
-
 const SkeletonItem = ({ indent = 0 }: { indent?: number }) => (
   <div
     className="flex items-center p-2"
@@ -870,8 +746,111 @@ const TreeSkeleton = () => {
 
 export default TreeSkeleton;
 
---- D:\WATATECH\WH\src\App.tsx ---
 
+--- D:\WATATECH\WH\src\pages\location-management\data.ts ---
+
+// Path: src/pages/location-management/data.ts
+
+import type { LocationNode } from './types';
+
+export const warehouseData: LocationNode = {
+  id: 'FBWH',
+  name: 'Kho Vải (FBWH)',
+  type: 'WAREHOUSE',
+  status: 'ACTIVE',
+  items: [],
+  children: [
+    {
+      id: 'FBWH-A',
+      name: 'Khu A',
+      type: 'ZONE',
+      status: 'ACTIVE',
+      items: [],
+      children: [
+        {
+          id: 'FBWH-A-01',
+          name: 'Dãy 01',
+          type: 'AISLE',
+          status: 'ACTIVE',
+          items: [],
+          children: [
+            {
+              id: 'FBWH-A-01-S1',
+              name: 'Kệ 01-S1',
+              type: 'SHELF',
+              status: 'ACTIVE',
+              capacity: 10,
+              items: [
+                { id: 'ROLL-001', sku: 'FAB-001', name: 'Vải Cotton Xanh', quantity: 2, uom: 'Cây' },
+                { id: 'ROLL-002', sku: 'FAB-002', name: 'Vải Kate Trắng', quantity: 3, uom: 'Cây' },
+              ],
+              children: [],
+            },
+            {
+              id: 'FBWH-A-01-S2',
+              name: 'Kệ 01-S2',
+              type: 'SHELF',
+              status: 'LOCKED',
+              capacity: 10,
+              items: [],
+              children: [],
+            },
+          ],
+        },
+        {
+          id: 'FBWH-A-02',
+          name: 'Dãy 02',
+          type: 'AISLE',
+          status: 'ACTIVE',
+          items: [],
+          children: [],
+        }
+      ],
+    },
+    {
+      id: 'FBWH-B',
+      name: 'Khu B',
+      type: 'ZONE',
+      status: 'ACTIVE',
+      items: [],
+      children: [],
+    }
+  ],
+};
+
+--- D:\WATATECH\WH\src\pages\location-management\types.ts ---
+
+// Path: src/pages/location-management/types.ts
+
+// Loại của một vị trí trong kho
+export type LocationType = 'WAREHOUSE' | 'ZONE' | 'AISLE' | 'SHELF' | 'BIN';
+
+// Trạng thái của vị trí
+export type LocationStatus = 'ACTIVE' | 'LOCKED';
+
+// Một mặt hàng tồn kho đơn giản
+export interface InventoryItem {
+  id: string;
+  sku: string;
+  name: string;
+  quantity: number;
+  uom: string; // Đơn vị tính
+}
+
+// Cấu trúc một node (vị trí) trong cây kho
+export interface LocationNode {
+  id: string;
+  name: string;
+  type: LocationType;
+  status: LocationStatus;
+  capacity?: number; // Sức chứa (tùy chọn)
+  items: InventoryItem[]; // Các mặt hàng đang có tại vị trí này
+  children: LocationNode[]; // Các vị trí con
+}
+
+
+
+# File src/App.tsx
 // Path: src/App.tsx
 
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -886,7 +865,8 @@ import QRScanInterfacePage from "./pages/qr-scan/QRScanInterfacePage";
 import IssueFabricFormPage from "./pages/issue-fabric-form/IssueFabricFormPage";
 import IssueAccessoryFormPage from "./pages/issue-accessory-form/IssueAccessoryFormPage";
 import IssuePackagingFormPage from "./pages/issue-packaging-form/IssuePackagingFormPage";
-import IssueTransactionReportsPage from "./pages/issue-transaction-reports/IssueTransactionReportsPage"; // <-- Import trang mới
+import IssueTransactionReportsPage from "./pages/issue-transaction-reports/IssueTransactionReportsPage";
+import PackingListManagementPage from "./pages/packing-list-management/PackingListManagementPage";
 
 function App() {
   return (
@@ -917,6 +897,8 @@ function App() {
             path="reports/issues"
             element={<IssueTransactionReportsPage />}
           />
+
+          <Route path="packing-list" element={<PackingListManagementPage />} />
         </Route>
 
         {/* Bạn có thể thêm các route không cần layout ở đây, ví dụ trang Login */}
@@ -929,11 +911,23 @@ function App() {
 export default App;
 
 
---- D:\WATATECH\WH\src\layouts\MainLayout.tsx ---
 
+
+
+
+
+
+
+
+
+
+
+
+
+# File src/layouts/MainLayout.tsx
 // Path: src/layouts/MainLayout.tsx
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import {
   Menu,
@@ -949,6 +943,8 @@ import {
   Boxes,
   Package,
   ScrollText,
+  ListPlus,
+  Upload,
 } from "lucide-react";
 
 const Sidebar = () => {
@@ -969,6 +965,16 @@ const Sidebar = () => {
         >
           <LayoutDashboard className="w-5 h-5 mr-3" />
           Dashboard Hàng Nhập
+        </NavLink>
+
+        <NavLink
+          to="/packing-list"
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <ListPlus className="w-5 h-5 mr-3" />
+          QL Packing List / In QR
         </NavLink>
 
         <NavLink
@@ -998,7 +1004,7 @@ const Sidebar = () => {
           }
         >
           <Truck className="w-5 h-5 mr-3" />
-          Shipment
+          Chi tiết lô hàng
         </NavLink>
 
         <NavLink
@@ -1059,6 +1065,16 @@ const Sidebar = () => {
         >
           <ScrollText className="w-5 h-5 mr-3" />
           Báo cáo Xuất Kho
+        </NavLink>
+
+        <NavLink
+          to="/import-packing-list" // <-- Route mới
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <Upload className="w-5 h-5 mr-3" />
+          Upfile Packing List
         </NavLink>
       </nav>
     </div>
@@ -1127,3 +1143,4 @@ const MainLayout = () => {
 };
 
 export default MainLayout;
+

@@ -1,7 +1,7 @@
 // Path: src/pages/qr-scan/components/ModeSelector.tsx
 
 import React from "react";
-import { ArrowRight, ArrowLeft } from "lucide-react";
+import { ArrowRight, ArrowLeft, Shuffle } from "lucide-react";
 import type { OperationMode } from "../types";
 
 interface ModeSelectorProps {
@@ -28,6 +28,7 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({ onSelectMode }) => {
           </span>
           <span className="text-sm opacity-80">INBOUND</span>
         </button>
+
         <button
           onClick={() => onSelectMode("OUTBOUND")}
           className="w-full text-lg bg-green-600 hover:bg-green-700 text-white font-bold py-6 px-4 rounded-lg flex items-center justify-between shadow-lg transition-transform transform hover:scale-105"
@@ -37,6 +38,17 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({ onSelectMode }) => {
             Xuất Kho / Soạn Hàng
           </span>
           <span className="text-sm opacity-80">OUTBOUND</span>
+        </button>
+
+        <button
+          onClick={() => onSelectMode("TRANSFER")}
+          className="w-full text-lg bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-6 px-4 rounded-lg flex items-center justify-between shadow-lg transition-transform transform hover:scale-105"
+        >
+          <span>
+            <Shuffle className="inline-block mr-3" />
+            Chuyển Vị Trí Kho
+          </span>
+          <span className="text-sm opacity-80">TRANSFER</span>
         </button>
       </div>
     </div>

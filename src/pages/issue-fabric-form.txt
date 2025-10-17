@@ -1,65 +1,3 @@
-
-
-**Directory Tree:**
-
-```
-issue-fabric-form/
-├── data.ts
-├── IssueFabricFormPage.tsx
-├── types.ts
-└── components/
-    ├── ActionToolbar.tsx
-    ├── FabricRequestTable.tsx
-    ├── FormHeader.tsx
-    ├── PageHeader.tsx
-    └── RollSelectionModal.tsx
-```
-
---- D:\WATATECH\WH\src\pages\issue-fabric-form\data.ts ---
-
-// Path: src/pages/issue-fabric-form/data.ts
-
-import type { AvailableRoll } from "./types";
-
-// Danh sách các mã vải để gợi ý (autocomplete)
-export const MOCK_FABRIC_SKUS = [
-  { sku: "FVN-102-BLUE", name: "Vải Kate Ford", color: "Xanh Dương", width: "1.5m", availableQty: 1200 },
-  { sku: "FVN-105-RED", name: "Vải Lụa Tơ Tằm", color: "Đỏ", width: "1.2m", availableQty: 850 },
-  { sku: "FCT-201-BLK", name: "Vải Cotton 4 chiều", color: "Đen", width: "1.8m", availableQty: 2500 },
-];
-
-// Dữ liệu giả cho các cây vải có sẵn trong kho theo từng SKU
-const MOCK_AVAILABLE_ROLLS: Record<string, AvailableRoll[]> = {
-  "FVN-102-BLUE": [
-    { id: "ROLL-001", location: "A-01-01", availableMeters: 150.5 },
-    { id: "ROLL-002", location: "A-01-02", availableMeters: 80.0 },
-    { id: "ROLL-003", location: "B-03-05", availableMeters: 125.2 },
-  ],
-  "FVN-105-RED": [
-    { id: "ROLL-008", location: "C-02-01", availableMeters: 200.0 },
-    { id: "ROLL-009", location: "C-02-02", availableMeters: 110.7 },
-  ],
-  "FCT-201-BLK": [
-    { id: "ROLL-015", location: "D-05-08", availableMeters: 300.0 },
-    { id: "ROLL-016", location: "D-05-09", availableMeters: 285.5 },
-    { id: "ROLL-017", location: "D-05-10", availableMeters: 310.0 },
-  ],
-};
-
-// Hàm giả lập việc gọi API để lấy danh sách cây vải
-export const getAvailableRollsBySku = (sku: string): Promise<AvailableRoll[]> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(MOCK_AVAILABLE_ROLLS[sku] || []);
-    }, 500); // Giả lập độ trễ mạng
-  });
-};
-
-
---- D:\WATATECH\WH\src\pages\issue-fabric-form\IssueFabricFormPage.tsx ---
-
-// Path: src/pages/issue-fabric-form/IssueFabricFormPage.tsx
-
 import React, { useState } from "react";
 import PageHeader from "./components/PageHeader";
 import FormHeader from "./components/FormHeader";
@@ -130,45 +68,6 @@ const IssueFabricFormPage = () => {
 export default IssueFabricFormPage;
 
 
---- D:\WATATECH\WH\src\pages\issue-fabric-form\types.ts ---
-
-// Path: src/pages/issue-fabric-form/types.ts
-
-// Đại diện cho một cây vải cụ thể có trong kho
-export interface AvailableRoll {
-  id: string;
-  location: string;
-  availableMeters: number;
-}
-
-// Đại diện cho một cây vải đã được chọn để xuất, cùng với số lượng
-export interface SelectedRoll {
-  rollId: string;
-  quantity: number;
-  location: string;
-  availableMeters: number;
-}
-
-// Đại diện cho một dòng yêu cầu vải trong form
-export interface FabricRequestItem {
-  id: string; // ID tạm thời ở client để quản lý
-  sku: string;
-  name: string;
-  color: string;
-  width: string;
-  availableQty: number;
-  requestedRolls: SelectedRoll[];
-}
-
-// Đại diện cho toàn bộ dữ liệu của form
-export interface FabricIssueFormData {
-  productionOrder: string;
-  requiredDate: string;
-  notes: string;
-  items: FabricRequestItem[];
-}
-
-
 --- D:\WATATECH\WH\src\pages\issue-fabric-form\components\ActionToolbar.tsx ---
 
 // Path: src/pages/issue-fabric-form/components/ActionToolbar.tsx
@@ -181,7 +80,7 @@ interface ActionToolbarProps {
   onSubmit: () => void;
 }
 
-const ActionToolbar: React.FC<ActionToolbarProps> = ({ 
+const ActionToolbar: React.FC<ActionToolbarProps> = ({
   onSaveDraft,
   onSubmit,
 }) => {
@@ -223,7 +122,7 @@ interface FabricRequestTableProps {
   onItemsChange: (items: FabricRequestItem[]) => void;
 }
 
-const FabricRequestTable: React.FC<FabricRequestTableProps> = ({ 
+const FabricRequestTable: React.FC<FabricRequestTableProps> = ({
   items,
   onItemsChange,
 }) => {
@@ -400,7 +299,7 @@ interface FormHeaderProps {
   onFieldChange: (field: string, value: string) => void;
 }
 
-const FormHeader: React.FC<FormHeaderProps> = ({ 
+const FormHeader: React.FC<FormHeaderProps> = ({
   productionOrder,
   requiredDate,
   notes,
@@ -417,7 +316,7 @@ const FormHeader: React.FC<FormHeaderProps> = ({
             htmlFor="productionOrder"
             className="block text-sm font-medium text-gray-600 mb-1"
           >
-            Lệnh Sản Xuất / Mã hàng
+            LệnhSản Xuất / Mã hàng
           </label>
           <input
             type="text"
@@ -472,7 +371,6 @@ export default FormHeader;
 // Path: src/pages/issue-fabric-form/components/PageHeader.tsx
 
 import { ChevronRight } from "lucide-react";
-import React from "react";
 
 const PageHeader = () => {
   return (
@@ -509,7 +407,7 @@ interface RollSelectionModalProps {
   onSave: (selectedRolls: SelectedRoll[]) => void;
 }
 
-const RollSelectionModal: React.FC<RollSelectionModalProps> = ({ 
+const RollSelectionModal: React.FC<RollSelectionModalProps> = ({
   isOpen,
   onClose,
   sku,
@@ -517,8 +415,9 @@ const RollSelectionModal: React.FC<RollSelectionModalProps> = ({
   onSave,
 }) => {
   const [availableRolls, setAvailableRolls] = useState<AvailableRoll[]>([]);
-  const [selectedRolls, setSelectedRolls] =
-    useState<SelectedRoll[]>(initialSelectedRolls);
+  const [selectedRolls,
+    setSelectedRolls
+  ] = useState<SelectedRoll[]>(initialSelectedRolls);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -677,8 +576,89 @@ const RollSelectionModal: React.FC<RollSelectionModalProps> = ({
 
 export default RollSelectionModal;
 
---- D:\WATATECH\WH\src\App.tsx ---
 
+--- D:\WATATECH\WH\src\pages\issue-fabric-form\data.ts ---
+
+// Path: src/pages/issue-fabric-form/data.ts
+
+import type { AvailableRoll } from "./types";
+
+// Danh sách các mã vải để gợi ý (autocomplete)
+export const MOCK_FABRIC_SKUS = [
+  { sku: "FVN-102-BLUE", name: "Vải Kate Ford", color: "Xanh Dương", width: "1.5m", availableQty: 1200 },
+  { sku: "FVN-105-RED", name: "Vải Lụa Tơ Tằm", color: "Đỏ", width: "1.2m", availableQty: 850 },
+  { sku: "FCT-201-BLK", name: "Vải Cotton 4 chiều", color: "Đen", width: "1.8m", availableQty: 2500 },
+];
+
+// Dữ liệu giả cho các cây vải có sẵn trong kho theo từng SKU
+const MOCK_AVAILABLE_ROLLS: Record<string, AvailableRoll[]> = {
+  "FVN-102-BLUE": [
+    { id: "ROLL-001", location: "A-01-01", availableMeters: 150.5 },
+    { id: "ROLL-002", location: "A-01-02", availableMeters: 80.0 },
+    { id: "ROLL-003", location: "B-03-05", availableMeters: 125.2 },
+  ],
+  "FVN-105-RED": [
+    { id: "ROLL-008", location: "C-02-01", availableMeters: 200.0 },
+    { id: "ROLL-009", location: "C-02-02", availableMeters: 110.7 },
+  ],
+  "FCT-201-BLK": [
+    { id: "ROLL-015", location: "D-05-08", availableMeters: 300.0 },
+    { id: "ROLL-016", location: "D-05-09", availableMeters: 285.5 },
+    { id: "ROLL-017", location: "D-05-10", availableMeters: 310.0 },
+  ],
+};
+
+// Hàm giả lập việc gọi API để lấy danh sách cây vải
+export const getAvailableRollsBySku = (sku: string): Promise<AvailableRoll[]> => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve(MOCK_AVAILABLE_ROLLS[sku] || []);
+    }, 500); // Giả lập độ trễ mạng
+  });
+};
+
+
+--- D:\WATATECH\WH\src\pages\issue-fabric-form\types.ts ---
+
+// Path: src/pages/issue-fabric-form/types.ts
+
+// Đại diện cho một cây vải cụ thể có trong kho
+export interface AvailableRoll {
+  id: string;
+  location: string;
+  availableMeters: number;
+}
+
+// Đại diện cho một cây vải đã được chọn để xuất, cùng với số lượng
+export interface SelectedRoll {
+  rollId: string;
+  quantity: number;
+  location: string;
+  availableMeters: number;
+}
+
+// Đại diện cho một dòng yêu cầu vải trong form
+export interface FabricRequestItem {
+  id: string; // ID tạm thời ở client để quản lý
+  sku: string;
+  name: string;
+  color: string;
+  width: string;
+  availableQty: number;
+  requestedRolls: SelectedRoll[];
+}
+
+// Đại diện cho toàn bộ dữ liệu của form
+export interface FabricIssueFormData {
+  productionOrder: string;
+  requiredDate: string;
+  notes: string;
+  items: FabricRequestItem[];
+}
+
+
+
+# File src/App.tsx
 // Path: src/App.tsx
 
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -693,7 +673,8 @@ import QRScanInterfacePage from "./pages/qr-scan/QRScanInterfacePage";
 import IssueFabricFormPage from "./pages/issue-fabric-form/IssueFabricFormPage";
 import IssueAccessoryFormPage from "./pages/issue-accessory-form/IssueAccessoryFormPage";
 import IssuePackagingFormPage from "./pages/issue-packaging-form/IssuePackagingFormPage";
-import IssueTransactionReportsPage from "./pages/issue-transaction-reports/IssueTransactionReportsPage"; // <-- Import trang mới
+import IssueTransactionReportsPage from "./pages/issue-transaction-reports/IssueTransactionReportsPage";
+import PackingListManagementPage from "./pages/packing-list-management/PackingListManagementPage";
 
 function App() {
   return (
@@ -724,6 +705,8 @@ function App() {
             path="reports/issues"
             element={<IssueTransactionReportsPage />}
           />
+
+          <Route path="packing-list" element={<PackingListManagementPage />} />
         </Route>
 
         {/* Bạn có thể thêm các route không cần layout ở đây, ví dụ trang Login */}
@@ -736,11 +719,23 @@ function App() {
 export default App;
 
 
---- D:\WATATECH\WH\src\layouts\MainLayout.tsx ---
 
+
+
+
+
+
+
+
+
+
+
+
+
+# File src/layouts/MainLayout.tsx
 // Path: src/layouts/MainLayout.tsx
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import {
   Menu,
@@ -756,6 +751,8 @@ import {
   Boxes,
   Package,
   ScrollText,
+  ListPlus,
+  Upload,
 } from "lucide-react";
 
 const Sidebar = () => {
@@ -776,6 +773,16 @@ const Sidebar = () => {
         >
           <LayoutDashboard className="w-5 h-5 mr-3" />
           Dashboard Hàng Nhập
+        </NavLink>
+
+        <NavLink
+          to="/packing-list"
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <ListPlus className="w-5 h-5 mr-3" />
+          QL Packing List / In QR
         </NavLink>
 
         <NavLink
@@ -805,7 +812,7 @@ const Sidebar = () => {
           }
         >
           <Truck className="w-5 h-5 mr-3" />
-          Shipment
+          Chi tiết lô hàng
         </NavLink>
 
         <NavLink
@@ -866,6 +873,16 @@ const Sidebar = () => {
         >
           <ScrollText className="w-5 h-5 mr-3" />
           Báo cáo Xuất Kho
+        </NavLink>
+
+        <NavLink
+          to="/import-packing-list" // <-- Route mới
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <Upload className="w-5 h-5 mr-3" />
+          Upfile Packing List
         </NavLink>
       </nav>
     </div>
@@ -934,3 +951,4 @@ const MainLayout = () => {
 };
 
 export default MainLayout;
+

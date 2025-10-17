@@ -1,137 +1,80 @@
-
-
-**Directory Tree:**
-
-```
-shipment-detail/
-├── data.ts
-├── ShipmentDetailPage.tsx
-├── types.ts
-└── components/
-    ├── ItemsToPrintTable.tsx
-    ├── PageHeader.tsx
-    ├── PrintToolbar.tsx
-    ├── ShipmentSummary.tsx
-    └── StatusBadge.tsx
-```
-
---- D:\WATATECH\WH\src\pages\shipment-detail\data.ts ---
-
-// Path: src/pages/shipment-detail/data.ts
-
-import type { Shipment } from "./types";
-
-export const mockShipmentData: Shipment = {
-  id: "7c3b9a1d",
-  packingListNo: "PL-Vn-2023-11-001",
-  poNumber: "PO-456-FABRIC",
-  supplier: "Công ty TNHH Vải Sợi Miền Nam",
-  etd: "2023-11-10",
-  eta: "2023-11-12",
-  status: "Mới tạo",
-  items: [
-    {
-      id: 1,
-      sku: "FVN-102-BLUE",
-      name: "Vải Cotton 100% - Xanh Navy",
-      quantity: 1500,
-      uom: "M",
-      printStatus: "printed",
-    },
-    {
-      id: 2,
-      sku: "FVN-103-WHT",
-      name: "Vải Cotton 100% - Trắng",
-      quantity: 2000,
-      uom: "M",
-      printStatus: "not_printed",
-    },
-    {
-      id: 3,
-      sku: "ACC-ZIP-05",
-      name: "Khóa kéo YKK 5cm",
-      quantity: 5000,
-      uom: "Cái",
-      printStatus: "not_printed",
-    },
-    {
-      id: 4,
-      sku: "ACC-BTN-12",
-      name: "Nút nhựa 4 lỗ 12mm",
-      quantity: 10000,
-      uom: "Cái",
-      printStatus: "not_printed",
-    },
-    {
-      id: 5,
-      sku: "PKG-TAG-L",
-      name: "Thẻ bài logo size L",
-      quantity: 1200,
-      uom: "Cái",
-      printStatus: "printed",
-    },
-    {
-      id: 6,
-      sku: "PKG-POLY-M",
-      name: "Túi Poly size M",
-      quantity: 1200,
-      uom: "Cái",
-      printStatus: "not_printed",
-    },
-  ],
-};
-
-
 --- D:\WATATECH\WH\src\pages\shipment-detail\ShipmentDetailPage.tsx ---
 
 // Path: src/pages/shipment-detail/ShipmentDetailPage.tsx
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { mockShipmentData } from "./data";
-import type { Shipment } from "./types";
+import type { Shipment, ShipmentItem, BreakdownItem } from "./types";
 import PageHeader from "./components/PageHeader";
 import ShipmentSummary from "./components/ShipmentSummary";
 import PrintToolbar from "./components/PrintToolbar";
 import ItemsToPrintTable from "./components/ItemsToPrintTable";
+import BreakdownModal from "./components/BreakdownModal"; // Import modal
 import { Edit, Trash2 } from "lucide-react";
 
 const ShipmentDetailPage = () => {
   const { shipmentId } = useParams<{ shipmentId: string }>();
-  // const navigate = useNavigate();
-
-  // State for the shipment data. In a real app, this would be fetched from an API.
   const [shipment, setShipment] = useState<Shipment | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedItemIds, setSelectedItemIds] = useState<(number | string)[]>([]);
 
-  // State for selected items
-  const [selectedItemIds, setSelectedItemIds] = useState<number[]>([]);
+  // State for breakdown modal
+  const [isBreakdownModalOpen, setIsBreakdownModalOpen] = useState(false);
+  const [currentItemForBreakdown, setCurrentItemForBreakdown] =
+    useState<ShipmentItem | null>(null);
 
-  // Effect to fetch data based on shipmentId
   useEffect(() => {
-    // Simulate API call
     setLoading(true);
     setTimeout(() => {
-      // In a real app: fetch(`/api/shipments/${shipmentId}`)
       if (shipmentId === mockShipmentData.id) {
         setShipment(mockShipmentData);
       } else {
-        setShipment(null); // Or handle not found error
+        setShipment(null);
       }
       setLoading(false);
     }, 500);
   }, [shipmentId]);
 
+  const handleOpenBreakdownModal = (item: ShipmentItem) => {
+    setCurrentItemForBreakdown(item);
+    setIsBreakdownModalOpen(true);
+  };
+
+  const handleCloseBreakdownModal = () => {
+    setIsBreakdownModalOpen(false);
+    setCurrentItemForBreakdown(null);
+  };
+
+  const handleSaveBreakdown = (breakdownData: BreakdownItem[]) => {
+    if (!shipment || !currentItemForBreakdown) return;
+
+    // Update the shipment state with the new breakdown data
+    const updatedItems = shipment.items.map((item) => {
+      if (item.id === currentItemForBreakdown.id) {
+        return { ...item, breakdown: breakdownData };
+      }
+      return item;
+    });
+
+    setShipment({ ...shipment, items: updatedItems });
+    handleCloseBreakdownModal();
+    alert("Đã lưu thông tin phân rã!");
+  };
+
   const handlePrintSelected = () => {
     if (selectedItemIds.length === 0) return;
     alert(`Đang in ${selectedItemIds.length} tem đã chọn...`);
-    // API call to print selected items would go here
     console.log("Printing items with IDs:", selectedItemIds);
   };
 
   const handlePrintAll = () => {
-    alert(`Đang in tất cả ${shipment?.items.length || 0} loại tem...`);
-    // API call to print all items would go here
+    const allItemCount =
+      shipment?.items.reduce(
+        (acc, item) => acc + (item.breakdown?.length || 1),
+        0
+      ) || 0;
+    alert(`Đang in tất cả ${allItemCount} tem...`);
     console.log("Printing all items for shipment:", shipment?.id);
   };
 
@@ -151,109 +94,270 @@ const ShipmentDetailPage = () => {
   ];
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
-      <PageHeader
-        title={`Chi tiết: ${shipment.packingListNo}`}
-        breadcrumbItems={breadcrumbItems}
-      >
-        <div className="flex space-x-3">
-          <button
-            type="button"
-            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
-          >
-            <Edit className="-ml-1 mr-2 h-5 w-5 text-gray-500" />
-            Sửa
-          </button>
-          <button
-            type="button"
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none"
-          >
-            <Trash2 className="-ml-1 mr-2 h-5 w-5" />
-            Xóa
-          </button>
+    <>
+      <div className="p-4 sm:p-6 lg:p-8">
+        <PageHeader
+          title={`Chi tiết: ${shipment.packingListNo}`}
+          breadcrumbItems={breadcrumbItems}
+        >
+          <div className="flex space-x-3">
+            <button
+              type="button"
+              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
+            >
+              <Edit className="-ml-1 mr-2 h-5 w-5 text-gray-500" />
+              Sửa
+            </button>
+            <button
+              type="button"
+              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none"
+            >
+              <Trash2 className="-ml-1 mr-2 h-5 w-5" />
+              Xóa
+            </button>
+          </div>
+        </PageHeader>
+
+        <ShipmentSummary shipment={shipment} />
+
+        <div className="mt-8">
+          <h2 className="text-xl font-semibold text-gray-800 mb-2">
+            Danh sách vật tư & In tem
+          </h2>
+          <PrintToolbar
+            selectedCount={selectedItemIds.length}
+            onPrintSelected={handlePrintSelected}
+            onPrintAll={handlePrintAll}
+          />
+          <ItemsToPrintTable
+            items={shipment.items}
+            selectedItems={selectedItemIds}
+            onSelectionChange={setSelectedItemIds}
+            onBreakdown={handleOpenBreakdownModal}
+          />
         </div>
-      </PageHeader>
-
-      <ShipmentSummary shipment={shipment} />
-
-      <div className="mt-8">
-        <h2 className="text-xl font-semibold text-gray-800 mb-2">
-          Danh sách vật tư & In tem
-        </h2>
-        <PrintToolbar
-          selectedCount={selectedItemIds.length}
-          onPrintSelected={handlePrintSelected}
-          onPrintAll={handlePrintAll}
-        />
-        <ItemsToPrintTable
-          items={shipment.items}
-          selectedItems={selectedItemIds}
-          onSelectionChange={setSelectedItemIds}
-        />
       </div>
-    </div>
+
+      {/* Render the modal */}
+      {currentItemForBreakdown && (
+        <BreakdownModal
+          isOpen={isBreakdownModalOpen}
+          item={currentItemForBreakdown}
+          onClose={handleCloseBreakdownModal}
+          onSave={handleSaveBreakdown}
+        />
+      )}
+    </>
   );
 };
 
 export default ShipmentDetailPage;
 
 
---- D:\WATATECH\WH\src\pages\shipment-detail\types.ts ---
+--- D:\WATATECH\WH\src\pages\shipment-detail\components\BreakdownModal.tsx ---
 
-// Path: src/pages/shipment-detail/types.ts
+// Path: src/pages/shipment-detail/components/BreakdownModal.tsx
 
-export type PrintStatus = 'printed' | 'not_printed';
+import React, { useState, useEffect } from "react";
+import type { ShipmentItem, BreakdownItem } from "../types";
+import { X, PlusCircle, Trash2 } from "lucide-react";
 
-export interface ShipmentItem {
-  id: number;
-  sku: string;
-  name: string;
-  quantity: number;
-  uom: string; // Unit of Measure
-  printStatus: PrintStatus;
+interface BreakdownModalProps {
+  item: ShipmentItem;
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (breakdownData: BreakdownItem[]) => void;
 }
 
-export interface Shipment {
-  id: string;
-  packingListNo: string;
-  poNumber: string;
-  supplier: string;
-  etd: string; // Expected Time of Departure
-  eta: string; // Expected Time of Arrival
-  status: 'Mới tạo' | 'Đã nhập kho';
-  items: ShipmentItem[];
-}
+const BreakdownModal: React.FC<BreakdownModalProps> = ({ item, isOpen, onClose, onSave }) => {
+  const [breakdownItems, setBreakdownItems] = useState<
+    Partial<BreakdownItem>[]
+  >([]);
+
+  useEffect(() => {
+    if (item && item.breakdown && item.breakdown.length > 0) {
+      setBreakdownItems(item.breakdown);
+    } else if (item) {
+      // Khởi tạo một dòng trống nếu chưa có dữ liệu
+      setBreakdownItems([
+        { parentId: item.id, itemNumber: 1, quantity: undefined },
+      ]);
+    }
+  }, [item]);
+
+  if (!isOpen || !item) return null;
+
+  const handleAddItem = () => {
+    setBreakdownItems([
+      ...breakdownItems,
+      {
+        parentId: item.id,
+        itemNumber: breakdownItems.length + 1,
+        quantity: undefined,
+      },
+    ]);
+  };
+
+  const handleRemoveItem = (index: number) => {
+    const newItems = breakdownItems.filter((_, i) => i !== index);
+    // Cập nhật lại itemNumber
+    setBreakdownItems(
+      newItems.map((it, idx) => ({ ...it, itemNumber: idx + 1 }))
+    );
+  };
+
+  const handleQuantityChange = (index: number, value: string) => {
+    const newItems = [...breakdownItems];
+    const quantity = parseFloat(value);
+    newItems[index].quantity = isNaN(quantity) ? undefined : quantity;
+    setBreakdownItems(newItems);
+  };
+
+  const handleSaveClick = () => {
+    const finalData = breakdownItems
+      .filter((it) => it.quantity !== undefined && it.quantity > 0)
+      .map((it, index) => ({
+        ...it,
+        uniqueId: it.uniqueId || `${item.id}-${index + 1}-${Date.now()}`,
+        printStatus: it.printStatus || "not_printed",
+      })) as BreakdownItem[];
+    onSave(finalData);
+  };
+
+  const totalBreakdownQuantity = breakdownItems.reduce(
+    (sum, it) => sum + (it.quantity || 0),
+    0
+  );
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+        <div className="p-4 border-b flex justify-between items-center">
+          <h2 className="text-lg font-semibold">
+            Phân rã chi tiết: {item.name} ({item.sku})
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-800"
+          >
+            <X />
+          </button>
+        </div>
+
+        <div className="p-6 overflow-y-auto">
+          <div className="flex justify-between items-baseline mb-4 p-3 bg-gray-50 rounded-md">
+            <div>
+              <span className="text-sm text-gray-600">
+                Tổng số lượng (Packing List):
+              </span>
+              <p className="font-bold text-xl text-indigo-600">
+                {item.quantity.toLocaleString()} {item.uom}
+              </p>
+            </div>
+            <div>
+              <span className="text-sm text-gray-600">Tổng đã phân rã:</span>
+              <p
+                className={`font-bold text-xl ${totalBreakdownQuantity > item.quantity ? "text-red-600" : "text-green-600"}`}
+              >
+                {totalBreakdownQuantity.toLocaleString()} {item.uom}
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {breakdownItems.map((breakdown, index) => (
+              <div
+                key={index}
+                className="flex items-center gap-3 p-2 border rounded-md"
+              >
+                <span className="font-medium text-gray-700 w-24">
+                  Cuộn/Thùng {breakdown.itemNumber}:
+                </span>
+                <input
+                  type="number"
+                  placeholder={`Số lượng (${item.uom})`}
+                  value={breakdown.quantity || ""}
+                  onChange={(e) => handleQuantityChange(index, e.target.value)}
+                  className="form-input flex-grow border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                />
+                <button
+                  onClick={() => handleRemoveItem(index)}
+                  className="text-red-500 hover:text-red-700 p-2"
+                  title="Xóa dòng"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
+              </div>
+            ))}
+          </div>
+          <button
+            onClick={handleAddItem}
+            className="mt-4 flex items-center gap-2 text-sm font-medium text-indigo-600 hover:text-indigo-800"
+          >
+            <PlusCircle className="w-5 h-5" />
+            Thêm dòng
+          </button>
+        </div>
+
+        <div className="p-4 border-t bg-gray-50 flex justify-end gap-3">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+          >
+            Hủy
+          </button>
+          <button
+            onClick={handleSaveClick}
+            className="px-4 py-2 bg-indigo-600 border border-transparent rounded-md text-sm font-medium text-white hover:bg-indigo-700"
+          >
+            Lưu thay đổi
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default BreakdownModal;
 
 
 --- D:\WATATECH\WH\src\pages\shipment-detail\components\ItemsToPrintTable.tsx ---
 
 // Path: src/pages/shipment-detail/components/ItemsToPrintTable.tsx
 
-import React from "react";
+import React, { useState } from "react";
 import type { ShipmentItem } from "../types";
 import StatusBadge from "./StatusBadge";
-import { Printer } from "lucide-react";
+import { Printer, Split, ChevronDown, ChevronRight } from "lucide-react";
 
 interface ItemsToPrintTableProps {
   items: ShipmentItem[];
-  selectedItems: number[];
-  onSelectionChange: (selectedIds: number[]) => void;
+  selectedItems: (number | string)[]; // Can be parent ID or uniqueId of breakdown item
+  onSelectionChange: (selectedIds: (number | string)[]) => void;
+  onBreakdown: (item: ShipmentItem) => void; // Callback to open modal
 }
 
-const ItemsToPrintTable: React.FC<ItemsToPrintTableProps> = ({
-  items,
-  selectedItems,
-  onSelectionChange,
-}) => {
+const ItemsToPrintTable: React.FC<ItemsToPrintTableProps> = ({ items, selectedItems, onSelectionChange, onBreakdown }) => {
+  const [expandedRows, setExpandedRows] = useState<Record<number, boolean>>({});
+
+  const handleToggleExpand = (itemId: number) => {
+    setExpandedRows((prev) => ({ ...prev, [itemId]: !prev[itemId] }));
+  };
+
   const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.checked) {
-      onSelectionChange(items.map((item) => item.id));
+      const allIds: (number | string)[] = [];
+      items.forEach((item) => {
+        allIds.push(item.id);
+        item.breakdown?.forEach((b) => allIds.push(b.uniqueId));
+      });
+      onSelectionChange(allIds);
     } else {
       onSelectionChange([]);
     }
   };
 
-  const handleSelectItem = (id: number) => {
+  const handleSelectItem = (id: number | string) => {
     const isSelected = selectedItems.includes(id);
     if (isSelected) {
       onSelectionChange(selectedItems.filter((itemId) => itemId !== id));
@@ -262,8 +366,12 @@ const ItemsToPrintTable: React.FC<ItemsToPrintTableProps> = ({
     }
   };
 
+  const allIds = items.flatMap((item) => [
+    item.id,
+    ...(item.breakdown?.map((b) => b.uniqueId) || []),
+  ]);
   const isAllSelected =
-    items.length > 0 && selectedItems.length === items.length;
+    items.length > 0 && selectedItems.length === allIds.length;
 
   return (
     <div className="overflow-x-auto">
@@ -284,13 +392,13 @@ const ItemsToPrintTable: React.FC<ItemsToPrintTableProps> = ({
                   scope="col"
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
-                  Mã VT (SKU)
+                  Tên vật tư / Chi tiết
                 </th>
                 <th
                   scope="col"
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
-                  Tên vật tư
+                  Mã VT (SKU)
                 </th>
                 <th
                   scope="col"
@@ -310,48 +418,114 @@ const ItemsToPrintTable: React.FC<ItemsToPrintTableProps> = ({
                 >
                   Trạng thái in
                 </th>
-                <th scope="col" className="relative px-6 py-3">
-                  <span className="sr-only">Hành động</span>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Hành động
                 </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {items.map((item) => (
-                <tr
-                  key={item.id}
-                  className={`
-                    selectedItems.includes(item.id) ? "bg-indigo-50" : ""
-                  `}
-                >
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                      checked={selectedItems.includes(item.id)}
-                      onChange={() => handleSelectItem(item.id)}
-                    />
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {item.sku}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {item.name}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
-                    {item.quantity.toLocaleString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {item.uom}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <StatusBadge status={item.printStatus} />
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button className="text-indigo-600 hover:text-indigo-900 flex items-center gap-1">
-                      <Printer className="w-4 h-4" /> In
-                    </button>
-                  </td>
-                </tr>
+                <React.Fragment key={item.id}>
+                  {/* Parent Row */}
+                  <tr
+                    className={
+                      selectedItems.includes(item.id) ? "bg-indigo-50" : ""
+                    }
+                  >
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        checked={selectedItems.includes(item.id)}
+                        onChange={() => handleSelectItem(item.id)}
+                      />
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      <div className="flex items-center">
+                        {item.breakdown && item.breakdown.length > 0 && (
+                          <button
+                            onClick={() => handleToggleExpand(item.id)}
+                            className="mr-2 p-1 rounded-full hover:bg-gray-200"
+                          >
+                            {expandedRows[item.id] ? (
+                              <ChevronDown className="w-4 h-4" />
+                            ) : (
+                              <ChevronRight className="w-4 h-4" />
+                            )}
+                          </button>
+                        )}
+                        <span
+                          className={
+                            !(item.breakdown && item.breakdown.length > 0)
+                              ? "ml-7"
+                              : ""
+                          }
+                        >
+                          {item.name}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {item.sku}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right font-bold">
+                      {item.quantity.toLocaleString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {item.uom}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <StatusBadge status={item.printStatus} />
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                      <button
+                        onClick={() => onBreakdown(item)}
+                        className="text-blue-600 hover:text-blue-900 flex items-center gap-1 mx-auto"
+                      >
+                        <Split className="w-4 h-4" /> Phân rã
+                      </button>
+                    </td>
+                  </tr>
+
+                  {/* Child Rows (Breakdown) */}
+                  {expandedRows[item.id] &&
+                    item.breakdown?.map((bItem) => (
+                      <tr
+                        key={bItem.uniqueId}
+                        className={`bg-gray-50 ${selectedItems.includes(bItem.uniqueId) ? "bg-indigo-100" : ""}`}
+                      >
+                        <td className="px-6 py-3 whitespace-nowrap">
+                          <input
+                            type="checkbox"
+                            className="ml-8 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                            checked={selectedItems.includes(bItem.uniqueId)}
+                            onChange={() => handleSelectItem(bItem.uniqueId)}
+                          />
+                        </td>
+                        <td className="pl-16 pr-6 py-3 whitespace-nowrap text-sm text-gray-700">
+                          Cuộn/Thùng #{bItem.itemNumber}
+                        </td>
+                        <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-500"></td>
+                        <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-500 text-right">
+                          {bItem.quantity.toLocaleString()}
+                        </td>
+                        <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-500">
+                          {item.uom}
+                        </td>
+                        <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-500">
+                          <StatusBadge status={bItem.printStatus} />
+                        </td>
+                        <td className="px-6 py-3 whitespace-nowrap text-center text-sm font-medium">
+                          <button className="text-indigo-600 hover:text-indigo-900 flex items-center gap-1 mx-auto">
+                            <Printer className="w-4 h-4" /> In
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                </React.Fragment>
               ))}
             </tbody>
           </table>
@@ -383,11 +557,7 @@ interface PageHeaderProps {
   children?: React.ReactNode; // For action buttons
 }
 
-const PageHeader: React.FC<PageHeaderProps> = ({
-  title,
-  breadcrumbItems,
-  children,
-}) => {
+const PageHeader: React.FC<PageHeaderProps> = ({ title, breadcrumbItems, children }) => {
   return (
     <div className="mb-6">
       <nav className="flex" aria-label="Breadcrumb">
@@ -442,11 +612,7 @@ interface PrintToolbarProps {
   onPrintAll: () => void;
 }
 
-const PrintToolbar: React.FC<PrintToolbarProps> = ({
-  selectedCount,
-  onPrintSelected,
-  onPrintAll,
-}) => {
+const PrintToolbar: React.FC<PrintToolbarProps> = ({ selectedCount, onPrintSelected, onPrintAll }) => {
   return (
     <div className="my-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
       <div className="flex items-center gap-4">
@@ -501,10 +667,7 @@ interface ShipmentSummaryProps {
   shipment: Shipment;
 }
 
-const InfoItem: React.FC<{ label: string; value: string }> = ({ 
-  label,
-  value,
-}) => (
+const InfoItem: React.FC<{ label: string; value: string }> = ({ label, value }) => (
   <div>
     <dt className="text-sm font-medium text-gray-500">{label}</dt>
     <dd className="mt-1 text-base text-gray-900 font-semibold">{value}</dd>
@@ -562,8 +725,138 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
 
 export default StatusBadge;
 
---- D:\WATATECH\WH\src\App.tsx ---
 
+--- D:\WATATECH\WH\src\pages\shipment-detail\data.ts ---
+
+// Path: src/pages/shipment-detail/data.ts
+
+import type { Shipment } from "./types";
+
+export const mockShipmentData: Shipment = {
+  id: "7c3b9a1d",
+  packingListNo: "PL-Vn-2023-11-001",
+  poNumber: "PO-456-FABRIC",
+  supplier: "Công ty TNHH Vải Sợi Miền Nam",
+  etd: "2023-11-10",
+  eta: "2023-11-12",
+  status: "Mới tạo",
+  items: [
+    {
+      id: 1,
+      sku: "FVN-102-BLUE",
+      name: "Vải Cotton 100% - Xanh Navy",
+      quantity: 1500,
+      uom: "M",
+      printStatus: "printed",
+      // Dữ liệu phân rã mẫu
+      breakdown: [
+        {
+          uniqueId: "7c3b9a1d-1-1",
+          parentId: 1,
+          itemNumber: 1,
+          quantity: 150.5,
+          printStatus: "printed",
+        },
+        {
+          uniqueId: "7c3b9a1d-1-2",
+          parentId: 1,
+          itemNumber: 2,
+          quantity: 149.0,
+          printStatus: "printed",
+        },
+        {
+          uniqueId: "7c3b9a1d-1-3",
+          parentId: 1,
+          itemNumber: 3,
+          quantity: 151.0,
+          printStatus: "not_printed",
+        },
+      ],
+    },
+    {
+      id: 2,
+      sku: "FVN-103-WHT",
+      name: "Vải Cotton 100% - Trắng",
+      quantity: 2000,
+      uom: "M",
+      printStatus: "not_printed",
+      breakdown: [], // Chưa phân rã
+    },
+    {
+      id: 3,
+      sku: "ACC-ZIP-05",
+      name: "Khóa kéo YKK 5cm",
+      quantity: 5000,
+      uom: "Cái",
+      printStatus: "not_printed",
+    },
+    {
+      id: 4,
+      sku: "ACC-BTN-12",
+      name: "Nút nhựa 4 lỗ 12mm",
+      quantity: 10000,
+      uom: "Cái",
+      printStatus: "not_printed",
+    },
+    {
+      id: 5,
+      sku: "PKG-TAG-L",
+      name: "Thẻ bài logo size L",
+      quantity: 1200,
+      uom: "Cái",
+      printStatus: "printed",
+    },
+    {
+      id: 6,
+      sku: "PKG-POLY-M",
+      name: "Túi Poly size M",
+      quantity: 1200,
+      uom: "Cái",
+      printStatus: "not_printed",
+    },
+  ],
+};
+
+--- D:\WATATECH\WH\src\pages\shipment-detail\types.ts ---
+
+// Path: src/pages/shipment-detail/types.ts
+
+export type PrintStatus = "printed" | "not_printed";
+
+// MỚI: Định nghĩa cho một đơn vị đã được phân rã (cuộn vải, thùng hàng)
+export interface BreakdownItem {
+  uniqueId: string; // Sẽ dùng để tạo QR Code, vd: 'item-1-roll-1'
+  parentId: number; // ID của ShipmentItem cha
+  itemNumber: number; // Số thứ tự, vd: 1, 2, 3...
+  quantity: number; // Số lượng thực tế của đơn vị này (vd: 148.5m)
+  printStatus: PrintStatus;
+}
+
+export interface ShipmentItem {
+  id: number;
+  sku: string;
+  name: string;
+  quantity: number; // Tổng số lượng
+  uom: string; // Unit of Measure
+  printStatus: PrintStatus;
+  // MỚI: Mảng chứa các đơn vị con sau khi phân rã
+  breakdown?: BreakdownItem[];
+}
+
+export interface Shipment {
+  id: string;
+  packingListNo: string;
+  poNumber: string;
+  supplier: string;
+  etd: string; // Expected Time of Departure
+  eta: string; // Expected Time of Arrival
+  status: "Mới tạo" | "Đã nhập kho";
+  items: ShipmentItem[];
+}
+
+
+
+# File src/App.tsx
 // Path: src/App.tsx
 
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -578,7 +871,8 @@ import QRScanInterfacePage from "./pages/qr-scan/QRScanInterfacePage";
 import IssueFabricFormPage from "./pages/issue-fabric-form/IssueFabricFormPage";
 import IssueAccessoryFormPage from "./pages/issue-accessory-form/IssueAccessoryFormPage";
 import IssuePackagingFormPage from "./pages/issue-packaging-form/IssuePackagingFormPage";
-import IssueTransactionReportsPage from "./pages/issue-transaction-reports/IssueTransactionReportsPage"; // <-- Import trang mới
+import IssueTransactionReportsPage from "./pages/issue-transaction-reports/IssueTransactionReportsPage";
+import PackingListManagementPage from "./pages/packing-list-management/PackingListManagementPage";
 
 function App() {
   return (
@@ -609,6 +903,8 @@ function App() {
             path="reports/issues"
             element={<IssueTransactionReportsPage />}
           />
+
+          <Route path="packing-list" element={<PackingListManagementPage />} />
         </Route>
 
         {/* Bạn có thể thêm các route không cần layout ở đây, ví dụ trang Login */}
@@ -621,11 +917,23 @@ function App() {
 export default App;
 
 
---- D:\WATATECH\WH\src\layouts\MainLayout.tsx ---
 
+
+
+
+
+
+
+
+
+
+
+
+
+# File src/layouts/MainLayout.tsx
 // Path: src/layouts/MainLayout.tsx
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import {
   Menu,
@@ -641,6 +949,8 @@ import {
   Boxes,
   Package,
   ScrollText,
+  ListPlus,
+  Upload,
 } from "lucide-react";
 
 const Sidebar = () => {
@@ -661,6 +971,16 @@ const Sidebar = () => {
         >
           <LayoutDashboard className="w-5 h-5 mr-3" />
           Dashboard Hàng Nhập
+        </NavLink>
+
+        <NavLink
+          to="/packing-list"
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <ListPlus className="w-5 h-5 mr-3" />
+          QL Packing List / In QR
         </NavLink>
 
         <NavLink
@@ -690,7 +1010,7 @@ const Sidebar = () => {
           }
         >
           <Truck className="w-5 h-5 mr-3" />
-          Shipment
+          Chi tiết lô hàng
         </NavLink>
 
         <NavLink
@@ -751,6 +1071,16 @@ const Sidebar = () => {
         >
           <ScrollText className="w-5 h-5 mr-3" />
           Báo cáo Xuất Kho
+        </NavLink>
+
+        <NavLink
+          to="/import-packing-list" // <-- Route mới
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <Upload className="w-5 h-5 mr-3" />
+          Upfile Packing List
         </NavLink>
       </nav>
     </div>
@@ -819,3 +1149,4 @@ const MainLayout = () => {
 };
 
 export default MainLayout;
+

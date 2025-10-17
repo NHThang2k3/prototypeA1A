@@ -1,48 +1,15 @@
-
-
-**Directory Tree:**
-
-```
-issue-transaction-reports/
-├── data.ts
-├── IssueTransactionReportsPage.tsx
-├── types.ts
-└── components/
-    ├── PageHeader.tsx
-    ├── ReportFilters.tsx
-    ├── StatusBadge.tsx
-    ├── TransactionsTable.tsx
-    └── skeletons/
-        └── TableSkeleton.tsx
-```
-
---- D:\WATATECH\WH\src\pages\issue-transaction-reports\data.ts ---
-
-// Path: src/pages/issue-transaction-reports/data.ts
-
-import type { IssueTransaction } from './types';
-
-export const mockTransactions: IssueTransaction[] = [
-  { id: 'IF-001', type: 'Xuất vải', createdAt: '2023-10-26T09:00:00Z', requestor: 'Phòng Cắt', productionOrder: 'PO-12345', status: 'Đã hoàn tất' },
-  { id: 'IA-001', type: 'Xuất phụ liệu', createdAt: '2023-10-26T11:30:00Z', requestor: 'Chuyền May 1', productionOrder: 'PO-12345', status: 'Đã hoàn tất' },
-  { id: 'IP-001', type: 'Xuất đóng gói', createdAt: '2023-10-27T14:00:00Z', requestor: 'Phòng Đóng Gói', productionOrder: 'PO-12345', status: 'Đang xử lý' },
-  { id: 'IF-002', type: 'Xuất vải', createdAt: '2023-10-28T08:15:00Z', requestor: 'Phòng Cắt', productionOrder: 'PO-67890', status: 'Mới yêu cầu' },
-  { id: 'IA-002', type: 'Xuất phụ liệu', createdAt: '2023-11-01T10:00:00Z', requestor: 'Chuyền May 2', productionOrder: 'PO-67890', status: 'Đã hủy' },
-  { id: 'IF-003', type: 'Xuất vải', createdAt: '2023-11-02T13:45:00Z', requestor: 'Phòng Mẫu', productionOrder: 'SAMPLE-001', status: 'Đã hoàn tất' },
-  { id: 'IP-002', type: 'Xuất đóng gói', createdAt: '2023-11-03T16:20:00Z', requestor: 'Phòng Đóng Gói', productionOrder: 'PO-67890', status: 'Đang xử lý' },
-];
-
-
 --- D:\WATATECH\WH\src\pages\issue-transaction-reports\IssueTransactionReportsPage.tsx ---
 
 // Path: src/pages/issue-transaction-reports/IssueTransactionReportsPage.tsx
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import PageHeader from "./components/PageHeader";
 import ReportFilters from "./components/ReportFilters";
 import TransactionsTable from "./components/TransactionsTable";
 import { mockTransactions } from "./data";
-import type { IssueTransaction } from "./types";
+import type { IssueTransaction, Filters } from "./types"; // <-- IMPORT TỪ ĐÂY
+
+// type Filters = Record<string, unknown>; // <-- XÓA ĐỊNH NGHĨA CỤC BỘ NÀY
 
 const IssueTransactionReportsPage = () => {
   const [transactions, setTransactions] = useState<IssueTransaction[]>([]);
@@ -59,7 +26,7 @@ const IssueTransactionReportsPage = () => {
     }, 1000); // Giả lập độ trễ 1 giây
   }, []);
 
-  const handleFilterChange = (filters: any) => {
+  const handleFilterChange = (filters: Filters) => {
     // TODO: Xử lý logic lọc dữ liệu dựa trên filters từ component ReportFilters
     console.log("Filters changed:", filters);
     // Gọi lại API hoặc lọc dữ liệu mock tại đây
@@ -68,6 +35,7 @@ const IssueTransactionReportsPage = () => {
   return (
     <div className="p-6 bg-gray-100 min-h-full">
       <PageHeader />
+      {/* Dòng 36 bây giờ sẽ không còn lỗi */}
       <ReportFilters onFilterChange={handleFilterChange} />
       <TransactionsTable transactions={transactions} isLoading={isLoading} />
       {/* Thêm Pagination ở đây nếu cần */}
@@ -78,38 +46,10 @@ const IssueTransactionReportsPage = () => {
 export default IssueTransactionReportsPage;
 
 
---- D:\WATATECH\WH\src\pages\issue-transaction-reports\types.ts ---
-
-// Path: src/pages/issue-transaction-reports/types.ts
-
-export type TransactionStatus = 'Đã hoàn tất' | 'Đang xử lý' | 'Mới yêu cầu' | 'Đã hủy';
-export type TransactionType = 'Xuất vải' | 'Xuất phụ liệu' | 'Xuất đóng gói';
-
-export interface IssueTransaction {
-  id: string;
-  type: TransactionType;
-  createdAt: string; // ISO date string
-  requestor: string;
-  productionOrder: string;
-  status: TransactionStatus;
-}
-
-export interface ReportFilters {
-  searchTerm: string;
-  status: string;
-  type: string;
-  dateRange: {
-    from: string;
-    to: string;
-  };
-}
-
-
 --- D:\WATATECH\WH\src\pages\issue-transaction-reports\components\PageHeader.tsx ---
 
 // Path: src/pages/issue-transaction-reports/components/PageHeader.tsx
 
-import React from "react";
 import { Download } from "lucide-react";
 
 const PageHeader = () => {
@@ -141,20 +81,42 @@ export default PageHeader;
 
 // Path: src/pages/issue-transaction-reports/components/ReportFilters.tsx
 
-import React from "react";
+import React, { useState } from "react";
 import { Search } from "lucide-react";
+import type { Filters } from "../types"; // <-- IMPORT TỪ ĐÂY
 
 // Giả sử bạn có prop onFilterChange để cập nhật state ở component cha
+// interface Filters { // <-- XÓA ĐỊNH NGHĨA CỤC BỘ NÀY
+//   query?: string;
+//   type?: string;
+//   status?: string;
+//   dateFrom?: string;
+//   dateTo?: string;
+// }
+
 interface ReportFiltersProps {
-  onFilterChange: (filters: any) => void;
+  onFilterChange: (filters: Filters) => void;
 }
 
 const ReportFilters: React.FC<ReportFiltersProps> = ({ onFilterChange }) => {
-  // Trong thực tế, bạn sẽ dùng state để quản lý giá trị của các input
-  // và gọi onFilterChange khi có thay đổi.
+  // Sử dụng state để quản lý giá trị của các input và gọi onFilterChange khi có thay đổi.
+  const [filters, setFilters] = useState<Filters>({
+    query: "",
+    type: "",
+    status: "",
+    dateFrom: "",
+    dateTo: "",
+  });
+
+  const handleChange = (patch: Partial<Filters>) => {
+    const next = { ...filters, ...patch };
+    setFilters(next);
+    onFilterChange(next);
+  };
 
   return (
     <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
+      {/* ...Phần còn lại của component không thay đổi... */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Search */}
         <div className="relative">
@@ -164,6 +126,8 @@ const ReportFilters: React.FC<ReportFiltersProps> = ({ onFilterChange }) => {
           <input
             type="text"
             placeholder="VD: PO-12345"
+            value={filters.query}
+            onChange={(e) => handleChange({ query: e.target.value })}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
           />
           <Search className="absolute left-3 top-9 w-5 h-5 text-gray-400" />
@@ -179,6 +143,8 @@ const ReportFilters: React.FC<ReportFiltersProps> = ({ onFilterChange }) => {
           </label>
           <select
             id="type"
+            value={filters.type}
+            onChange={(e) => handleChange({ type: e.target.value })}
             className="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
           >
             <option value="">Tất cả</option>
@@ -198,6 +164,8 @@ const ReportFilters: React.FC<ReportFiltersProps> = ({ onFilterChange }) => {
           </label>
           <select
             id="status"
+            value={filters.status}
+            onChange={(e) => handleChange({ status: e.target.value })}
             className="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
           >
             <option value="">Tất cả</option>
@@ -216,11 +184,15 @@ const ReportFilters: React.FC<ReportFiltersProps> = ({ onFilterChange }) => {
           <div className="flex items-center space-x-2">
             <input
               type="date"
+              value={filters.dateFrom}
+              onChange={(e) => handleChange({ dateFrom: e.target.value })}
               className="w-full p-2 border border-gray-300 rounded-lg"
             />
             <span className="text-gray-500">-</span>
             <input
               type="date"
+              value={filters.dateTo}
+              onChange={(e) => handleChange({ dateTo: e.target.value })}
               className="w-full p-2 border border-gray-300 rounded-lg"
             />
           </div>
@@ -396,11 +368,65 @@ const TransactionsTable: React.FC<TransactionsTableProps> = ({
 export default TransactionsTable;
 
 
---- D:\WATATECH\WH\src\pages\issue-transaction-reports\components\skeletons\TableSkeleton.tsx ---
+--- D:\WATATECH\WH\src\pages\issue-transaction-reports\data.ts ---
+
+// Path: src/pages/issue-transaction-reports/data.ts
+
+import type { IssueTransaction } from './types';
+
+export const mockTransactions: IssueTransaction[] = [
+  { id: 'IF-001', type: 'Xuất vải', createdAt: '2023-10-26T09:00:00Z', requestor: 'Phòng Cắt', productionOrder: 'PO-12345', status: 'Đã hoàn tất' },
+  { id: 'IA-001', type: 'Xuất phụ liệu', createdAt: '2023-10-26T11:30:00Z', requestor: 'Chuyền May 1', productionOrder: 'PO-12345', status: 'Đã hoàn tất' },
+  { id: 'IP-001', type: 'Xuất đóng gói', createdAt: '2023-10-27T14:00:00Z', requestor: 'Phòng Đóng Gói', productionOrder: 'PO-12345', status: 'Đang xử lý' },
+  { id: 'IF-002', type: 'Xuất vải', createdAt: '2023-10-28T08:15:00Z', requestor: 'Phòng Cắt', productionOrder: 'PO-67890', status: 'Mới yêu cầu' },
+  { id: 'IA-002', type: 'Xuất phụ liệu', createdAt: '2023-11-01T10:00:00Z', requestor: 'Chuyền May 2', productionOrder: 'PO-67890', status: 'Đã hủy' },
+  { id: 'IF-003', type: 'Xuất vải', createdAt: '2023-11-02T13:45:00Z', requestor: 'Phòng Mẫu', productionOrder: 'SAMPLE-001', status: 'Đã hoàn tất' },
+  { id: 'IP-002', type: 'Xuất đóng gói', createdAt: '2023-11-03T16:20:00Z', requestor: 'Phòng Đóng Gói', productionOrder: 'PO-67890', status: 'Đang xử lý' },
+];
+
+--- D:\WATATECH\WH\src\pages\issue-transaction-reports\types.ts ---
+
+// Path: src/pages/issue-transaction-reports/types.ts
+
+export type TransactionStatus = 'Đã hoàn tất' | 'Đang xử lý' | 'Mới yêu cầu' | 'Đã hủy';
+export type TransactionType = 'Xuất vải' | 'Xuất phụ liệu' | 'Xuất đóng gói';
+
+export interface IssueTransaction {
+  id: string;
+  type: TransactionType;
+  createdAt: string; // ISO date string
+  requestor: string;
+  productionOrder: string;
+  status: TransactionStatus;
+}
+
+// Thêm hoặc thay thế định nghĩa Filters ở đây
+// Đây là định nghĩa chính xác cho bộ lọc của bạn
+export interface Filters {
+  query?: string;
+  type?: string;
+  status?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+// Ghi chú: Interface ReportFilters bên dưới có vẻ không được sử dụng
+// hoặc có cấu trúc khác. Bạn có thể xóa nó đi nếu không cần thiết.
+/*
+export interface ReportFilters {
+  searchTerm: string;
+  status: string;
+  type: string;
+  dateRange: {
+    from: string;
+    to: string;
+  };
+}
+*/
 
 
---- D:\WATATECH\WH\src\App.tsx ---
 
+# File src/App.tsx
 // Path: src/App.tsx
 
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -415,7 +441,8 @@ import QRScanInterfacePage from "./pages/qr-scan/QRScanInterfacePage";
 import IssueFabricFormPage from "./pages/issue-fabric-form/IssueFabricFormPage";
 import IssueAccessoryFormPage from "./pages/issue-accessory-form/IssueAccessoryFormPage";
 import IssuePackagingFormPage from "./pages/issue-packaging-form/IssuePackagingFormPage";
-import IssueTransactionReportsPage from "./pages/issue-transaction-reports/IssueTransactionReportsPage"; // <-- Import trang mới
+import IssueTransactionReportsPage from "./pages/issue-transaction-reports/IssueTransactionReportsPage";
+import PackingListManagementPage from "./pages/packing-list-management/PackingListManagementPage";
 
 function App() {
   return (
@@ -444,8 +471,10 @@ function App() {
 
           <Route
             path="reports/issues"
-            element={<IssueTransactionReportsPage />} // <-- Route mới
+            element={<IssueTransactionReportsPage />}
           />
+
+          <Route path="packing-list" element={<PackingListManagementPage />} />
         </Route>
 
         {/* Bạn có thể thêm các route không cần layout ở đây, ví dụ trang Login */}
@@ -458,11 +487,23 @@ function App() {
 export default App;
 
 
---- D:\WATATECH\WH\src\layouts\MainLayout.tsx ---
 
+
+
+
+
+
+
+
+
+
+
+
+
+# File src/layouts/MainLayout.tsx
 // Path: src/layouts/MainLayout.tsx
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import {
   Menu,
@@ -478,6 +519,8 @@ import {
   Boxes,
   Package,
   ScrollText,
+  ListPlus,
+  Upload,
 } from "lucide-react";
 
 const Sidebar = () => {
@@ -498,6 +541,16 @@ const Sidebar = () => {
         >
           <LayoutDashboard className="w-5 h-5 mr-3" />
           Dashboard Hàng Nhập
+        </NavLink>
+
+        <NavLink
+          to="/packing-list"
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <ListPlus className="w-5 h-5 mr-3" />
+          QL Packing List / In QR
         </NavLink>
 
         <NavLink
@@ -527,7 +580,7 @@ const Sidebar = () => {
           }
         >
           <Truck className="w-5 h-5 mr-3" />
-          Shipment
+          Chi tiết lô hàng
         </NavLink>
 
         <NavLink
@@ -588,6 +641,16 @@ const Sidebar = () => {
         >
           <ScrollText className="w-5 h-5 mr-3" />
           Báo cáo Xuất Kho
+        </NavLink>
+
+        <NavLink
+          to="/import-packing-list" // <-- Route mới
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <Upload className="w-5 h-5 mr-3" />
+          Upfile Packing List
         </NavLink>
       </nav>
     </div>
@@ -656,3 +719,4 @@ const MainLayout = () => {
 };
 
 export default MainLayout;
+

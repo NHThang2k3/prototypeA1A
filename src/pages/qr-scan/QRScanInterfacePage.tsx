@@ -2,36 +2,40 @@
 
 import React, { useState, useCallback } from "react";
 import { toast, Toaster } from "react-hot-toast";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Package } from "lucide-react";
 import type {
   OperationMode,
   InboundScanState,
   OutboundScanState,
+  TransferScanState,
+  ItemCategory,
   ScannedItem,
   ScannedLocation,
   IssueRequest,
-  PickingListItem,
 } from "./types";
 import {
   fetchScannedData,
   submitPutAwayAction,
   submitIssueAction,
+  submitTransferAction,
 } from "./data";
 import Scanner from "./components/Scanner";
-// REMOVED: ScanResult không còn dùng cho Inbound
 import ActionFeedback from "./components/ActionFeedback";
 import ModeSelector from "./components/ModeSelector";
 import PickingList from "./components/PickingList";
-import IssueQuantityInput from "./components/IssueQuantityInput";
-// NEW: Import component mới
 import InboundPutAway from "./components/InboundPutAway";
+import CategorySelector from "./components/CategorySelector";
 
 const QRScanInterfacePage: React.FC = () => {
   // State chung
   const [mode, setMode] = useState<OperationMode | "SELECT">("SELECT");
-  const [feedback, setFeedback] = useState({ status: "HIDDEN", message: "" });
+  type FeedbackStatus = "HIDDEN" | "PROCESSING" | "SUCCESS" | "ERROR";
+  const [feedback, setFeedback] = useState<{
+    status: FeedbackStatus;
+    message: string;
+  }>({ status: "HIDDEN", message: "" });
 
-  // State cho luồng Nhập Kho (Inbound) - Cập nhật lại
+  // State cho luồng Nhập Kho (Inbound)
   const [inboundState, setInboundState] =
     useState<InboundScanState>("SCANNING_LOCATION");
   const [scannedInboundLocation, setScannedInboundLocation] =
@@ -42,38 +46,66 @@ const QRScanInterfacePage: React.FC = () => {
 
   // State cho luồng Xuất Kho (Outbound)
   const [outboundState, setOutboundState] =
-    useState<OutboundScanState>("SCANNING_REQUEST");
+    useState<OutboundScanState>("SELECTING_CATEGORY");
   const [issueRequest, setIssueRequest] = useState<IssueRequest | null>(null);
-  const [scannedOutboundItem, setScannedOutboundItem] =
-    useState<ScannedItem | null>(null);
-  const [currentItemPickingInfo, setCurrentItemPickingInfo] =
-    useState<PickingListItem | null>(null);
+  const [itemCategory, setItemCategory] = useState<ItemCategory | null>(null);
 
-  const resetInboundState = useCallback(() => {
-    setInboundState("SCANNING_LOCATION");
-    setScannedInboundLocation(null);
-    setScannedItemsForPutAway([]);
-  }, []);
+  // State cho luồng Chuyển Kho (Transfer)
+  const [transferState, setTransferState] = useState<TransferScanState>(
+    "SCANNING_ITEM_TO_MOVE"
+  );
+  const [itemToMove, setItemToMove] = useState<ScannedItem | null>(null);
 
   const resetAllStates = useCallback(() => {
     setMode("SELECT");
     setFeedback({ status: "HIDDEN", message: "" });
     // Reset Inbound
-    resetInboundState();
+    setInboundState("SCANNING_LOCATION");
+    setScannedInboundLocation(null);
+    setScannedItemsForPutAway([]);
     // Reset Outbound
-    setOutboundState("SCANNING_REQUEST");
+    setOutboundState("SELECTING_CATEGORY");
     setIssueRequest(null);
-    setScannedOutboundItem(null);
-    setCurrentItemPickingInfo(null);
-  }, [resetInboundState]);
+    setItemCategory(null);
+    // Reset Transfer
+    setTransferState("SCANNING_ITEM_TO_MOVE");
+    setItemToMove(null);
+  }, []);
 
   const handleError = (error: unknown) => {
-    const errorMessage = (error as Error).message;
+    const errorMessage =
+      error instanceof Error ? error.message : "Đã xảy ra lỗi không xác định";
     toast.error(errorMessage);
     setFeedback({ status: "ERROR", message: errorMessage });
   };
 
-  // --- LOGIC CHO LUỒNG NHẬP KHO (INBOUND) - VIẾT LẠI HOÀN TOÀN ---
+  const handleModeSelect = (selectedMode: OperationMode) => {
+    setMode(selectedMode);
+    if (selectedMode === "OUTBOUND") {
+      setOutboundState("SELECTING_CATEGORY");
+    }
+  };
+
+  const handleCategorySelect = (category: ItemCategory) => {
+    setItemCategory(category);
+    setOutboundState("SCANNING_REQUEST");
+  };
+
+  const getCategoryName = (category: ItemCategory | null): string => {
+    if (!category) return "";
+    switch (category) {
+      case "FABRIC":
+        return "VẢI";
+      case "ACCESSORY":
+        return "PHỤ LIỆU";
+      case "PACKAGING":
+        return "ĐÓNG GÓI";
+      default:
+        return "";
+    }
+  };
+
+  // --- LOGIC NHẬP KHO (INBOUND) ---
   const handleInboundScan = async (qrCode: string) => {
     try {
       const data = await fetchScannedData(qrCode);
@@ -87,7 +119,6 @@ const QRScanInterfacePage: React.FC = () => {
         }
       } else if (inboundState === "AWAITING_ITEMS") {
         if (data.type === "item") {
-          // Kiểm tra xem item đã được quét chưa
           if (
             scannedItemsForPutAway.some((item) => item.qrCode === data.qrCode)
           ) {
@@ -98,8 +129,9 @@ const QRScanInterfacePage: React.FC = () => {
             toast.error(
               `Cảnh báo: Vật tư này đã có vị trí (${
                 (data as ScannedItem).currentLocation
-              }).`
+              }). Dùng chức năng Chuyển Kho.`
             );
+            return;
           }
           setScannedItemsForPutAway((prev) => [...prev, data as ScannedItem]);
           toast.success(`Đã quét vật tư: ${data.sku}`);
@@ -118,10 +150,7 @@ const QRScanInterfacePage: React.FC = () => {
       return;
     }
     setInboundState("PROCESSING");
-    setFeedback({
-      status: "PROCESSING",
-      message: "Đang cập nhật vị trí cho các vật tư...",
-    });
+    setFeedback({ status: "PROCESSING", message: "Đang cập nhật vị trí..." });
     try {
       const result = await submitPutAwayAction(
         scannedItemsForPutAway,
@@ -136,7 +165,7 @@ const QRScanInterfacePage: React.FC = () => {
     }
   };
 
-  // --- LOGIC CHO LUỒNG XUẤT KHO (OUTBOUND) - Không thay đổi ---
+  // --- LOGIC XUẤT KHO (OUTBOUND) ---
   const handleOutboundScan = async (qrCode: string) => {
     try {
       const data = await fetchScannedData(qrCode);
@@ -146,27 +175,27 @@ const QRScanInterfacePage: React.FC = () => {
           setOutboundState("REQUEST_LOADED");
           toast.success(`Đã tải phiếu yêu cầu: ${data.id}`);
         } else {
-          toast.error("Vui lòng quét mã PHIẾU YÊU CẦU.");
+          toast.error(
+            `Vui lòng quét mã PHIẾU YÊU CẦU ${getCategoryName(itemCategory)}.`
+          );
         }
-      } else if (outboundState === "SCANNING_ITEM_FOR_ISSUE") {
-        if (data.type === "item" && issueRequest) {
+      } else if (outboundState === "SCANNING_ITEM_FOR_ISSUE" && issueRequest) {
+        if (data.type === "item") {
           const itemInPickingList = issueRequest.pickingList.find(
             (p) => p.sku === data.sku
           );
-          if (itemInPickingList) {
-            if (
-              itemInPickingList.pickedQuantity >=
-              itemInPickingList.requiredQuantity
-            ) {
-              toast.error(`Đã lấy đủ số lượng cho mã hàng ${data.sku}.`);
-              return;
-            }
-            setScannedOutboundItem(data as ScannedItem);
-            setCurrentItemPickingInfo(itemInPickingList);
-            setOutboundState("AWAITING_QUANTITY");
-          } else {
+          if (!itemInPickingList) {
             toast.error(`Vật tư ${data.sku} không có trong phiếu yêu cầu này!`);
+            return;
           }
+          if (
+            itemInPickingList.pickedQuantity >=
+            itemInPickingList.requiredQuantity
+          ) {
+            toast.error(`Đã lấy đủ số lượng cho mã hàng ${data.sku}.`);
+            return;
+          }
+          await handleIssueSubmit(data as ScannedItem);
         } else {
           toast.error("Vui lòng quét mã VẬT TƯ.");
         }
@@ -176,61 +205,114 @@ const QRScanInterfacePage: React.FC = () => {
     }
   };
 
-  const handleIssueSubmit = async (quantity: number) => {
-    if (!issueRequest || !scannedOutboundItem) return;
+  const handleIssueSubmit = async (scannedItem: ScannedItem) => {
+    if (!issueRequest) return;
     setOutboundState("PROCESSING_ISSUE");
-    setFeedback({ status: "PROCESSING", message: "Đang ghi nhận xuất kho..." });
+    setFeedback({
+      status: "PROCESSING",
+      message: `Đang xuất kho ${scannedItem.name}...`,
+    });
     try {
       const result = await submitIssueAction(
         issueRequest,
-        scannedOutboundItem,
-        quantity
+        scannedItem,
+        scannedItem.quantity
       );
-      setIssueRequest(result.updatedRequest); // Cập nhật lại request với số lượng mới
+      setIssueRequest(result.updatedRequest);
       setFeedback({ status: "SUCCESS", message: result.message });
     } catch (error) {
       handleError(error);
     }
   };
 
+  // --- LOGIC CHUYỂN KHO (TRANSFER) ---
+  const handleTransferScan = async (qrCode: string) => {
+    try {
+      const data = await fetchScannedData(qrCode);
+      if (transferState === "SCANNING_ITEM_TO_MOVE") {
+        if (data.type === "item") {
+          if (!data.currentLocation) {
+            toast.error(
+              "Vật tư này chưa có vị trí. Vui lòng dùng chức năng Nhập Kho."
+            );
+            return;
+          }
+          setItemToMove(data as ScannedItem);
+          setTransferState("SCANNING_NEW_LOCATION");
+          toast.success(
+            `Đã chọn vật tư: ${data.name}. Giờ hãy quét vị trí mới.`
+          );
+        } else {
+          toast.error("Vui lòng quét mã VẬT TƯ cần chuyển.");
+        }
+      } else if (transferState === "SCANNING_NEW_LOCATION" && itemToMove) {
+        if (data.type === "location") {
+          if (data.locationCode === itemToMove.currentLocation) {
+            toast.error("Vị trí mới không được trùng với vị trí cũ.");
+            return;
+          }
+          await handleTransferSubmit(itemToMove, data as ScannedLocation);
+        } else {
+          toast.error("Vui lòng quét mã VỊ TRÍ KHO mới.");
+        }
+      }
+    } catch (error) {
+      handleError(error);
+    }
+  };
+
+  const handleTransferSubmit = async (
+    item: ScannedItem,
+    newLocation: ScannedLocation
+  ) => {
+    setTransferState("PROCESSING");
+    setFeedback({
+      status: "PROCESSING",
+      message: `Đang chuyển ${item.name} đến ${newLocation.locationCode}...`,
+    });
+    try {
+      const result = await submitTransferAction(item, newLocation);
+      setFeedback({ status: "SUCCESS", message: result.message });
+    } catch (error) {
+      handleError(error);
+    }
+  };
+
+  const renderFeedback = () => (
+    <ActionFeedback
+      status={feedback.status as "PROCESSING" | "SUCCESS" | "ERROR"}
+      message={feedback.message}
+      onClose={() => {
+        if (mode === "INBOUND") {
+          setInboundState("SCANNING_LOCATION");
+          setScannedInboundLocation(null);
+          setScannedItemsForPutAway([]);
+        }
+        if (mode === "OUTBOUND") {
+          setOutboundState("REQUEST_LOADED");
+        }
+        if (mode === "TRANSFER") {
+          setTransferState("SCANNING_ITEM_TO_MOVE");
+          setItemToMove(null);
+        }
+        setFeedback({ status: "HIDDEN", message: "" });
+      }}
+    />
+  );
+
   const renderContent = () => {
-    if (
-      feedback.status === "PROCESSING" ||
-      feedback.status === "SUCCESS" ||
-      feedback.status === "ERROR"
-    ) {
-      return (
-        <ActionFeedback
-          status={feedback.status}
-          message={feedback.message}
-          onClose={() => {
-            // Sau khi xử lý xong, quay lại bước phù hợp
-            if (mode === "INBOUND") {
-              resetInboundState(); // Quay lại bước quét vị trí
-            }
-            if (mode === "OUTBOUND") {
-              setOutboundState("REQUEST_LOADED"); // Quay lại màn hình picking list
-              setScannedOutboundItem(null);
-              setCurrentItemPickingInfo(null);
-            }
-            setFeedback({ status: "HIDDEN", message: "" });
-          }}
-        />
-      );
-    }
+    if (feedback.status !== "HIDDEN") return renderFeedback();
+    if (mode === "SELECT")
+      return <ModeSelector onSelectMode={handleModeSelect} />;
 
-    if (mode === "SELECT") {
-      return <ModeSelector onSelectMode={setMode} />;
-    }
-
-    // --- RENDER LUỒNG NHẬP KHO - Cập nhật lại ---
+    // --- RENDER LUỒNG NHẬP KHO ---
     if (mode === "INBOUND") {
       switch (inboundState) {
         case "SCANNING_LOCATION":
           return (
             <Scanner
               onScan={handleInboundScan}
-              scanPrompt="NHẬP KHO: Vui lòng quét mã QR của VỊ TRÍ KHO"
+              scanPrompt="NHẬP KHO: Quét mã VỊ TRÍ KHO"
               mode={mode}
             />
           );
@@ -242,23 +324,36 @@ const QRScanInterfacePage: React.FC = () => {
                 scannedItems={scannedItemsForPutAway}
                 onScanItem={handleInboundScan}
                 onSubmit={handlePutAwaySubmit}
-                onCancel={resetInboundState} // Nút Hủy sẽ reset lại từ đầu
+                onCancel={() => {
+                  setInboundState("SCANNING_LOCATION");
+                  setScannedInboundLocation(null);
+                  setScannedItemsForPutAway([]);
+                }}
               />
             )
           );
         default:
-          return <div>Trạng thái không xác định</div>;
+          return null;
       }
     }
 
-    // --- RENDER LUỒNG XUẤT KHO - Không thay đổi ---
+    // --- RENDER LUỒNG XUẤT KHO ---
     if (mode === "OUTBOUND") {
       switch (outboundState) {
+        case "SELECTING_CATEGORY":
+          return (
+            <CategorySelector
+              onSelectCategory={handleCategorySelect}
+              onBack={() => setMode("SELECT")}
+            />
+          );
         case "SCANNING_REQUEST":
           return (
             <Scanner
               onScan={handleOutboundScan}
-              scanPrompt="XUẤT KHO: Vui lòng quét mã PHIẾU YÊU CẦU"
+              scanPrompt={`XUẤT ${getCategoryName(
+                itemCategory
+              )}: Quét mã PHIẾU YÊU CẦU`}
               mode={mode}
             />
           );
@@ -271,8 +366,9 @@ const QRScanInterfacePage: React.FC = () => {
                   setOutboundState("SCANNING_ITEM_FOR_ISSUE")
                 }
                 onBack={() => {
-                  setOutboundState("SCANNING_REQUEST");
+                  setOutboundState("SELECTING_CATEGORY");
                   setIssueRequest(null);
+                  setItemCategory(null);
                 }}
               />
             )
@@ -281,24 +377,52 @@ const QRScanInterfacePage: React.FC = () => {
           return (
             <Scanner
               onScan={handleOutboundScan}
-              scanPrompt={`Phiếu ${issueRequest?.id}: Quét mã VẬT TƯ cần lấy`}
+              scanPrompt={`Phiếu ${issueRequest?.id}: Quét ${getCategoryName(
+                itemCategory
+              )} cần lấy`}
               mode={mode}
             />
           );
-        case "AWAITING_QUANTITY":
+        default:
+          return null;
+      }
+    }
+
+    // --- RENDER LUỒNG CHUYỂN KHO ---
+    if (mode === "TRANSFER") {
+      switch (transferState) {
+        case "SCANNING_ITEM_TO_MOVE":
           return (
-            scannedOutboundItem &&
-            currentItemPickingInfo && (
-              <IssueQuantityInput
-                item={scannedOutboundItem}
-                pickingInfo={currentItemPickingInfo}
-                onSubmit={handleIssueSubmit}
-                onCancel={() => setOutboundState("SCANNING_ITEM_FOR_ISSUE")}
+            <Scanner
+              onScan={handleTransferScan}
+              scanPrompt="CHUYỂN KHO: Quét VẬT TƯ cần chuyển"
+              mode={mode}
+            />
+          );
+        case "SCANNING_NEW_LOCATION":
+          return (
+            <div className="text-center">
+              <div className="p-4 bg-blue-100 border border-blue-300 rounded-lg mb-4 max-w-md mx-auto">
+                <p className="font-semibold">Đang chuyển vật tư:</p>
+                <div className="font-mono text-blue-800 text-lg flex items-center justify-center gap-2 mt-1">
+                  <Package size={20} /> {itemToMove?.name}
+                </div>
+                <p className="text-sm">
+                  Từ vị trí:{" "}
+                  <span className="font-mono">
+                    {itemToMove?.currentLocation}
+                  </span>
+                </p>
+              </div>
+              <Scanner
+                onScan={handleTransferScan}
+                scanPrompt="Quét VỊ TRÍ KHO mới"
+                mode={mode}
               />
-            )
+            </div>
           );
         default:
-          return <div>Trạng thái không xác định</div>;
+          return null;
       }
     }
   };
