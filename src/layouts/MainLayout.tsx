@@ -341,7 +341,7 @@ const Sidebar = ({ isForMobile = false }: { isForMobile?: boolean }) => {
           {effectiveIsCollapsed && <MoreHorizontal className="w-8 h-8" />}
         </div>
 
-        <nav className="flex-1 p-2 space-y-1 overflow-y-auto no-scrollbar">
+        <nav className="flex-1 p-2 space-y-1 overflow-y-auto scrollbar-hide">
           {sidebarNavItems.map((item) => (
             <MenuItem key={item.key} item={item} />
           ))}
