@@ -17,6 +17,10 @@ export type TransferScanState = 'SCANNING_ITEM_TO_MOVE' | 'SCANNING_NEW_LOCATION
 export type OutboundScanState = 'SELECTING_CATEGORY' | 'SCANNING_REQUEST' | 'REQUEST_LOADED' | 'SCANNING_ITEM_FOR_ISSUE' | 'PROCESSING_ISSUE';
 
 // --- Types chung không thay đổi nhiều ---
+
+// ADD THIS TYPE: Định nghĩa các hành động có thể thực hiện sau khi quét 1 vật tư
+export type ScanAction = 'PUT_AWAY' | 'TRANSFER';
+
 export type PickingListItem = {
   sku: string;
   name: string;
@@ -34,7 +38,7 @@ export type IssueRequest = {
   status: 'new' | 'in_progress' | 'completed';
   pickingList: PickingListItem[];
   // NEW: Thêm category để có thể lọc phiếu yêu cầu sau này
-  category: ItemCategory; 
+  category: ItemCategory;
 };
 
 export type ScannedItem = {
