@@ -57,5 +57,5 @@ Quality
 Availability (Other Phase)
 Ability (Other Phase)
 
-Khi bắt đầu vào ứng dụng, sẽ hiển thị 6 module chính là: Warehouse, Cutting, Sewing, Buffer/Supermarket, Decoration, Finish Goods WH.
-Khi ấn vào từng module sẽ hiển thị các chức năng tương ứng trong module đó. Có nút để quay về màn hình chính 6 module.
+Khi bắt đầu vào ứng dụng, sẽ hiển thị 3 module chính là: Kho vải, Kho phụ liệu, kho đóng gói.
+Khi ấn vào từng module sẽ hiển thị các chức năng tương ứng trong module đó. Có nút để quay về màn hình chính 3 module.

@@ -25,22 +25,21 @@ const InboundPutAway: React.FC<InboundPutAwayProps> = ({
       <div className="bg-white rounded-lg shadow-lg p-6 border border-gray-200">
         <div className="text-center mb-4 border-b pb-4">
           <Warehouse className="mx-auto h-12 w-12 text-blue-500 mb-2" />
-          <h2 className="text-xl font-bold text-gray-800">Cất Hàng Vào Kho</h2>
+          <h2 className="text-xl font-bold text-gray-800">Cất Vải Vào Kho</h2>
           <p className="text-sm text-gray-500">Vị trí đã chọn:</p>
           <p className="font-mono text-blue-600 bg-blue-100 px-3 py-1 rounded-full inline-block mt-1">
             {location.locationCode}
           </p>
         </div>
 
-        {/* Danh sách các vật tư đã quét */}
         <div className="mb-4">
           <h3 className="font-semibold text-gray-700 mb-2">
-            Các vật tư đã quét ({scannedItems.length}):
+            Các cuộn vải đã quét ({scannedItems.length}):
           </h3>
           <div className="max-h-40 overflow-y-auto space-y-2 pr-2">
             {scannedItems.length === 0 ? (
               <p className="text-center text-gray-500 italic py-4">
-                Chưa có vật tư nào được quét.
+                Chưa có cuộn vải nào được quét.
               </p>
             ) : (
               scannedItems.map((item) => (
@@ -56,12 +55,11 @@ const InboundPutAway: React.FC<InboundPutAwayProps> = ({
           </div>
         </div>
 
-        {/* Khu vực quét */}
         <div className="mt-4">
           <Scanner
             onScan={onScanItem}
-            scanPrompt="Tiếp tục quét mã QR trên các cuộn vải/thùng hàng"
-            mode="INBOUND"
+            scanPrompt="Tiếp tục quét mã QR trên các cuộn vải"
+            context="PUT_AWAY_ITEM"
           />
         </div>
       </div>

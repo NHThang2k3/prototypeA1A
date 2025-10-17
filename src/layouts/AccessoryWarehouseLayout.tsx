@@ -1,5 +1,6 @@
+// Path: src/layouts/AccessoryWarehouseLayout.tsx
 import { useState, createContext, useContext, useEffect } from "react";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { NavLink, Outlet, useLocation, Link } from "react-router-dom";
 import {
   Menu,
   X,
@@ -7,26 +8,13 @@ import {
   Truck,
   Bell,
   User,
-  KanbanSquare,
-  Network,
   QrCode,
-  FileOutput,
   Boxes,
-  Package,
   ScrollText,
-  ListPlus,
-  Upload,
   ChevronDown,
   ChevronLeft,
-  Zap,
-  ShieldCheck,
-  CalendarCheck,
-  Wrench,
-  FileText,
-  BarChart,
-  BellRing,
-  Settings,
   MoreHorizontal,
+  ArrowLeft,
   type LucideIcon,
 } from "lucide-react";
 
@@ -38,156 +26,41 @@ type NavItem = {
   children?: NavItem[];
 };
 
-// --- UPDATED: Cập nhật lại các đường dẫn 'path' ---
+// --- Menu Sidebar cho Kho Phụ Liệu ---
 const sidebarNavItems: NavItem[] = [
   {
-    title: "Productivity",
-    icon: Zap,
-    key: "productivity",
-    children: [
-      {
-        title: "Kanban Board & Planning",
-        icon: KanbanSquare,
-        key: "productivity-kanban",
-        children: [
-          {
-            title: "Dashboard Hàng Nhập",
-            path: "/dashboard",
-            icon: LayoutDashboard,
-            key: "dashboard",
-          },
-          {
-            title: "Quản lý Tồn Kho",
-            path: "/inventory",
-            icon: Truck,
-            key: "inventory",
-          },
-          {
-            title: "Bảng Kanban",
-            path: "/kanban",
-            icon: KanbanSquare,
-            key: "kanban",
-          },
-        ],
-      },
-      {
-        title: "Receipt",
-        icon: ScrollText,
-        key: "productivity-receipt",
-        children: [
-          {
-            title: "Upfile Packing List",
-            path: "/import-packing-list",
-            icon: Upload,
-            key: "import-packing-list",
-          },
-          {
-            title: "QL Packing List/InQR",
-            path: "/packing-list",
-            icon: ListPlus,
-            key: "packing-list",
-          },
-          {
-            title: "Chi tiết lô hàng",
-            path: "/shipments/7c3b9a1d",
-            icon: Truck,
-            key: "shipment-detail",
-          },
-          {
-            title: "Báo cáo xuất kho",
-            path: "/reports/issues",
-            icon: ScrollText,
-            key: "reports-issues",
-          },
-        ],
-      },
-      {
-        title: "Inventory Tracking",
-        icon: Boxes,
-        key: "productivity-inventory",
-        children: [
-          // Tất cả các mục này đều trỏ đến trang quét chung
-          {
-            title: "Quét Xuất Vải", // Đổi tên cho phù hợp
-            path: "/qr-scan",
-            icon: FileOutput,
-            key: "issue-fabric",
-          },
-          {
-            title: "Quét Xuất Phụ Liệu", // Đổi tên cho phù hợp
-            path: "/qr-scan",
-            icon: Boxes,
-            key: "issue-accessory",
-          },
-          {
-            title: "Quét Xuất Đóng Gói", // Đổi tên cho phù hợp
-            path: "/qr-scan",
-            icon: Package,
-            key: "issue-packaging",
-          },
-        ],
-      },
-      {
-        title: "Delivery transaction",
-        icon: Network,
-        key: "productivity-delivery",
-        children: [
-          {
-            title: "Quản lý vị trí",
-            path: "/locations",
-            icon: Network,
-            key: "locations",
-          },
-          {
-            title: "Quét Mã QR Chung", // Đổi tên cho rõ ràng
-            path: "/qr-scan",
-            icon: QrCode,
-            key: "qr-scan",
-          },
-        ],
-      },
-    ],
+    title: "Dashboard",
+    path: "/accessory-warehouse/dashboard",
+    icon: LayoutDashboard,
+    key: "dashboard",
   },
   {
-    title: "Quality",
-    icon: ShieldCheck,
-    key: "quality",
-    children: [
-      {
-        title: "QC Management (Reuse)",
-        path: "#",
-        icon: FileText,
-        key: "qc-management",
-      },
-      {
-        title: "Record Supplier KPI (Reuse)",
-        path: "#",
-        icon: BarChart,
-        key: "supplier-kpi",
-      },
-      {
-        title: "Material Issue Notification (Reuse)",
-        path: "#",
-        icon: BellRing,
-        key: "material-issue",
-      },
-      { title: "Action Plan", path: "#", icon: Settings, key: "action-plan" },
-    ],
+    title: "Quản lý Tồn Kho",
+    path: "/accessory-warehouse/inventory",
+    icon: Truck,
+    key: "inventory",
   },
   {
-    title: "Availability (Other Phase)",
-    icon: CalendarCheck,
-    key: "availability",
-    path: "#",
+    title: "Xuất Kho Phụ Liệu",
+    path: "/accessory-warehouse/issue",
+    icon: Boxes,
+    key: "issue-accessory",
   },
   {
-    title: "Ability (Other Phase)",
-    icon: Wrench,
-    key: "ability",
-    path: "#",
+    title: "Báo cáo Xuất Kho",
+    path: "/accessory-warehouse/reports/issues",
+    icon: ScrollText,
+    key: "reports-issues",
+  },
+  {
+    title: "Quét Mã QR",
+    path: "/accessory-warehouse/qr-scan",
+    icon: QrCode,
+    key: "qr-scan",
   },
 ];
 
+// --- Context và các Component con (giữ nguyên logic) ---
 type SidebarContextType = {
   isCollapsed: boolean;
   openKeys: string[];
@@ -204,6 +77,7 @@ const useSidebar = () => {
 
 const MenuItem = ({ item }: { item: NavItem }) => {
   const { isCollapsed, openKeys, toggleMenu, isLinkActive } = useSidebar();
+  const location = useLocation();
   const hasChildren = item.children && item.children.length > 0;
   const isOpen = openKeys.includes(item.key);
   const isActive = isLinkActive(item.path, item.children);
@@ -249,12 +123,7 @@ const MenuItem = ({ item }: { item: NavItem }) => {
     );
   }
 
-  // UPDATED: Logic để xử lý active state cho các link cùng trỏ về /qr-scan
-  // Chỉ active link chính "Quét Mã QR Chung" khi ở trang /qr-scan
-  // Các link phụ (Quét Xuất Vải, etc.) sẽ không tự active để tránh nhầm lẫn.
-  const isActuallyActive =
-    item.key === "qr-scan" && location.pathname === "/qr-scan";
-
+  const isActuallyActive = location.pathname === item.path;
   return (
     <NavLink
       to={item.path || "#"}
@@ -276,43 +145,19 @@ const Sidebar = ({ isForMobile = false }: { isForMobile?: boolean }) => {
   const [openKeys, setOpenKeys] = useState<string[]>([]);
   const location = useLocation();
 
-  // Mở menu cha của item đang active khi tải trang
   useEffect(() => {
-    const findParentKeys = (items: NavItem[], path: string): string[] => {
-      for (const item of items) {
-        if (item.children) {
-          const childPaths = item.children.map((c) => c.path).filter(Boolean);
-          if (
-            childPaths.includes(path) ||
-            item.children.some(
-              (c) => c.children && findParentKeys([c], path).length > 0
-            )
-          ) {
-            const parentKeys = findParentKeys(item.children, path);
-            return [item.key, ...parentKeys];
-          }
-        }
-      }
-      return [];
-    };
-
-    const activeParentKeys = findParentKeys(sidebarNavItems, location.pathname);
-    setOpenKeys(activeParentKeys);
-  }, [location.pathname]);
+    setOpenKeys([]);
+  }, [location.pathname]); // Logic mở menu cha không cần thiết cho sidebar phẳng
 
   const toggleMenu = (key: string) => {
     setOpenKeys((prev) =>
       prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
     );
   };
-
   const isLinkActive = (path?: string, children?: NavItem[]): boolean => {
-    if (path && location.pathname === path) {
-      return true;
-    }
-    if (children) {
+    if (path && location.pathname.startsWith(path)) return true;
+    if (children)
       return children.some((child) => isLinkActive(child.path, child.children));
-    }
     return false;
   };
 
@@ -336,17 +181,15 @@ const Sidebar = ({ isForMobile = false }: { isForMobile?: boolean }) => {
               effectiveIsCollapsed ? "hidden" : ""
             }`}
           >
-            Kho Vải
+            Kho Phụ Liệu
           </span>
           {effectiveIsCollapsed && <MoreHorizontal className="w-8 h-8" />}
         </div>
-
         <nav className="flex-1 p-2 space-y-1 overflow-y-auto scrollbar-hide">
           {sidebarNavItems.map((item) => (
             <MenuItem key={item.key} item={item} />
           ))}
         </nav>
-
         {!isForMobile && (
           <div className="p-2 border-t border-gray-700">
             <button
@@ -373,10 +216,18 @@ const Sidebar = ({ isForMobile = false }: { isForMobile?: boolean }) => {
 
 const Header = ({ onMenuClick }: { onMenuClick: () => void }) => (
   <header className="bg-white border-b border-gray-200 p-4 flex justify-between items-center">
-    <button onClick={onMenuClick} className="lg:hidden text-gray-600">
-      <Menu className="w-6 h-6" />
-    </button>
-    <div className="hidden lg:block">{/* Placeholder */}</div>
+    <div className="flex items-center gap-4">
+      <button onClick={onMenuClick} className="lg:hidden text-gray-600">
+        <Menu className="w-6 h-6" />
+      </button>
+      <Link
+        to="/"
+        className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+      >
+        <ArrowLeft className="w-5 h-5" />
+        <span className="font-medium hidden sm:block">Chọn Module</span>
+      </Link>
+    </div>
     <div className="flex items-center space-x-4">
       <button className="text-gray-500 hover:text-gray-700">
         <Bell className="w-6 h-6" />
@@ -389,10 +240,9 @@ const Header = ({ onMenuClick }: { onMenuClick: () => void }) => (
   </header>
 );
 
-const MainLayout = () => {
+const AccessoryWarehouseLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
-
   useEffect(() => {
     setSidebarOpen(false);
   }, [location.pathname]);
@@ -402,7 +252,6 @@ const MainLayout = () => {
       <div className="hidden lg:flex flex-shrink-0">
         <Sidebar />
       </div>
-
       <div
         className={`lg:hidden fixed inset-0 z-40 transition-opacity duration-300 ${
           sidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none"
@@ -412,7 +261,6 @@ const MainLayout = () => {
           className="fixed inset-0 bg-black/60"
           onClick={() => setSidebarOpen(false)}
         ></div>
-
         <div
           className={`relative z-50 h-full transform transition-transform duration-300 ease-in-out ${
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
@@ -427,7 +275,6 @@ const MainLayout = () => {
           </button>
         </div>
       </div>
-
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header onMenuClick={() => setSidebarOpen(true)} />
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-4 sm:p-6">
@@ -438,4 +285,4 @@ const MainLayout = () => {
   );
 };
 
-export default MainLayout;
+export default AccessoryWarehouseLayout;

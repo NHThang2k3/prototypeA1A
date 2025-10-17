@@ -2,16 +2,12 @@
 
 import React, { useState, useCallback } from "react";
 import { toast, Toaster } from "react-hot-toast";
-import { ArrowLeft, Package } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import type {
-  OperationMode,
-  InboundScanState,
-  OutboundScanState,
-  TransferScanState,
-  ItemCategory,
   ScannedItem,
   ScannedLocation,
   IssueRequest,
+  ScannedData,
 } from "./types";
 import {
   fetchScannedData,
@@ -21,423 +17,336 @@ import {
 } from "./data";
 import Scanner from "./components/Scanner";
 import ActionFeedback from "./components/ActionFeedback";
-import ModeSelector from "./components/ModeSelector";
 import PickingList from "./components/PickingList";
 import InboundPutAway from "./components/InboundPutAway";
-import CategorySelector from "./components/CategorySelector";
+import TransferItem from "./components/TransferItem";
+
+// NEW: Thêm trường `details` vào trạng thái FEEDBACK
+type OperationState =
+  | { name: "AWAITING_FIRST_SCAN" }
+  | { name: "PUT_AWAY"; location: ScannedLocation; items: ScannedItem[] }
+  | { name: "TRANSFER"; item: ScannedItem }
+  | { name: "ISSUE"; request: IssueRequest }
+  | { name: "ISSUE_SCANNING_ITEM"; request: IssueRequest }
+  | { name: "PROCESSING"; message: string }
+  | {
+      name: "FEEDBACK";
+      status: "SUCCESS" | "ERROR";
+      message: string;
+      details?: {
+        type: "PUT_AWAY_SUCCESS";
+        items: ScannedItem[];
+        location: ScannedLocation;
+      };
+    };
+
+// NEW: Helper function để kiểm tra phiếu xuất đã hoàn thành chưa
+const isRequestCompleted = (request: IssueRequest): boolean => {
+  return request.pickingList.every(
+    (item) => item.pickedQuantity >= item.requiredQuantity
+  );
+};
 
 const QRScanInterfacePage: React.FC = () => {
-  // State chung
-  const [mode, setMode] = useState<OperationMode | "SELECT">("SELECT");
-  type FeedbackStatus = "HIDDEN" | "PROCESSING" | "SUCCESS" | "ERROR";
-  const [feedback, setFeedback] = useState<{
-    status: FeedbackStatus;
-    message: string;
-  }>({ status: "HIDDEN", message: "" });
+  const [operation, setOperation] = useState<OperationState>({
+    name: "AWAITING_FIRST_SCAN",
+  });
 
-  // State cho luồng Nhập Kho (Inbound)
-  const [inboundState, setInboundState] =
-    useState<InboundScanState>("SCANNING_LOCATION");
-  const [scannedInboundLocation, setScannedInboundLocation] =
-    useState<ScannedLocation | null>(null);
-  const [scannedItemsForPutAway, setScannedItemsForPutAway] = useState<
-    ScannedItem[]
-  >([]);
-
-  // State cho luồng Xuất Kho (Outbound)
-  const [outboundState, setOutboundState] =
-    useState<OutboundScanState>("SELECTING_CATEGORY");
-  const [issueRequest, setIssueRequest] = useState<IssueRequest | null>(null);
-  const [itemCategory, setItemCategory] = useState<ItemCategory | null>(null);
-
-  // State cho luồng Chuyển Kho (Transfer)
-  const [transferState, setTransferState] = useState<TransferScanState>(
-    "SCANNING_ITEM_TO_MOVE"
-  );
-  const [itemToMove, setItemToMove] = useState<ScannedItem | null>(null);
+  // ... (resetAllStates, handleError, handleScan, handleFirstScan, handlePutAwayItemScan không đổi)
 
   const resetAllStates = useCallback(() => {
-    setMode("SELECT");
-    setFeedback({ status: "HIDDEN", message: "" });
-    // Reset Inbound
-    setInboundState("SCANNING_LOCATION");
-    setScannedInboundLocation(null);
-    setScannedItemsForPutAway([]);
-    // Reset Outbound
-    setOutboundState("SELECTING_CATEGORY");
-    setIssueRequest(null);
-    setItemCategory(null);
-    // Reset Transfer
-    setTransferState("SCANNING_ITEM_TO_MOVE");
-    setItemToMove(null);
+    setOperation({ name: "AWAITING_FIRST_SCAN" });
   }, []);
 
-  const handleError = (error: unknown) => {
-    const errorMessage =
-      error instanceof Error ? error.message : "Đã xảy ra lỗi không xác định";
-    toast.error(errorMessage);
-    setFeedback({ status: "ERROR", message: errorMessage });
+  const handleError = (error: unknown, prefix?: string) => {
+    const errorMessage = (error as Error).message;
+    toast.error(prefix ? `${prefix}: ${errorMessage}` : errorMessage);
+    setOperation({
+      name: "FEEDBACK",
+      status: "ERROR",
+      message: errorMessage,
+    });
   };
 
-  const handleModeSelect = (selectedMode: OperationMode) => {
-    setMode(selectedMode);
-    if (selectedMode === "OUTBOUND") {
-      setOutboundState("SELECTING_CATEGORY");
-    }
-  };
-
-  const handleCategorySelect = (category: ItemCategory) => {
-    setItemCategory(category);
-    setOutboundState("SCANNING_REQUEST");
-  };
-
-  const getCategoryName = (category: ItemCategory | null): string => {
-    if (!category) return "";
-    switch (category) {
-      case "FABRIC":
-        return "VẢI";
-      case "ACCESSORY":
-        return "PHỤ LIỆU";
-      case "PACKAGING":
-        return "ĐÓNG GÓI";
-      default:
-        return "";
-    }
-  };
-
-  // --- LOGIC NHẬP KHO (INBOUND) ---
-  const handleInboundScan = async (qrCode: string) => {
+  const handleScan = async (qrCode: string) => {
     try {
       const data = await fetchScannedData(qrCode);
-      if (inboundState === "SCANNING_LOCATION") {
-        if (data.type === "location") {
-          setScannedInboundLocation(data as ScannedLocation);
-          setInboundState("AWAITING_ITEMS");
-          toast.success(`Đã chọn vị trí: ${data.locationCode}`);
-        } else {
-          toast.error("Vui lòng quét mã VỊ TRÍ KHO trước.");
-        }
-      } else if (inboundState === "AWAITING_ITEMS") {
-        if (data.type === "item") {
-          if (
-            scannedItemsForPutAway.some((item) => item.qrCode === data.qrCode)
-          ) {
-            toast.error("Vật tư này đã được quét rồi.");
-            return;
-          }
-          if ((data as ScannedItem).currentLocation) {
-            toast.error(
-              `Cảnh báo: Vật tư này đã có vị trí (${
-                (data as ScannedItem).currentLocation
-              }). Dùng chức năng Chuyển Kho.`
-            );
-            return;
-          }
-          setScannedItemsForPutAway((prev) => [...prev, data as ScannedItem]);
-          toast.success(`Đã quét vật tư: ${data.sku}`);
-        } else {
-          toast.error("Vui lòng quét mã VẬT TƯ (cuộn vải, thùng hàng...).");
-        }
+      switch (operation.name) {
+        case "AWAITING_FIRST_SCAN":
+          handleFirstScan(data);
+          break;
+        case "PUT_AWAY":
+          handlePutAwayItemScan(data);
+          break;
+        case "TRANSFER":
+          handleTransferLocationScan(data);
+          break;
+        case "ISSUE_SCANNING_ITEM":
+          handleIssueAndSubmitScan(data);
+          break;
       }
     } catch (error) {
-      handleError(error);
+      handleError(error, "Lỗi quét mã");
     }
   };
 
-  const handlePutAwaySubmit = async () => {
-    if (!scannedInboundLocation || scannedItemsForPutAway.length === 0) {
-      toast.error("Chưa có vật tư nào để cất vào kho.");
-      return;
+  const handleFirstScan = (data: ScannedData) => {
+    if (data.type === "location") {
+      setOperation({
+        name: "PUT_AWAY",
+        location: data as ScannedLocation,
+        items: [],
+      });
+      toast.success(`Bắt đầu tác vụ CẤT VẢI vào vị trí: ${data.locationCode}`);
+    } else if (data.type === "item") {
+      const item = data as ScannedItem;
+      if (!item.currentLocation) {
+        toast.error(
+          "Cuộn vải này chưa có vị trí, không thể CHUYỂN VỊ TRÍ. Vui lòng Cất vải trước."
+        );
+        return;
+      }
+      setOperation({ name: "TRANSFER", item: data as ScannedItem });
+      toast.success(`Bắt đầu tác vụ CHUYỂN VỊ TRÍ cho cuộn vải: ${data.sku}`);
+    } else if (data.type === "issue_request") {
+      setOperation({ name: "ISSUE", request: data as IssueRequest });
+      toast.success(`Bắt đầu tác vụ XUẤT KHO theo phiếu: ${data.id}`);
+    } else {
+      toast.error("Mã QR không phù hợp để bắt đầu một tác vụ.");
     }
-    setInboundState("PROCESSING");
-    setFeedback({ status: "PROCESSING", message: "Đang cập nhật vị trí..." });
+  };
+
+  const handlePutAwayItemScan = (data: ScannedData) => {
+    if (operation.name !== "PUT_AWAY") return;
+    if (data.type === "item") {
+      if (operation.items.some((item) => item.qrCode === data.qrCode)) {
+        toast.error("Cuộn vải này đã được quét rồi.");
+        return;
+      }
+      if ((data as ScannedItem).currentLocation) {
+        toast.error(
+          `Cảnh báo: Cuộn vải này đã có vị trí (${
+            (data as ScannedItem).currentLocation
+          }).`
+        );
+      }
+      setOperation({
+        ...operation,
+        items: [...operation.items, data as ScannedItem],
+      });
+      toast.success(`Đã thêm cuộn vải: ${data.sku}`);
+    } else {
+      toast.error("Vui lòng quét mã VẢI (cuộn vải).");
+    }
+  };
+
+  // UPDATED: handlePutAwaySubmit để truyền dữ liệu chi tiết
+  const handlePutAwaySubmit = async () => {
+    if (operation.name !== "PUT_AWAY" || operation.items.length === 0) return;
+    const { items, location } = operation;
+    setOperation({
+      name: "PROCESSING",
+      message: "Đang cập nhật vị trí cho các cuộn vải...",
+    });
     try {
-      const result = await submitPutAwayAction(
-        scannedItemsForPutAway,
-        scannedInboundLocation
-      );
-      setFeedback({
+      const result = await submitPutAwayAction(items, location);
+      setOperation({
+        name: "FEEDBACK",
         status: result.success ? "SUCCESS" : "ERROR",
         message: result.message,
+        details: {
+          // Truyền dữ liệu chi tiết vào đây
+          type: "PUT_AWAY_SUCCESS",
+          items: items,
+          location: location,
+        },
       });
     } catch (error) {
       handleError(error);
     }
   };
 
-  // --- LOGIC XUẤT KHO (OUTBOUND) ---
-  const handleOutboundScan = async (qrCode: string) => {
-    try {
-      const data = await fetchScannedData(qrCode);
-      if (outboundState === "SCANNING_REQUEST") {
-        if (data.type === "issue_request") {
-          setIssueRequest(data as IssueRequest);
-          setOutboundState("REQUEST_LOADED");
-          toast.success(`Đã tải phiếu yêu cầu: ${data.id}`);
-        } else {
-          toast.error(
-            `Vui lòng quét mã PHIẾU YÊU CẦU ${getCategoryName(itemCategory)}.`
-          );
-        }
-      } else if (outboundState === "SCANNING_ITEM_FOR_ISSUE" && issueRequest) {
-        if (data.type === "item") {
-          const itemInPickingList = issueRequest.pickingList.find(
-            (p) => p.sku === data.sku
-          );
-          if (!itemInPickingList) {
-            toast.error(`Vật tư ${data.sku} không có trong phiếu yêu cầu này!`);
-            return;
-          }
-          if (
-            itemInPickingList.pickedQuantity >=
-            itemInPickingList.requiredQuantity
-          ) {
-            toast.error(`Đã lấy đủ số lượng cho mã hàng ${data.sku}.`);
-            return;
-          }
-          await handleIssueSubmit(data as ScannedItem);
-        } else {
-          toast.error("Vui lòng quét mã VẬT TƯ.");
-        }
+  // ... (handleTransferLocationScan không đổi)
+  const handleTransferLocationScan = async (data: ScannedData) => {
+    if (operation.name !== "TRANSFER") return;
+    if (data.type === "location") {
+      setOperation({
+        name: "PROCESSING",
+        message: "Đang thực hiện chuyển vị trí...",
+      });
+      try {
+        const result = await submitTransferAction(
+          operation.item,
+          data as ScannedLocation
+        );
+        setOperation({
+          name: "FEEDBACK",
+          status: result.success ? "SUCCESS" : "ERROR",
+          message: result.message,
+        });
+      } catch (error) {
+        handleError(error);
       }
-    } catch (error) {
-      handleError(error);
+    } else {
+      toast.error("Vui lòng quét mã VỊ TRÍ KHO MỚI.");
     }
   };
 
-  const handleIssueSubmit = async (scannedItem: ScannedItem) => {
-    if (!issueRequest) return;
-    setOutboundState("PROCESSING_ISSUE");
-    setFeedback({
-      status: "PROCESSING",
-      message: `Đang xuất kho ${scannedItem.name}...`,
+  // UPDATED: handleIssueAndSubmitScan để kiểm tra hoàn thành
+  const handleIssueAndSubmitScan = async (data: ScannedData) => {
+    if (operation.name !== "ISSUE_SCANNING_ITEM") return;
+    const { request } = operation;
+
+    if (data.type !== "item") {
+      toast.error("Vui lòng quét mã VẢI.");
+      return;
+    }
+
+    const scannedItem = data as ScannedItem;
+    const itemInPickingList = request.pickingList.find(
+      (p) => p.sku === scannedItem.sku
+    );
+
+    if (!itemInPickingList) {
+      toast.error(`Vải ${scannedItem.sku} không có trong phiếu yêu cầu này!`);
+      return;
+    }
+    const remainingNeeded =
+      itemInPickingList.requiredQuantity - itemInPickingList.pickedQuantity;
+    if (remainingNeeded <= 0) {
+      toast.error(`Đã lấy đủ số lượng cho mã vải ${scannedItem.sku}.`);
+      return;
+    }
+    const quantityToIssue = Math.min(scannedItem.quantity, remainingNeeded);
+    if (quantityToIssue <= 0) {
+      toast.error(`Không thể lấy thêm vải từ cuộn này.`);
+      return;
+    }
+
+    setOperation({
+      name: "PROCESSING",
+      message: `Đang ghi nhận xuất ${quantityToIssue} ${scannedItem.uom}...`,
     });
     try {
       const result = await submitIssueAction(
-        issueRequest,
+        request,
         scannedItem,
-        scannedItem.quantity
+        quantityToIssue
       );
-      setIssueRequest(result.updatedRequest);
-      setFeedback({ status: "SUCCESS", message: result.message });
-    } catch (error) {
-      handleError(error);
-    }
-  };
 
-  // --- LOGIC CHUYỂN KHO (TRANSFER) ---
-  const handleTransferScan = async (qrCode: string) => {
-    try {
-      const data = await fetchScannedData(qrCode);
-      if (transferState === "SCANNING_ITEM_TO_MOVE") {
-        if (data.type === "item") {
-          if (!data.currentLocation) {
-            toast.error(
-              "Vật tư này chưa có vị trí. Vui lòng dùng chức năng Nhập Kho."
-            );
-            return;
-          }
-          setItemToMove(data as ScannedItem);
-          setTransferState("SCANNING_NEW_LOCATION");
-          toast.success(
-            `Đã chọn vật tư: ${data.name}. Giờ hãy quét vị trí mới.`
-          );
-        } else {
-          toast.error("Vui lòng quét mã VẬT TƯ cần chuyển.");
-        }
-      } else if (transferState === "SCANNING_NEW_LOCATION" && itemToMove) {
-        if (data.type === "location") {
-          if (data.locationCode === itemToMove.currentLocation) {
-            toast.error("Vị trí mới không được trùng với vị trí cũ.");
-            return;
-          }
-          await handleTransferSubmit(itemToMove, data as ScannedLocation);
-        } else {
-          toast.error("Vui lòng quét mã VỊ TRÍ KHO mới.");
-        }
+      // Kiểm tra xem phiếu đã hoàn thành sau khi cập nhật chưa
+      if (isRequestCompleted(result.updatedRequest)) {
+        // Nếu hoàn thành, hiển thị màn hình feedback cuối cùng
+        setOperation({
+          name: "FEEDBACK",
+          status: "SUCCESS",
+          message: `Đã hoàn thành soạn hàng cho phiếu ${result.updatedRequest.id}!`,
+        });
+      } else {
+        // Nếu chưa, quay lại màn hình quét để tiếp tục
+        setOperation({
+          name: "ISSUE_SCANNING_ITEM",
+          request: result.updatedRequest,
+        });
+        toast.success(result.message);
       }
     } catch (error) {
       handleError(error);
     }
   };
 
-  const handleTransferSubmit = async (
-    item: ScannedItem,
-    newLocation: ScannedLocation
-  ) => {
-    setTransferState("PROCESSING");
-    setFeedback({
-      status: "PROCESSING",
-      message: `Đang chuyển ${item.name} đến ${newLocation.locationCode}...`,
-    });
-    try {
-      const result = await submitTransferAction(item, newLocation);
-      setFeedback({ status: "SUCCESS", message: result.message });
-    } catch (error) {
-      handleError(error);
-    }
-  };
-
-  const renderFeedback = () => (
-    <ActionFeedback
-      status={feedback.status as "PROCESSING" | "SUCCESS" | "ERROR"}
-      message={feedback.message}
-      onClose={() => {
-        if (mode === "INBOUND") {
-          setInboundState("SCANNING_LOCATION");
-          setScannedInboundLocation(null);
-          setScannedItemsForPutAway([]);
-        }
-        if (mode === "OUTBOUND") {
-          setOutboundState("REQUEST_LOADED");
-        }
-        if (mode === "TRANSFER") {
-          setTransferState("SCANNING_ITEM_TO_MOVE");
-          setItemToMove(null);
-        }
-        setFeedback({ status: "HIDDEN", message: "" });
-      }}
-    />
-  );
-
+  // UPDATED: renderContent để truyền `details`
   const renderContent = () => {
-    if (feedback.status !== "HIDDEN") return renderFeedback();
-    if (mode === "SELECT")
-      return <ModeSelector onSelectMode={handleModeSelect} />;
+    switch (operation.name) {
+      // ... (các case khác giữ nguyên)
+      case "AWAITING_FIRST_SCAN":
+        return (
+          <Scanner
+            onScan={handleScan}
+            scanPrompt="Vui lòng quét mã QR để bắt đầu (Vị trí, Cuộn vải, hoặc Phiếu Yêu Cầu)"
+            context="INITIAL"
+          />
+        );
+      case "PUT_AWAY":
+        return (
+          <InboundPutAway
+            location={operation.location}
+            scannedItems={operation.items}
+            onScanItem={handleScan}
+            onSubmit={handlePutAwaySubmit}
+            onCancel={resetAllStates}
+          />
+        );
+      case "TRANSFER":
+        return (
+          <TransferItem
+            item={operation.item}
+            onScanLocation={handleScan}
+            onCancel={resetAllStates}
+          />
+        );
+      case "ISSUE":
+        return (
+          <PickingList
+            request={operation.request}
+            onStartScanning={() =>
+              setOperation({ ...operation, name: "ISSUE_SCANNING_ITEM" })
+            }
+            onBack={resetAllStates}
+          />
+        );
+      case "ISSUE_SCANNING_ITEM":
+        return (
+          <Scanner
+            onScan={handleScan}
+            scanPrompt={`Phiếu ${operation.request.id}: Quét mã VẢI cần lấy`}
+            context="ISSUE_ITEM"
+          />
+        );
 
-    // --- RENDER LUỒNG NHẬP KHO ---
-    if (mode === "INBOUND") {
-      switch (inboundState) {
-        case "SCANNING_LOCATION":
-          return (
-            <Scanner
-              onScan={handleInboundScan}
-              scanPrompt="NHẬP KHO: Quét mã VỊ TRÍ KHO"
-              mode={mode}
-            />
-          );
-        case "AWAITING_ITEMS":
-          return (
-            scannedInboundLocation && (
-              <InboundPutAway
-                location={scannedInboundLocation}
-                scannedItems={scannedItemsForPutAway}
-                onScanItem={handleInboundScan}
-                onSubmit={handlePutAwaySubmit}
-                onCancel={() => {
-                  setInboundState("SCANNING_LOCATION");
-                  setScannedInboundLocation(null);
-                  setScannedItemsForPutAway([]);
-                }}
-              />
-            )
-          );
-        default:
-          return null;
-      }
-    }
-
-    // --- RENDER LUỒNG XUẤT KHO ---
-    if (mode === "OUTBOUND") {
-      switch (outboundState) {
-        case "SELECTING_CATEGORY":
-          return (
-            <CategorySelector
-              onSelectCategory={handleCategorySelect}
-              onBack={() => setMode("SELECT")}
-            />
-          );
-        case "SCANNING_REQUEST":
-          return (
-            <Scanner
-              onScan={handleOutboundScan}
-              scanPrompt={`XUẤT ${getCategoryName(
-                itemCategory
-              )}: Quét mã PHIẾU YÊU CẦU`}
-              mode={mode}
-            />
-          );
-        case "REQUEST_LOADED":
-          return (
-            issueRequest && (
-              <PickingList
-                request={issueRequest}
-                onStartScanning={() =>
-                  setOutboundState("SCANNING_ITEM_FOR_ISSUE")
-                }
-                onBack={() => {
-                  setOutboundState("SELECTING_CATEGORY");
-                  setIssueRequest(null);
-                  setItemCategory(null);
-                }}
-              />
-            )
-          );
-        case "SCANNING_ITEM_FOR_ISSUE":
-          return (
-            <Scanner
-              onScan={handleOutboundScan}
-              scanPrompt={`Phiếu ${issueRequest?.id}: Quét ${getCategoryName(
-                itemCategory
-              )} cần lấy`}
-              mode={mode}
-            />
-          );
-        default:
-          return null;
-      }
-    }
-
-    // --- RENDER LUỒNG CHUYỂN KHO ---
-    if (mode === "TRANSFER") {
-      switch (transferState) {
-        case "SCANNING_ITEM_TO_MOVE":
-          return (
-            <Scanner
-              onScan={handleTransferScan}
-              scanPrompt="CHUYỂN KHO: Quét VẬT TƯ cần chuyển"
-              mode={mode}
-            />
-          );
-        case "SCANNING_NEW_LOCATION":
-          return (
-            <div className="text-center">
-              <div className="p-4 bg-blue-100 border border-blue-300 rounded-lg mb-4 max-w-md mx-auto">
-                <p className="font-semibold">Đang chuyển vật tư:</p>
-                <div className="font-mono text-blue-800 text-lg flex items-center justify-center gap-2 mt-1">
-                  <Package size={20} /> {itemToMove?.name}
-                </div>
-                <p className="text-sm">
-                  Từ vị trí:{" "}
-                  <span className="font-mono">
-                    {itemToMove?.currentLocation}
-                  </span>
-                </p>
-              </div>
-              <Scanner
-                onScan={handleTransferScan}
-                scanPrompt="Quét VỊ TRÍ KHO mới"
-                mode={mode}
-              />
-            </div>
-          );
-        default:
-          return null;
-      }
+      case "PROCESSING":
+      case "FEEDBACK":
+        return (
+          <ActionFeedback
+            status={
+              operation.name === "PROCESSING" ? "PROCESSING" : operation.status
+            }
+            message={operation.message}
+            onClose={resetAllStates}
+            details={
+              operation.name === "FEEDBACK" ? operation.details : undefined
+            }
+          />
+        );
+      default:
+        return <div>Trạng thái không xác định</div>;
     }
   };
 
+  // ... (phần return JSX không đổi)
   return (
     <div className="p-4 bg-gray-50 min-h-full">
       <Toaster position="top-center" reverseOrder={false} />
       <div className="container mx-auto">
-        {mode !== "SELECT" && (
+        {operation.name !== "AWAITING_FIRST_SCAN" &&
+          operation.name !== "ISSUE_SCANNING_ITEM" && (
+            <button
+              onClick={resetAllStates}
+              className="mb-4 flex items-center text-sm font-semibold text-blue-600 hover:text-blue-800"
+            >
+              <ArrowLeft size={16} className="mr-1" />
+              Bắt đầu lại
+            </button>
+          )}
+        {operation.name === "ISSUE_SCANNING_ITEM" && (
           <button
-            onClick={resetAllStates}
+            onClick={() =>
+              setOperation({ name: "ISSUE", request: operation.request })
+            }
             className="mb-4 flex items-center text-sm font-semibold text-blue-600 hover:text-blue-800"
           >
             <ArrowLeft size={16} className="mr-1" />
-            Chọn lại tác vụ
+            Xem lại phiếu yêu cầu
           </button>
         )}
         {renderContent()}

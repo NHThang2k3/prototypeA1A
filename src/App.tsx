@@ -1,7 +1,14 @@
 // Path: src/App.tsx
 
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import MainLayout from "./layouts/MainLayout";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+
+// Import Layouts
+import FabricWarehouseLayout from "./layouts/FabricWarehouseLayout";
+import AccessoryWarehouseLayout from "./layouts/AccessoryWarehouseLayout";
+import PackagingWarehouseLayout from "./layouts/PackagingWarehouseLayout";
+
+// Import Pages
+import HomePage from "./pages/home/HomePage";
 import InboundDashboardPage from "./pages/inbound-dashboard/InboundDashboardPage";
 import InventoryListPage from "./pages/inventory-list/InventoryListPage";
 import KanbanBoardPage from "./pages/kanban-board/KanbanBoardPage";
@@ -19,9 +26,13 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Tất cả các route bên trong đây sẽ sử dụng MainLayout */}
-        <Route path="/" element={<MainLayout />}>
-          <Route index element={<InboundDashboardPage />} />
+        {/* Route chính để chọn module */}
+        <Route path="/" element={<HomePage />} />
+
+        {/* === Module Kho Vải === */}
+        <Route path="/fabric-warehouse" element={<FabricWarehouseLayout />}>
+          {/* Chuyển hướng từ /fabric-warehouse sang dashboard */}
+          <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<InboundDashboardPage />} />
           <Route path="inventory" element={<InventoryListPage />} />
           <Route path="kanban" element={<KanbanBoardPage />} />
@@ -36,20 +47,49 @@ function App() {
           <Route path="locations" element={<LocationManagementPage />} />
           <Route path="qr-scan" element={<QRScanInterfacePage />} />
           <Route path="issue/fabric" element={<IssueFabricFormPage />} />
-
-          <Route path="issue/accessory" element={<IssueAccessoryFormPage />} />
-          <Route path="issue/packaging" element={<IssuePackagingFormPage />} />
-
           <Route
             path="reports/issues"
             element={<IssueTransactionReportsPage />}
           />
-
           <Route path="packing-list" element={<PackingListManagementPage />} />
         </Route>
 
-        {/* Bạn có thể thêm các route không cần layout ở đây, ví dụ trang Login */}
-        {/* <Route path="/login" element={<LoginPage />} /> */}
+        {/* === Module Kho Phụ Liệu (Ví dụ) === */}
+        <Route
+          path="/accessory-warehouse"
+          element={<AccessoryWarehouseLayout />}
+        >
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<InboundDashboardPage />} /> // Tái
+          sử dụng dashboard
+          <Route path="inventory" element={<InventoryListPage />} /> // Tái sử
+          dụng trang tồn kho
+          <Route path="issue" element={<IssueAccessoryFormPage />} />
+          <Route
+            path="reports/issues"
+            element={<IssueTransactionReportsPage />}
+          />
+          <Route path="qr-scan" element={<QRScanInterfacePage />} />
+        </Route>
+
+        {/* === Module Kho Đóng Gói (Ví dụ) === */}
+        <Route
+          path="/packaging-warehouse"
+          element={<PackagingWarehouseLayout />}
+        >
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<InboundDashboardPage />} />
+          <Route path="inventory" element={<InventoryListPage />} />
+          <Route path="issue" element={<IssuePackagingFormPage />} />
+          <Route
+            path="reports/issues"
+            element={<IssueTransactionReportsPage />}
+          />
+          <Route path="qr-scan" element={<QRScanInterfacePage />} />
+        </Route>
+
+        {/* Redirect về trang chủ nếu không khớp route nào */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );
