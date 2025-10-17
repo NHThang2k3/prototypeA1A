@@ -1,0 +1,642 @@
+
+
+**Directory Tree:**
+
+```
+kanban-board/
+├── data.ts
+├── KanbanBoardPage.tsx
+├── types.ts
+└── components/
+    ├── AssigneeAvatar.tsx
+    ├── KanbanCard.tsx
+    ├── KanbanColumn.tsx
+    └── PriorityTag.tsx
+```
+
+--- D:\WATATECH\WH\src\pages\kanban-board\data.ts ---
+
+// Path: src/pages/kanban-board/data.ts
+
+import type { KanbanBoard } from "./types";
+
+export const mockBoards: KanbanBoard[] = [
+  {
+    id: "fabric-to-cutting",
+    name: "Kho Vải -> Cắt",
+    tasks: [
+      { id: 'task-1', requestId: 'RF-0123', title: 'Vải FVN-102-BLUE', details: '5 cây / 750m', department: 'Phòng Cắt', priority: 'Khẩn cấp', dueDate: '28/10/2023', assignee: { id: 'user-1', name: 'Văn A' } },
+      { id: 'task-2', requestId: 'RF-0124', title: 'Vải KTG-05-RED', details: '2 cây / 310m', department: 'Phòng Cắt', priority: 'Thường', dueDate: '29/10/2023' },
+      { id: 'task-3', requestId: 'RF-0125', title: 'Vải Denim-WASH', details: '10 cây / 1200m', department: 'Phòng Cắt', priority: 'Cao', dueDate: '28/10/2023', assignee: { id: 'user-2', name: 'Thị B' } },
+      { id: 'task-4', requestId: 'RF-0126', title: 'Vải Cotton 100%', details: '3 cây / 450m', department: 'Phòng Cắt', priority: 'Thường', dueDate: '30/10/2023', assignee: { id: 'user-2', name: 'Thị B' } },
+    ],
+    columns: [
+      { id: 'col-1', title: 'Yêu cầu mới', taskIds: ['task-1', 'task-2'] },
+      { id: 'col-2', title: 'Đang chuẩn bị', taskIds: ['task-3'] },
+      { id: 'col-3', title: 'Sẵn sàng giao', taskIds: ['task-4'] },
+      { id: 'col-4', title: 'Đã giao', taskIds: [] },
+    ],
+  },
+  {
+    id: "sewing-to-acc",
+    name: "May -> Kho Phụ Liệu",
+    tasks: [
+        { id: 'task-5', requestId: 'RA-551', title: 'Nút áo sơ mi', details: '5,000 cái', department: 'Chuyền May 1', priority: 'Cao', dueDate: '28/10/2023', assignee: { id: 'user-3', name: 'Văn C' } },
+        { id: 'task-6', requestId: 'RA-552', title: 'Chỉ may vắt sổ', details: '20 cuộn', department: 'Chuyền May 3', priority: 'Thường', dueDate: '29/10/2023', assignee: { id: 'user-3', name: 'Văn C' } },
+    ],
+    columns: [
+        { id: 'col-5', title: 'Yêu cầu mới', taskIds: ['task-5'] },
+        { id: 'col-6', title: 'Đang soạn hàng', taskIds: ['task-6'] },
+        { id: 'col-7', title: 'Đã giao', taskIds: [] },
+    ],
+  },
+];
+
+
+--- D:\WATATECH\WH\src\pages\kanban-board\KanbanBoardPage.tsx ---
+
+// Path: src/pages/kanban-board/KanbanBoardPage.tsx
+import React, { useState } from "react";
+import { DndContext, closestCorners } from "@dnd-kit/core";
+import type { DragEndEvent } from "@dnd-kit/core";
+import { mockBoards } from "./data";
+import type { KanbanBoard } from "./types";
+import KanbanColumn from "./components/KanbanColumn";
+
+const KanbanBoardPage = () => {
+  const [boards, setBoards] = useState<KanbanBoard[]>(mockBoards);
+  const [activeBoardId, setActiveBoardId] = useState<string>(mockBoards[0].id);
+
+  const activeBoard = boards.find((b) => b.id === activeBoardId);
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || !activeBoard) return;
+
+    // Nếu kéo card vào một vị trí khác
+    if (active.id !== over.id) {
+      setBoards((prevBoards) => {
+        const newBoards = [...prevBoards];
+        const boardIndex = newBoards.findIndex((b) => b.id === activeBoardId);
+        if (boardIndex === -1) return prevBoards;
+
+        const boardToUpdate = { ...newBoards[boardIndex] };
+
+        // Tìm cột chứa card đang kéo (active) và cột đích (over)
+        const activeContainer = boardToUpdate.columns.find((c) =>
+          c.taskIds.includes(active.id as string)
+        );
+        let overContainer = boardToUpdate.columns.find((c) =>
+          c.taskIds.includes(over.id as string)
+        );
+        if (!overContainer) {
+          overContainer = boardToUpdate.columns.find((c) => c.id === over.id);
+        }
+
+        if (
+          !activeContainer ||
+          !overContainer ||
+          activeContainer === overContainer
+        ) {
+          return prevBoards; // Không thay đổi nếu kéo trong cùng cột hoặc không tìm thấy cột
+        }
+
+        // Xóa card khỏi cột cũ
+        const activeContainerIndex = boardToUpdate.columns.findIndex(
+          (c) => c.id === activeContainer!.id
+        );
+        const newActiveTaskIds = activeContainer.taskIds.filter(
+          (id) => id !== active.id
+        );
+        boardToUpdate.columns[activeContainerIndex] = {
+          ...boardToUpdate.columns[activeContainerIndex],
+          taskIds: newActiveTaskIds,
+        };
+
+        // Thêm card vào cột mới
+        const overContainerIndex = boardToUpdate.columns.findIndex(
+          (c) => c.id === overContainer!.id
+        );
+        const newOverTaskIds = [...overContainer.taskIds, active.id as string];
+        boardToUpdate.columns[overContainerIndex] = {
+          ...boardToUpdate.columns[overContainerIndex],
+          taskIds: newOverTaskIds,
+        };
+
+        newBoards[boardIndex] = boardToUpdate;
+        return newBoards;
+      });
+    }
+  };
+
+  if (!activeBoard) {
+    return <div className="p-8">Không tìm thấy bảng công việc.</div>;
+  }
+
+  return (
+    <div className="p-6 md:p-8 bg-gray-50 min-h-full">
+      {/* Header của trang */}
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-800">
+          Bảng Công Việc Kanban
+        </h1>
+        <p className="text-gray-500 mt-1">
+          Trực quan hóa và theo dõi luồng yêu cầu vật tư.
+        </p>
+      </div>
+
+      {/* Tabs để chuyển đổi board */}
+      <div className="border-b border-gray-200 mb-6">
+        <nav className="-mb-px flex space-x-6" aria-label="Tabs">
+          {boards.map((board) => (
+            <button
+              key={board.id}
+              onClick={() => setActiveBoardId(board.id)}
+              className={`${`
+                board.id === activeBoardId
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              `} whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm`}
+            >
+              {board.name}
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      {/* Bảng Kanban */}
+      <DndContext onDragEnd={handleDragEnd} collisionDetection={closestCorners}>
+        <div className="flex space-x-4 overflow-x-auto pb-4">
+          {activeBoard.columns.map((column) => {
+            const tasks = column.taskIds
+              .map((taskId) => activeBoard.tasks.find((t) => t.id === taskId)!)
+              .filter(Boolean); // Lọc ra các task undefined nếu có lỗi dữ liệu
+
+            return (
+              <KanbanColumn key={column.id} column={column} tasks={tasks} />
+            );
+          })}
+        </div>
+      </DndContext>
+    </div>
+  );
+};
+
+export default KanbanBoardPage;
+
+
+--- D:\WATATECH\WH\src\pages\kanban-board\types.ts ---
+
+// Path: src/pages/kanban-board/types.ts
+
+export interface Assignee {
+  id: string;
+  name: string;
+  avatarUrl?: string; // URL ảnh đại diện
+}
+
+export type Priority = 'Khẩn cấp' | 'Cao' | 'Thường';
+
+export interface KanbanTask {
+  id: string;
+  requestId: string; // VD: "RF-0123"
+  title: string; // VD: "Vải FVN-102-BLUE"
+  details: string; // VD: "5 cây / 750m"
+  department: string; // VD: "Phòng Cắt"
+  priority: Priority;
+  assignee?: Assignee;
+  dueDate: string; // Ngày cần hàng
+}
+
+export interface KanbanColumn {
+  id: string; // VD: "todo", "inprogress", "done"
+  title: string;
+  taskIds: string[]; // Mảng chứa ID của các task trong cột này
+}
+
+export interface KanbanBoard {
+  id: string; // VD: "fabric-to-cutting"
+  name: string; // VD: "Kho Vải -> Cắt"
+  columns: KanbanColumn[];
+  tasks: KanbanTask[];
+}
+
+
+--- D:\WATATECH\WH\src\pages\kanban-board\components\AssigneeAvatar.tsx ---
+
+// Path: src/pages/kanban-board/components/AssigneeAvatar.tsx
+import React from "react";
+import type { Assignee } from "../types";
+
+interface Props {
+  assignee?: Assignee;
+}
+
+const AssigneeAvatar: React.FC<Props> = ({ assignee }) => {
+  if (!assignee) {
+    return null;
+  }
+
+  const initials = assignee.name
+    .split(" ")
+    .map((n) => n[0])
+    .join("");
+
+  return (
+    <div
+      title={assignee.name}
+      className="w-7 h-7 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold"
+    >
+      {assignee.avatarUrl ? (
+        <img
+          src={assignee.avatarUrl}
+          alt={assignee.name}
+          className="w-full h-full rounded-full"
+        />
+      ) : (
+        initials
+      )}
+    </div>
+  );
+};
+
+export default AssigneeAvatar;
+
+
+--- D:\WATATECH\WH\src\pages\kanban-board\components\KanbanCard.tsx ---
+
+// Path: src/pages/kanban-board/components/KanbanCard.tsx
+import React from "react";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import type { KanbanTask } from "../types";
+import PriorityTag from "./PriorityTag";
+import AssigneeAvatar from "./AssigneeAvatar";
+import { Calendar } from "lucide-react";
+
+interface Props {
+  task: KanbanTask;
+}
+
+const KanbanCard: React.FC<Props> = ({ task }) => {
+  const { attributes, listeners, setNodeRef, transform, transition } = 
+    useSortable({ id: task.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className="bg-white rounded-lg p-3 shadow-sm border border-gray-200 mb-3 cursor-grab active:cursor-grabbing"
+    >
+      <div className="flex justify-between items-start mb-2">
+        <span className="text-sm font-semibold text-gray-500">
+          {task.requestId}
+        </span>
+        <PriorityTag priority={task.priority} />
+      </div>
+      <p className="font-semibold text-gray-800 mb-1">{task.title}</p>
+      <p className="text-sm text-gray-600 mb-3">{task.details}</p>
+      <div className="flex justify-between items-center text-sm text-gray-500">
+        <div className="flex items-center space-x-2">
+          <Calendar className="w-4 h-4" />
+          <span>{task.dueDate}</span>
+        </div>
+        <AssigneeAvatar assignee={task.assignee} />
+      </div>
+    </div>
+  );
+};
+
+export default KanbanCard;
+
+
+--- D:\WATATECH\WH\src\pages\kanban-board\components\KanbanColumn.tsx ---
+
+// Path: src/pages/kanban-board/components/KanbanColumn.tsx
+import React from "react";
+import { SortableContext } from "@dnd-kit/sortable";
+import type { KanbanColumn as ColumnType, KanbanTask } from "../types";
+import KanbanCard from "./KanbanCard";
+
+interface Props {
+  column: ColumnType;
+  tasks: KanbanTask[];
+}
+
+const KanbanColumn: React.FC<Props> = ({ column, tasks }) => {
+  return (
+    <div className="w-80 flex-shrink-0 bg-gray-100 rounded-lg p-3 flex flex-col">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="font-semibold text-gray-700">{column.title}</h3>
+        <span className="bg-gray-300 text-gray-600 text-sm font-bold w-6 h-6 flex items-center justify-center rounded-full">
+          {tasks.length}
+        </span>
+      </div>
+      {/* Container cho các card, có thể scroll nếu quá nhiều */}
+      <div className="flex-1 overflow-y-auto">
+        <SortableContext items={tasks.map((t) => t.id)}>
+          {tasks.map((task) => (
+            <KanbanCard key={task.id} task={task} />
+          ))}
+        </SortableContext>
+      </div>
+    </div>
+  );
+};
+
+export default KanbanColumn;
+
+
+--- D:\WATATECH\WH\src\pages\kanban-board\components\PriorityTag.tsx ---
+
+// Path: src/pages/kanban-board/components/PriorityTag.tsx
+import React from "react";
+import type { Priority } from "../types";
+
+interface Props {
+  priority: Priority;
+}
+
+const PriorityTag: React.FC<Props> = ({ priority }) => {
+  const colorClasses = {
+    "Khẩn cấp": "bg-red-100 text-red-800",
+    Cao: "bg-yellow-100 text-yellow-800",
+    Thường: "bg-green-100 text-green-800",
+  };
+
+  return (
+    <span
+      className={`px-2 py-0.5 text-xs font-medium rounded-full ${colorClasses[priority]}`}
+    >
+      {priority}
+    </span>
+  );
+};
+
+export default PriorityTag;
+
+--- D:\WATATECH\WH\src\App.tsx ---
+
+// Path: src/App.tsx
+
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import MainLayout from "./layouts/MainLayout";
+import InboundDashboardPage from "./pages/inbound-dashboard/InboundDashboardPage";
+import InventoryListPage from "./pages/inventory-list/InventoryListPage";
+import KanbanBoardPage from "./pages/kanban-board/KanbanBoardPage";
+import ImportPackingListFormPage from "./pages/import-packing-list/ImportPackingListFormPage";
+import ShipmentDetailPage from "./pages/shipment-detail/ShipmentDetailPage";
+import LocationManagementPage from "./pages/location-management/LocationManagementPage";
+import QRScanInterfacePage from "./pages/qr-scan/QRScanInterfacePage";
+import IssueFabricFormPage from "./pages/issue-fabric-form/IssueFabricFormPage";
+import IssueAccessoryFormPage from "./pages/issue-accessory-form/IssueAccessoryFormPage";
+import IssuePackagingFormPage from "./pages/issue-packaging-form/IssuePackagingFormPage";
+import IssueTransactionReportsPage from "./pages/issue-transaction-reports/IssueTransactionReportsPage"; // <-- Import trang mới
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        {/* Tất cả các route bên trong đây sẽ sử dụng MainLayout */}
+        <Route path="/" element={<MainLayout />}>
+          <Route index element={<InboundDashboardPage />} />
+          <Route path="dashboard" element={<InboundDashboardPage />} />
+          <Route path="inventory" element={<InventoryListPage />} />
+          <Route path="kanban" element={<KanbanBoardPage />} />
+          <Route
+            path="import-packing-list"
+            element={<ImportPackingListFormPage />}
+          />
+          <Route
+            path="shipments/:shipmentId"
+            element={<ShipmentDetailPage />}
+          />
+          <Route path="locations" element={<LocationManagementPage />} />
+          <Route path="qr-scan" element={<QRScanInterfacePage />} />
+          <Route path="issue/fabric" element={<IssueFabricFormPage />} />
+
+          <Route path="issue/accessory" element={<IssueAccessoryFormPage />} />
+          <Route path="issue/packaging" element={<IssuePackagingFormPage />} />
+
+          <Route
+            path="reports/issues"
+            element={<IssueTransactionReportsPage />}
+          />
+        </Route>
+
+        {/* Bạn có thể thêm các route không cần layout ở đây, ví dụ trang Login */}
+        {/* <Route path="/login" element={<LoginPage />} /> */}
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+export default App;
+
+
+--- D:\WATATECH\WH\src\layouts\MainLayout.tsx ---
+
+// Path: src/layouts/MainLayout.tsx
+
+import React, { useState } from "react";
+import { NavLink, Outlet } from "react-router-dom";
+import {
+  Menu,
+  X,
+  LayoutDashboard,
+  Truck,
+  Bell,
+  User,
+  KanbanSquare,
+  Network,
+  QrCode,
+  FileOutput,
+  Boxes,
+  Package,
+  ScrollText,
+} from "lucide-react";
+
+const Sidebar = () => {
+  // Style chung cho NavLink
+  const linkClasses = "flex items-center px-4 py-2.5 rounded-lg";
+  const inactiveClasses = "text-gray-300 hover:bg-gray-700";
+  const activeClasses = "bg-gray-700 font-semibold text-white";
+
+  return (
+    <div className="bg-gray-800 text-white w-64 space-y-2 p-4 flex-shrink-0">
+      <div className="text-2xl font-bold mb-6">Kho Hàng Pro</div>
+      <nav>
+        <NavLink
+          to="/dashboard"
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <LayoutDashboard className="w-5 h-5 mr-3" />
+          Dashboard Hàng Nhập
+        </NavLink>
+
+        <NavLink
+          to="/inventory" // <--- THAY ĐỔI LINK
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <Truck className="w-5 h-5 mr-3" />
+          Quản lý Tồn kho
+        </NavLink>
+
+        <NavLink
+          to="/kanban"
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <KanbanSquare className="w-5 h-5 mr-3" />
+          Bảng Kanban
+        </NavLink>
+
+        <NavLink
+          to="/shipments/7c3b9a1d"
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <Truck className="w-5 h-5 mr-3" />
+          Shipment
+        </NavLink>
+
+        <NavLink
+          to="/locations"
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <Network className="w-5 h-5 mr-3" />
+          Quản lý Vị trí
+        </NavLink>
+
+        <NavLink
+          to="/qr-scan"
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <QrCode className="w-5 h-5 mr-3" />
+          Quét Mã QR
+        </NavLink>
+
+        <NavLink
+          to="/issue/fabric"
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <FileOutput className="w-5 h-5 mr-3" />
+          Tạo Phiếu Xuất Vải
+        </NavLink>
+
+        <NavLink
+          to="/issue/accessory" // <--- Route mới
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <Boxes className="w-5 h-5 mr-3" />
+          Tạo Phiếu Xuất Phụ liệu
+        </NavLink>
+
+        <NavLink
+          to="/issue/packaging"
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <Package className="w-5 h-5 mr-3" />
+          Tạo Phiếu Xuất Đóng Gói
+        </NavLink>
+
+        <NavLink
+          to="/reports/issues" // <-- Route mới
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <ScrollText className="w-5 h-5 mr-3" />
+          Báo cáo Xuất Kho
+        </NavLink>
+      </nav>
+    </div>
+  );
+};
+
+// Component Header đơn giản
+const Header = ({ onMenuClick }: { onMenuClick: () => void }) => (
+  <header className="bg-white border-b border-gray-200 p-4 flex justify-between items-center">
+    {/* Nút Menu cho mobile */}
+    <button onClick={onMenuClick} className="lg:hidden text-gray-600">
+      <Menu className="w-6 h-6" />
+    </button>
+    <div className="hidden lg:block">
+      {/* Placeholder, có thể là thanh search hoặc title */}
+    </div>
+    <div className="flex items-center space-x-4">
+      <button className="text-gray-500 hover:text-gray-700">
+        <Bell className="w-6 h-6" />
+      </button>
+      <div className="flex items-center space-x-2">
+        <User className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 p-1" />
+        <span className="text-sm font-medium text-gray-700">Admin</span>
+      </div>
+    </div>
+  </header>
+);
+
+const MainLayout = () => {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  return (
+    <div className="flex h-screen bg-gray-100">
+      {/* Sidebar cho Desktop */}
+      <div className="hidden lg:flex">
+        <Sidebar />
+      </div>
+
+      {/* Sidebar cho Mobile (Overlay) */}
+      {sidebarOpen && (
+        <div className="lg:hidden fixed inset-0 flex z-40">
+          <div
+            className="fixed inset-0 bg-black opacity-30"
+            onClick={() => setSidebarOpen(false)}
+          ></div>
+          <Sidebar />
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="absolute top-4 right-4 text-white"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+      )}
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Header onMenuClick={() => setSidebarOpen(true)} />
+        <main className="flex-1 overflow-x-hidden overflow-y-auto">
+          {/* Đây là nơi các trang con sẽ được render */}
+          <Outlet />
+        </main>
+      </div>
+    </div>
+  );
+};
+
+export default MainLayout;

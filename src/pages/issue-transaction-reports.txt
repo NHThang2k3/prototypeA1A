@@ -1,0 +1,658 @@
+
+
+**Directory Tree:**
+
+```
+issue-transaction-reports/
+├── data.ts
+├── IssueTransactionReportsPage.tsx
+├── types.ts
+└── components/
+    ├── PageHeader.tsx
+    ├── ReportFilters.tsx
+    ├── StatusBadge.tsx
+    ├── TransactionsTable.tsx
+    └── skeletons/
+        └── TableSkeleton.tsx
+```
+
+--- D:\WATATECH\WH\src\pages\issue-transaction-reports\data.ts ---
+
+// Path: src/pages/issue-transaction-reports/data.ts
+
+import type { IssueTransaction } from './types';
+
+export const mockTransactions: IssueTransaction[] = [
+  { id: 'IF-001', type: 'Xuất vải', createdAt: '2023-10-26T09:00:00Z', requestor: 'Phòng Cắt', productionOrder: 'PO-12345', status: 'Đã hoàn tất' },
+  { id: 'IA-001', type: 'Xuất phụ liệu', createdAt: '2023-10-26T11:30:00Z', requestor: 'Chuyền May 1', productionOrder: 'PO-12345', status: 'Đã hoàn tất' },
+  { id: 'IP-001', type: 'Xuất đóng gói', createdAt: '2023-10-27T14:00:00Z', requestor: 'Phòng Đóng Gói', productionOrder: 'PO-12345', status: 'Đang xử lý' },
+  { id: 'IF-002', type: 'Xuất vải', createdAt: '2023-10-28T08:15:00Z', requestor: 'Phòng Cắt', productionOrder: 'PO-67890', status: 'Mới yêu cầu' },
+  { id: 'IA-002', type: 'Xuất phụ liệu', createdAt: '2023-11-01T10:00:00Z', requestor: 'Chuyền May 2', productionOrder: 'PO-67890', status: 'Đã hủy' },
+  { id: 'IF-003', type: 'Xuất vải', createdAt: '2023-11-02T13:45:00Z', requestor: 'Phòng Mẫu', productionOrder: 'SAMPLE-001', status: 'Đã hoàn tất' },
+  { id: 'IP-002', type: 'Xuất đóng gói', createdAt: '2023-11-03T16:20:00Z', requestor: 'Phòng Đóng Gói', productionOrder: 'PO-67890', status: 'Đang xử lý' },
+];
+
+
+--- D:\WATATECH\WH\src\pages\issue-transaction-reports\IssueTransactionReportsPage.tsx ---
+
+// Path: src/pages/issue-transaction-reports/IssueTransactionReportsPage.tsx
+
+import React, { useState, useEffect } from "react";
+import PageHeader from "./components/PageHeader";
+import ReportFilters from "./components/ReportFilters";
+import TransactionsTable from "./components/TransactionsTable";
+import { mockTransactions } from "./data";
+import type { IssueTransaction } from "./types";
+
+const IssueTransactionReportsPage = () => {
+  const [transactions, setTransactions] = useState<IssueTransaction[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Logic lọc và tải dữ liệu sẽ nằm ở đây
+  useEffect(() => {
+    // Giả lập gọi API
+    setIsLoading(true);
+    setTimeout(() => {
+      // Trong thực tế, bạn sẽ lọc dữ liệu dựa trên state của các bộ lọc
+      setTransactions(mockTransactions);
+      setIsLoading(false);
+    }, 1000); // Giả lập độ trễ 1 giây
+  }, []);
+
+  const handleFilterChange = (filters: any) => {
+    // TODO: Xử lý logic lọc dữ liệu dựa trên filters từ component ReportFilters
+    console.log("Filters changed:", filters);
+    // Gọi lại API hoặc lọc dữ liệu mock tại đây
+  };
+
+  return (
+    <div className="p-6 bg-gray-100 min-h-full">
+      <PageHeader />
+      <ReportFilters onFilterChange={handleFilterChange} />
+      <TransactionsTable transactions={transactions} isLoading={isLoading} />
+      {/* Thêm Pagination ở đây nếu cần */}
+    </div>
+  );
+};
+
+export default IssueTransactionReportsPage;
+
+
+--- D:\WATATECH\WH\src\pages\issue-transaction-reports\types.ts ---
+
+// Path: src/pages/issue-transaction-reports/types.ts
+
+export type TransactionStatus = 'Đã hoàn tất' | 'Đang xử lý' | 'Mới yêu cầu' | 'Đã hủy';
+export type TransactionType = 'Xuất vải' | 'Xuất phụ liệu' | 'Xuất đóng gói';
+
+export interface IssueTransaction {
+  id: string;
+  type: TransactionType;
+  createdAt: string; // ISO date string
+  requestor: string;
+  productionOrder: string;
+  status: TransactionStatus;
+}
+
+export interface ReportFilters {
+  searchTerm: string;
+  status: string;
+  type: string;
+  dateRange: {
+    from: string;
+    to: string;
+  };
+}
+
+
+--- D:\WATATECH\WH\src\pages\issue-transaction-reports\components\PageHeader.tsx ---
+
+// Path: src/pages/issue-transaction-reports/components/PageHeader.tsx
+
+import React from "react";
+import { Download } from "lucide-react";
+
+const PageHeader = () => {
+  return (
+    <div className="bg-white p-4 shadow-sm mb-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">Báo cáo Xuất Kho</h1>
+          <p className="text-sm text-gray-500">
+            Xem và quản lý lịch sử các giao dịch xuất kho.
+          </p>
+        </div>
+        <button
+          className="flex items-center bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
+          onClick={() => alert("Chức năng xuất Excel đang được phát triển!")}
+        >
+          <Download className="w-4 h-4 mr-2" />
+          Xuất Excel
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default PageHeader;
+
+
+--- D:\WATATECH\WH\src\pages\issue-transaction-reports\components\ReportFilters.tsx ---
+
+// Path: src/pages/issue-transaction-reports/components/ReportFilters.tsx
+
+import React from "react";
+import { Search } from "lucide-react";
+
+// Giả sử bạn có prop onFilterChange để cập nhật state ở component cha
+interface ReportFiltersProps {
+  onFilterChange: (filters: any) => void;
+}
+
+const ReportFilters: React.FC<ReportFiltersProps> = ({ onFilterChange }) => {
+  // Trong thực tế, bạn sẽ dùng state để quản lý giá trị của các input
+  // và gọi onFilterChange khi có thay đổi.
+
+  return (
+    <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Search */}
+        <div className="relative">
+          <label className="text-sm font-medium text-gray-600 block mb-1">
+            Tìm kiếm Lệnh SX
+          </label>
+          <input
+            type="text"
+            placeholder="VD: PO-12345"
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+          />
+          <Search className="absolute left-3 top-9 w-5 h-5 text-gray-400" />
+        </div>
+
+        {/* Filter by Type */}
+        <div>
+          <label
+            htmlFor="type"
+            className="text-sm font-medium text-gray-600 block mb-1"
+          >
+            Loại phiếu
+          </label>
+          <select
+            id="type"
+            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+          >
+            <option value="">Tất cả</option>
+            <option value="Xuất vải">Xuất vải</option>
+            <option value="Xuất phụ liệu">Xuất phụ liệu</option>
+            <option value="Xuất đóng gói">Xuất đóng gói</option>
+          </select>
+        </div>
+
+        {/* Filter by Status */}
+        <div>
+          <label
+            htmlFor="status"
+            className="text-sm font-medium text-gray-600 block mb-1"
+          >
+            Trạng thái
+          </label>
+          <select
+            id="status"
+            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+          >
+            <option value="">Tất cả</option>
+            <option value="Mới yêu cầu">Mới yêu cầu</option>
+            <option value="Đang xử lý">Đang xử lý</option>
+            <option value="Đã hoàn tất">Đã hoàn tất</option>
+            <option value="Đã hủy">Đã hủy</option>
+          </select>
+        </div>
+
+        {/* Date Range Picker (giả lập bằng 2 input) */}
+        <div>
+          <label className="text-sm font-medium text-gray-600 block mb-1">
+            Ngày xuất
+          </label>
+          <div className="flex items-center space-x-2">
+            <input
+              type="date"
+              className="w-full p-2 border border-gray-300 rounded-lg"
+            />
+            <span className="text-gray-500">-</span>
+            <input
+              type="date"
+              className="w-full p-2 border border-gray-300 rounded-lg"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ReportFilters;
+
+
+--- D:\WATATECH\WH\src\pages\issue-transaction-reports\components\StatusBadge.tsx ---
+
+// Path: src/pages/issue-transaction-reports/components/StatusBadge.tsx
+
+import React from "react";
+import type { TransactionStatus } from "../types";
+
+interface StatusBadgeProps {
+  status: TransactionStatus;
+}
+
+const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
+  const statusStyles: Record<TransactionStatus, string> = {
+    "Đã hoàn tất": "bg-green-100 text-green-800",
+    "Đang xử lý": "bg-blue-100 text-blue-800",
+    "Mới yêu cầu": "bg-yellow-100 text-yellow-800",
+    "Đã hủy": "bg-red-100 text-red-800",
+  };
+
+  return (
+    <span
+      className={`px-2 py-1 text-xs font-medium rounded-full ${statusStyles[status]}`}
+    >
+      {status}
+    </span>
+  );
+};
+
+export default StatusBadge;
+
+
+--- D:\WATATECH\WH\src\pages\issue-transaction-reports\components\TransactionsTable.tsx ---
+
+// Path: src/pages/issue-transaction-reports/components/TransactionsTable.tsx
+
+import React from "react";
+import type { IssueTransaction } from "../types";
+import StatusBadge from "./StatusBadge";
+import { ChevronRight } from "lucide-react";
+
+interface TransactionsTableProps {
+  transactions: IssueTransaction[];
+  isLoading: boolean;
+}
+
+const TableSkeleton = () => (
+  // Một skeleton đơn giản
+  <div className="space-y-2">
+    {[...Array(5)].map((_, i) => (
+      <div key={i} className="bg-gray-200 h-12 rounded-lg animate-pulse"></div>
+    ))}
+  </div>
+);
+
+const TransactionsTable: React.FC<TransactionsTableProps> = ({
+  transactions,
+  isLoading,
+}) => {
+  if (isLoading) {
+    return <TableSkeleton />;
+  }
+
+  if (transactions.length === 0) {
+    return (
+      <div className="text-center py-16 bg-white rounded-lg shadow-sm">
+        <h3 className="text-lg font-medium text-gray-700">
+          Không tìm thấy giao dịch nào
+        </h3>
+        <p className="text-gray-500 mt-1">
+          Vui lòng thử thay đổi bộ lọc hoặc tạo phiếu xuất mới.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white shadow-sm rounded-lg overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Mã Phiếu
+              </th>
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Loại Phiếu
+              </th>
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Ngày Tạo
+              </th>
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Người Yêu Cầu
+              </th>
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Lệnh SX
+              </th>
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Trạng Thái
+              </th>
+              <th scope="col" className="relative px-6 py-3">
+                <span className="sr-only">Xem</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {transactions.map((tx) => (
+              <tr key={tx.id} className="hover:bg-gray-50">
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-indigo-600">
+                  {tx.id}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {tx.type}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {new Date(tx.createdAt).toLocaleDateString("vi-VN")}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {tx.requestor}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {tx.productionOrder}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm">
+                  <StatusBadge status={tx.status} />
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <button
+                    onClick={() => alert(`Xem chi tiết phiếu ${tx.id}`)}
+                    className="text-indigo-600 hover:text-indigo-900 flex items-center"
+                  >
+                    Xem chi tiết <ChevronRight className="w-4 h-4 ml-1" />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+export default TransactionsTable;
+
+
+--- D:\WATATECH\WH\src\pages\issue-transaction-reports\components\skeletons\TableSkeleton.tsx ---
+
+
+--- D:\WATATECH\WH\src\App.tsx ---
+
+// Path: src/App.tsx
+
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import MainLayout from "./layouts/MainLayout";
+import InboundDashboardPage from "./pages/inbound-dashboard/InboundDashboardPage";
+import InventoryListPage from "./pages/inventory-list/InventoryListPage";
+import KanbanBoardPage from "./pages/kanban-board/KanbanBoardPage";
+import ImportPackingListFormPage from "./pages/import-packing-list/ImportPackingListFormPage";
+import ShipmentDetailPage from "./pages/shipment-detail/ShipmentDetailPage";
+import LocationManagementPage from "./pages/location-management/LocationManagementPage";
+import QRScanInterfacePage from "./pages/qr-scan/QRScanInterfacePage";
+import IssueFabricFormPage from "./pages/issue-fabric-form/IssueFabricFormPage";
+import IssueAccessoryFormPage from "./pages/issue-accessory-form/IssueAccessoryFormPage";
+import IssuePackagingFormPage from "./pages/issue-packaging-form/IssuePackagingFormPage";
+import IssueTransactionReportsPage from "./pages/issue-transaction-reports/IssueTransactionReportsPage"; // <-- Import trang mới
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        {/* Tất cả các route bên trong đây sẽ sử dụng MainLayout */}
+        <Route path="/" element={<MainLayout />}>
+          <Route index element={<InboundDashboardPage />} />
+          <Route path="dashboard" element={<InboundDashboardPage />} />
+          <Route path="inventory" element={<InventoryListPage />} />
+          <Route path="kanban" element={<KanbanBoardPage />} />
+          <Route
+            path="import-packing-list"
+            element={<ImportPackingListFormPage />}
+          />
+          <Route
+            path="shipments/:shipmentId"
+            element={<ShipmentDetailPage />}
+          />
+          <Route path="locations" element={<LocationManagementPage />} />
+          <Route path="qr-scan" element={<QRScanInterfacePage />} />
+          <Route path="issue/fabric" element={<IssueFabricFormPage />} />
+
+          <Route path="issue/accessory" element={<IssueAccessoryFormPage />} />
+          <Route path="issue/packaging" element={<IssuePackagingFormPage />} />
+
+          <Route
+            path="reports/issues"
+            element={<IssueTransactionReportsPage />} // <-- Route mới
+          />
+        </Route>
+
+        {/* Bạn có thể thêm các route không cần layout ở đây, ví dụ trang Login */}
+        {/* <Route path="/login" element={<LoginPage />} /> */}
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+export default App;
+
+
+--- D:\WATATECH\WH\src\layouts\MainLayout.tsx ---
+
+// Path: src/layouts/MainLayout.tsx
+
+import React, { useState } from "react";
+import { NavLink, Outlet } from "react-router-dom";
+import {
+  Menu,
+  X,
+  LayoutDashboard,
+  Truck,
+  Bell,
+  User,
+  KanbanSquare,
+  Network,
+  QrCode,
+  FileOutput,
+  Boxes,
+  Package,
+  ScrollText,
+} from "lucide-react";
+
+const Sidebar = () => {
+  // Style chung cho NavLink
+  const linkClasses = "flex items-center px-4 py-2.5 rounded-lg";
+  const inactiveClasses = "text-gray-300 hover:bg-gray-700";
+  const activeClasses = "bg-gray-700 font-semibold text-white";
+
+  return (
+    <div className="bg-gray-800 text-white w-64 space-y-2 p-4 flex-shrink-0">
+      <div className="text-2xl font-bold mb-6">Kho Hàng Pro</div>
+      <nav>
+        <NavLink
+          to="/dashboard"
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <LayoutDashboard className="w-5 h-5 mr-3" />
+          Dashboard Hàng Nhập
+        </NavLink>
+
+        <NavLink
+          to="/inventory" // <--- THAY ĐỔI LINK
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <Truck className="w-5 h-5 mr-3" />
+          Quản lý Tồn kho
+        </NavLink>
+
+        <NavLink
+          to="/kanban"
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <KanbanSquare className="w-5 h-5 mr-3" />
+          Bảng Kanban
+        </NavLink>
+
+        <NavLink
+          to="/shipments/7c3b9a1d"
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <Truck className="w-5 h-5 mr-3" />
+          Shipment
+        </NavLink>
+
+        <NavLink
+          to="/locations"
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <Network className="w-5 h-5 mr-3" />
+          Quản lý Vị trí
+        </NavLink>
+
+        <NavLink
+          to="/qr-scan"
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <QrCode className="w-5 h-5 mr-3" />
+          Quét Mã QR
+        </NavLink>
+
+        <NavLink
+          to="/issue/fabric"
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <FileOutput className="w-5 h-5 mr-3" />
+          Tạo Phiếu Xuất Vải
+        </NavLink>
+
+        <NavLink
+          to="/issue/accessory" // <--- Route mới
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <Boxes className="w-5 h-5 mr-3" />
+          Tạo Phiếu Xuất Phụ liệu
+        </NavLink>
+
+        <NavLink
+          to="/issue/packaging"
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <Package className="w-5 h-5 mr-3" />
+          Tạo Phiếu Xuất Đóng Gói
+        </NavLink>
+
+        <NavLink
+          to="/reports/issues" // <-- Route mới
+          className={({ isActive }) =>
+            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
+          }
+        >
+          <ScrollText className="w-5 h-5 mr-3" />
+          Báo cáo Xuất Kho
+        </NavLink>
+      </nav>
+    </div>
+  );
+};
+
+// Component Header đơn giản
+const Header = ({ onMenuClick }: { onMenuClick: () => void }) => (
+  <header className="bg-white border-b border-gray-200 p-4 flex justify-between items-center">
+    {/* Nút Menu cho mobile */}
+    <button onClick={onMenuClick} className="lg:hidden text-gray-600">
+      <Menu className="w-6 h-6" />
+    </button>
+    <div className="hidden lg:block">
+      {/* Placeholder, có thể là thanh search hoặc title */}
+    </div>
+    <div className="flex items-center space-x-4">
+      <button className="text-gray-500 hover:text-gray-700">
+        <Bell className="w-6 h-6" />
+      </button>
+      <div className="flex items-center space-x-2">
+        <User className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 p-1" />
+        <span className="text-sm font-medium text-gray-700">Admin</span>
+      </div>
+    </div>
+  </header>
+);
+
+const MainLayout = () => {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  return (
+    <div className="flex h-screen bg-gray-100">
+      {/* Sidebar cho Desktop */}
+      <div className="hidden lg:flex">
+        <Sidebar />
+      </div>
+
+      {/* Sidebar cho Mobile (Overlay) */}
+      {sidebarOpen && (
+        <div className="lg:hidden fixed inset-0 flex z-40">
+          <div
+            className="fixed inset-0 bg-black opacity-30"
+            onClick={() => setSidebarOpen(false)}
+          ></div>
+          <Sidebar />
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="absolute top-4 right-4 text-white"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+      )}
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Header onMenuClick={() => setSidebarOpen(true)} />
+        <main className="flex-1 overflow-x-hidden overflow-y-auto">
+          {/* Đây là nơi các trang con sẽ được render */}
+          <Outlet />
+        </main>
+      </div>
+    </div>
+  );
+};
+
+export default MainLayout;

@@ -1,0 +1,955 @@
+// Path: src/pages/qr-scan/types.ts
+
+// Chế độ hoạt động chính của màn hình
+export type OperationMode = 'INBOUND' | 'OUTBOUND';
+
+// --- Types cho luồng Nhập Kho (Inbound) ---
+export type InboundScanState = 'SCANNING_ITEM' | 'ITEM_SCANNED' | 'SCANNING_LOCATION' | 'PROCESSING' | 'SUCCESS' | 'ERROR';
+export type ScanAction = 'PUT_AWAY' | 'TRANSFER' | 'STOCK_COUNT' | 'VIEW_DETAIL';
+
+// --- Types cho luồng Xuất Kho (Outbound) ---
+export type OutboundScanState = 'SCANNING_REQUEST' | 'REQUEST_LOADED' | 'SCANNING_ITEM_FOR_ISSUE' | 'AWAITING_QUANTITY' | 'PROCESSING_ISSUE' | 'ISSUE_SUCCESS' | 'ISSUE_ERROR';
+
+export type PickingListItem = {
+  sku: string;
+  name: string;
+  uom: 'Cây' | 'Thùng' | 'Mét' | 'Cái';
+  requiredQuantity: number;
+  pickedQuantity: number;
+  locations: string[]; // Gợi ý vị trí lấy hàng
+};
+
+export type IssueRequest = {
+  qrCode: string; // Mã QR của phiếu yêu cầu
+  type: 'issue_request';
+  id: string;
+  destination: string; // Nơi nhận hàng (VD: Bộ phận Cắt)
+  status: 'new' | 'in_progress' | 'completed';
+  pickingList: PickingListItem[];
+};
+
+
+// --- Types chung ---
+export type ScannedItem = {
+  qrCode: string;
+  type: 'item';
+  sku:string;
+  name: string;
+  quantity: number; // Số lượng gốc của đơn vị này (vd: 150m vải)
+  uom: string;
+  currentLocation: string | null;
+  shipmentId: string; // Thuộc lô hàng nào
+};
+
+export type ScannedLocation = {
+  qrCode: string;
+  type: 'location';
+  locationCode: string;
+  description: string;
+};
+
+// Dữ liệu trả về sau khi quét có thể là 1 trong 3 loại này
+export type ScannedData = ScannedItem | ScannedLocation | IssueRequest;
+
+// Path: src/pages/qr-scan/QRScanInterfacePage.tsx
+
+import React, { useState, useCallback } from "react";
+import { toast, Toaster } from "react-hot-toast";
+import { ArrowLeft } from "lucide-react";
+import type {
+  OperationMode,
+  InboundScanState,
+  OutboundScanState,
+  ScannedItem,
+  ScannedLocation,
+  IssueRequest,
+  PickingListItem,
+} from "./types";
+import {
+  fetchScannedData,
+  submitPutAwayAction,
+  submitIssueAction,
+} from "./data";
+import Scanner from "./components/Scanner";
+import ScanResult from "./components/ScanResult";
+import ActionFeedback from "./components/ActionFeedback";
+import ModeSelector from "./components/ModeSelector";
+import PickingList from "./components/PickingList";
+import IssueQuantityInput from "./components/IssueQuantityInput";
+
+const QRScanInterfacePage: React.FC = () => {
+  // State chung
+  const [mode, setMode] = useState<OperationMode | "SELECT">("SELECT");
+  const [feedback, setFeedback] = useState({ status: "HIDDEN", message: "" });
+
+  // State cho luồng Nhập Kho (Inbound)
+  const [inboundState, setInboundState] =
+    useState<InboundScanState>("SCANNING_ITEM");
+  const [scannedInboundItem, setScannedInboundItem] =
+    useState<ScannedItem | null>(null);
+
+  // State cho luồng Xuất Kho (Outbound)
+  const [outboundState, setOutboundState] =
+    useState<OutboundScanState>("SCANNING_REQUEST");
+  const [issueRequest, setIssueRequest] = useState<IssueRequest | null>(null);
+  const [scannedOutboundItem, setScannedOutboundItem] =
+    useState<ScannedItem | null>(null);
+  const [currentItemPickingInfo, setCurrentItemPickingInfo] =
+    useState<PickingListItem | null>(null);
+
+  const resetAllStates = useCallback(() => {
+    setMode("SELECT");
+    setFeedback({ status: "HIDDEN", message: "" });
+    // Reset Inbound
+    setInboundState("SCANNING_ITEM");
+    setScannedInboundItem(null);
+    // Reset Outbound
+    setOutboundState("SCANNING_REQUEST");
+    setIssueRequest(null);
+    setScannedOutboundItem(null);
+    setCurrentItemPickingInfo(null);
+  }, []);
+
+  const handleError = (error: unknown) => {
+    const errorMessage = (error as Error).message;
+    toast.error(errorMessage);
+    setFeedback({ status: "ERROR", message: errorMessage });
+  };
+
+  // --- LOGIC CHO LUỒNG NHẬP KHO (INBOUND) ---
+  const handleInboundScan = async (qrCode: string) => {
+    try {
+      const data = await fetchScannedData(qrCode);
+      if (inboundState === "SCANNING_ITEM") {
+        if (data.type === "item") {
+          setScannedInboundItem(data as ScannedItem);
+          setInboundState("ITEM_SCANNED");
+          toast.success(`Đã quét vật tư: ${data.sku}`);
+        } else {
+          toast.error("Vui lòng quét mã VẬT TƯ trước.");
+        }
+      } else if (inboundState === "SCANNING_LOCATION") {
+        if (data.type === "location" && scannedInboundItem) {
+          setInboundState("PROCESSING");
+          setFeedback({
+            status: "PROCESSING",
+            message: "Đang cập nhật vị trí...",
+          });
+          const result = await submitPutAwayAction(
+            scannedInboundItem,
+            data as ScannedLocation
+          );
+          setFeedback({
+            status: result.success ? "SUCCESS" : "ERROR",
+            message: result.message,
+          });
+        } else {
+          toast.error("Vui lòng quét mã VỊ TRÍ hợp lệ.");
+        }
+      }
+    } catch (error) {
+      handleError(error);
+    }
+  };
+
+  // --- LOGIC CHO LUỒNG XUẤT KHO (OUTBOUND) ---
+  const handleOutboundScan = async (qrCode: string) => {
+    try {
+      const data = await fetchScannedData(qrCode);
+      if (outboundState === "SCANNING_REQUEST") {
+        if (data.type === "issue_request") {
+          setIssueRequest(data as IssueRequest);
+          setOutboundState("REQUEST_LOADED");
+          toast.success(`Đã tải phiếu yêu cầu: ${data.id}`);
+        } else {
+          toast.error("Vui lòng quét mã PHIẾU YÊU CẦU.");
+        }
+      } else if (outboundState === "SCANNING_ITEM_FOR_ISSUE") {
+        if (data.type === "item" && issueRequest) {
+          const itemInPickingList = issueRequest.pickingList.find(
+            (p) => p.sku === data.sku
+          );
+          if (itemInPickingList) {
+            if (
+              itemInPickingList.pickedQuantity >=
+              itemInPickingList.requiredQuantity
+            ) {
+              toast.error(`Đã lấy đủ số lượng cho mã hàng ${data.sku}.`);
+              return;
+            }
+            setScannedOutboundItem(data as ScannedItem);
+            setCurrentItemPickingInfo(itemInPickingList);
+            setOutboundState("AWAITING_QUANTITY");
+          } else {
+            toast.error(`Vật tư ${data.sku} không có trong phiếu yêu cầu này!`);
+          }
+        } else {
+          toast.error("Vui lòng quét mã VẬT TƯ.");
+        }
+      }
+    } catch (error) {
+      handleError(error);
+    }
+  };
+
+  const handleIssueSubmit = async (quantity: number) => {
+    if (!issueRequest || !scannedOutboundItem) return;
+    setOutboundState("PROCESSING_ISSUE");
+    setFeedback({ status: "PROCESSING", message: "Đang ghi nhận xuất kho..." });
+    try {
+      const result = await submitIssueAction(
+        issueRequest,
+        scannedOutboundItem,
+        quantity
+      );
+      setIssueRequest(result.updatedRequest); // Cập nhật lại request với số lượng mới
+      setFeedback({ status: "SUCCESS", message: result.message });
+    } catch (error) {
+      handleError(error);
+    }
+  };
+
+  const renderContent = () => {
+    if (
+      feedback.status === "PROCESSING" ||
+      feedback.status === "SUCCESS" ||
+      feedback.status === "ERROR"
+    ) {
+      return (
+        <ActionFeedback
+          status={feedback.status}
+          message={feedback.message}
+          onClose={() => {
+            // Sau khi xử lý xong, quay lại bước phù hợp
+            if (mode === "INBOUND") {
+              setInboundState("SCANNING_ITEM");
+            }
+            if (mode === "OUTBOUND") {
+              setOutboundState("REQUEST_LOADED"); // Quay lại màn hình picking list
+              setScannedOutboundItem(null);
+              setCurrentItemPickingInfo(null);
+            }
+            setFeedback({ status: "HIDDEN", message: "" });
+          }}
+        />
+      );
+    }
+
+    if (mode === "SELECT") {
+      return <ModeSelector onSelectMode={setMode} />;
+    }
+
+    // --- RENDER LUỒNG NHẬP KHO ---
+    if (mode === "INBOUND") {
+      switch (inboundState) {
+        case "SCANNING_ITEM":
+          return (
+            <Scanner
+              onScan={handleInboundScan}
+              scanPrompt="NHẬP KHO: Vui lòng quét mã QR trên sản phẩm"
+              mode={mode}
+            />
+          );
+        case "ITEM_SCANNED":
+          return (
+            scannedInboundItem && (
+              <ScanResult
+                item={scannedInboundItem}
+                onActionSelect={() => setInboundState("SCANNING_LOCATION")}
+                onCancel={() => setInboundState("SCANNING_ITEM")}
+              />
+            )
+          );
+        case "SCANNING_LOCATION":
+          return (
+            <Scanner
+              onScan={handleInboundScan}
+              scanPrompt={`Cất hàng "${scannedInboundItem?.sku}". Vui lòng quét mã QR của VỊ TRÍ ĐÍCH`}
+              mode={mode}
+            />
+          );
+        default:
+          return <div>Trạng thái không xác định</div>;
+      }
+    }
+
+    // --- RENDER LUỒNG XUẤT KHO ---
+    if (mode === "OUTBOUND") {
+      switch (outboundState) {
+        case "SCANNING_REQUEST":
+          return (
+            <Scanner
+              onScan={handleOutboundScan}
+              scanPrompt="XUẤT KHO: Vui lòng quét mã PHIẾU YÊU CẦU"
+              mode={mode}
+            />
+          );
+        case "REQUEST_LOADED":
+          return (
+            issueRequest && (
+              <PickingList
+                request={issueRequest}
+                onStartScanning={() =>
+                  setOutboundState("SCANNING_ITEM_FOR_ISSUE")
+                }
+                onBack={() => {
+                  setOutboundState("SCANNING_REQUEST");
+                  setIssueRequest(null);
+                }}
+              />
+            )
+          );
+        case "SCANNING_ITEM_FOR_ISSUE":
+          return (
+            <Scanner
+              onScan={handleOutboundScan}
+              scanPrompt={`Phiếu ${issueRequest?.id}: Quét mã VẬT TƯ cần lấy`}
+              mode={mode}
+            />
+          );
+        case "AWAITING_QUANTITY":
+          return (
+            scannedOutboundItem &&
+            currentItemPickingInfo && (
+              <IssueQuantityInput
+                item={scannedOutboundItem}
+                pickingInfo={currentItemPickingInfo}
+                onSubmit={handleIssueSubmit}
+                onCancel={() => setOutboundState("SCANNING_ITEM_FOR_ISSUE")}
+              />
+            )
+          );
+        default:
+          return <div>Trạng thái không xác định</div>;
+      }
+    }
+  };
+
+  return (
+    <div className="p-4 bg-gray-50 min-h-full">
+      <Toaster position="top-center" reverseOrder={false} />
+      <div className="container mx-auto">
+        {mode !== "SELECT" && (
+          <button
+            onClick={resetAllStates}
+            className="mb-4 flex items-center text-sm font-semibold text-blue-600 hover:text-blue-800"
+          >
+            <ArrowLeft size={16} className="mr-1" />
+            Chọn lại tác vụ
+          </button>
+        )}
+        {renderContent()}
+      </div>
+    </div>
+  );
+};
+
+export default QRScanInterfacePage;
+ 
+
+ // Path: src/pages/qr-scan/data.ts
+
+import type { ScannedData, ScannedItem, ScannedLocation, IssueRequest } from './types';
+
+// Giả lập cơ sở dữ liệu kho
+const MOCK_INVENTORY_DB: { [key: string]: ScannedData } = {
+  // Items - Mỗi QR code là duy nhất cho từng đơn vị (từng cây vải, từng thùng hàng)
+  "ITEM_QR_FAB_001": {
+    qrCode: "ITEM_QR_FAB_001", type: 'item', sku: 'FVN-102-BLUE', name: 'Vải Cotton Xanh Navy (Lô 1)',
+    quantity: 150, uom: 'Mét', currentLocation: null, shipmentId: 'SH-001'
+  },
+  "ITEM_QR_FAB_002": {
+    qrCode: "ITEM_QR_FAB_002", type: 'item', sku: 'FVN-102-BLUE', name: 'Vải Cotton Xanh Navy (Lô 1)',
+    quantity: 148.5, uom: 'Mét', currentLocation: 'FBWH-A-01-A', shipmentId: 'SH-001'
+  },
+  "ITEM_QR_ACC_003": {
+    qrCode: "ITEM_QR_ACC_003", type: 'item', sku: 'BTN-005-WHITE', name: 'Thùng Nút Áo Trắng (5000 cái)',
+    quantity: 5000, uom: 'Cái', currentLocation: 'ACCWH-C-05-D', shipmentId: 'SH-002'
+  },
+  // Locations
+  "LOC_QR_A_01_B": {
+    qrCode: "LOC_QR_A_01_B", type: 'location', locationCode: 'FBWH-A-01-B',
+    description: 'Kho Vải, Khu A, Dãy 01, Kệ B',
+  },
+  "LOC_QR_C_05_D": {
+    qrCode: "LOC_QR_C_05_D", type: 'location', locationCode: 'ACCWH-C-05-D',
+    description: 'Kho Phụ Liệu, Khu C, Dãy 05, Kệ D',
+  },
+  // Issue Requests
+  "ISSUE_REQ_001": {
+    qrCode: "ISSUE_REQ_001", type: 'issue_request', id: 'YR-2024-001', destination: 'Bộ phận Cắt',
+    status: 'new',
+    pickingList: [
+      { sku: 'FVN-102-BLUE', name: 'Vải Cotton Xanh Navy', uom: 'Mét', requiredQuantity: 250, pickedQuantity: 0, locations: ['FBWH-A-01-A'] },
+      { sku: 'BTN-005-WHITE', name: 'Nút Áo Trắng', uom: 'Cái', requiredQuantity: 1000, pickedQuantity: 0, locations: ['ACCWH-C-05-D'] },
+    ]
+  }
+};
+
+// Hàm giả lập gọi API để lấy thông tin từ QR code
+export const fetchScannedData = (qrCode: string): Promise<ScannedData> => {
+  console.log(`Simulating API call for QR: ${qrCode}`);
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      const data = MOCK_INVENTORY_DB[qrCode];
+      if (data) {
+        // Trả về một bản sao để tránh thay đổi trực tiếp DB mock
+        resolve(JSON.parse(JSON.stringify(data)));
+      } else {
+        reject(new Error("Mã QR không hợp lệ hoặc không tìm thấy."));
+      }
+    }, 300);
+  });
+};
+
+// Hàm giả lập API cất hàng (Nhập kho)
+export const submitPutAwayAction = (item: ScannedItem, location: ScannedLocation): Promise<{ success: boolean; message: string }> => {
+    console.log(`Simulating ACTION [INBOUND]: Moving ${item.sku} to ${location.locationCode}`);
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            // Cập nhật DB giả
+            const dbItem = MOCK_INVENTORY_DB[item.qrCode] as ScannedItem;
+            if (dbItem) dbItem.currentLocation = location.locationCode;
+            resolve({ success: true, message: `Đã cất hàng ${item.sku} vào vị trí ${location.locationCode} thành công!` });
+        }, 500);
+    });
+}
+
+// Hàm giả lập API xuất kho
+export const submitIssueAction = (request: IssueRequest, item: ScannedItem, issuedQuantity: number): Promise<{ success: boolean; message: string; updatedRequest: IssueRequest }> => {
+  console.log(`Simulating ACTION [OUTBOUND]: Issuing ${issuedQuantity} ${item.uom} of ${item.sku} for request ${request.id}`);
+  return new Promise((resolve, reject) => {
+      setTimeout(() => {
+          const itemInPickingList = request.pickingList.find(p => p.sku === item.sku);
+          const dbItem = MOCK_INVENTORY_DB[item.qrCode] as ScannedItem;
+
+          if (!itemInPickingList || !dbItem) {
+            return reject({ success: false, message: "Lỗi hệ thống: Không tìm thấy vật tư trong phiếu hoặc DB." });
+          }
+
+          // Cập nhật số lượng đã lấy trong phiếu
+          itemInPickingList.pickedQuantity += issuedQuantity;
+          
+          // Trừ tồn kho của cây vải/thùng hàng
+          dbItem.quantity -= issuedQuantity;
+
+          const message = `Xuất thành công ${issuedQuantity} ${item.uom} của ${item.sku}. Tồn kho còn lại của cuộn/thùng: ${dbItem.quantity} ${item.uom}.`;
+          resolve({ success: true, message: message, updatedRequest: request });
+      }, 700);
+  });
+}
+
+// Path: src/pages/qr-scan/components/ActionFeedback.tsx
+
+import React from "react";
+import { CheckCircle, AlertTriangle, Loader } from "lucide-react";
+
+interface ActionFeedbackProps {
+  status: "PROCESSING" | "SUCCESS" | "ERROR";
+  message: string;
+  onClose: () => void;
+}
+
+const ActionFeedback: React.FC<ActionFeedbackProps> = ({
+  status,
+  message,
+  onClose,
+}) => {
+  const renderContent = () => {
+    switch (status) {
+      case "PROCESSING":
+        return (
+          <>
+            <Loader className="w-16 h-16 text-blue-500 animate-spin mb-4" />
+            <h2 className="text-xl font-semibold">Đang xử lý...</h2>
+            <p className="text-gray-600">{message}</p>
+          </>
+        );
+      case "SUCCESS":
+        return (
+          <>
+            <CheckCircle className="w-16 h-16 text-green-500 mb-4" />
+            <h2 className="text-xl font-semibold">Thành công!</h2>
+            <p className="text-gray-600 text-center">{message}</p>
+            <button
+              onClick={onClose}
+              className="mt-6 bg-green-600 text-white font-bold py-2 px-6 rounded-lg"
+            >
+              Quét Tiếp
+            </button>
+          </>
+        );
+      case "ERROR":
+        return (
+          <>
+            <AlertTriangle className="w-16 h-16 text-red-500 mb-4" />
+            <h2 className="text-xl font-semibold">Đã xảy ra lỗi!</h2>
+            <p className="text-gray-600 text-center">{message}</p>
+            <button
+              onClick={onClose}
+              className="mt-6 bg-red-600 text-white font-bold py-2 px-6 rounded-lg"
+            >
+              Thử Lại
+            </button>
+          </>
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="w-full max-w-md mx-auto p-4 flex flex-col items-center justify-center text-center animate-fade-in">
+      <div className="bg-white p-8 rounded-lg shadow-lg w-full flex flex-col items-center">
+        {renderContent()}
+      </div>
+    </div>
+  );
+};
+
+export default ActionFeedback;
+
+
+// Path: src/pages/qr-scan/components/IssueQuantityInput.tsx
+
+import React, { useState } from "react";
+import type { ScannedItem, PickingListItem } from "../types";
+import { Check, X } from "lucide-react";
+import { toast } from "react-hot-toast";
+
+interface IssueQuantityInputProps {
+  item: ScannedItem;
+  pickingInfo: PickingListItem;
+  onSubmit: (quantity: number) => void;
+  onCancel: () => void;
+}
+
+const IssueQuantityInput: React.FC<IssueQuantityInputProps> = ({
+  item,
+  pickingInfo,
+  onSubmit,
+  onCancel,
+}) => {
+  const [quantity, setQuantity] = useState("");
+
+  const remainingNeeded =
+    pickingInfo.requiredQuantity - pickingInfo.pickedQuantity;
+  const maxCanTake = Math.min(item.quantity, remainingNeeded);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const numQuantity = parseFloat(quantity);
+    if (isNaN(numQuantity) || numQuantity <= 0) {
+      toast.error("Vui lòng nhập số lượng hợp lệ.");
+      return;
+    }
+    if (numQuantity > maxCanTake) {
+      toast.error(`Số lượng không được vượt quá ${maxCanTake} ${item.uom}.`);
+      return;
+    }
+    onSubmit(numQuantity);
+  };
+
+  return (
+    <div className="w-full max-w-md mx-auto p-4 animate-fade-in">
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white rounded-lg shadow-lg p-6 border border-gray-200"
+      >
+        <h2 className="text-xl font-bold text-gray-800 mb-2">
+          Xác nhận số lượng xuất
+        </h2>
+        <p className="text-gray-600 mb-4">
+          Mặt hàng: <strong>{item.name}</strong>
+        </p>
+
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded-md mb-4 text-sm">
+          <p>
+            Cần lấy:{" "}
+            <strong className="text-red-600">
+              {remainingNeeded.toLocaleString()} {pickingInfo.uom}
+            </strong>
+          </p>
+          <p>
+            Tồn kho của cuộn/thùng này:{" "}
+            <strong>
+              {item.quantity.toLocaleString()} {item.uom}
+            </strong>
+          </p>
+          <p className="font-bold mt-1">
+            {" "}
+            == Tối đa có thể lấy: {maxCanTake.toLocaleString()} {item.uom}
+          </p>
+        </div>
+
+        <div className="mb-4">
+          <label
+            htmlFor="quantity"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            Số lượng thực tế xuất đi ({item.uom})
+          </label>
+          <input
+            type="number"
+            id="quantity"
+            value={quantity}
+            onChange={(e) => setQuantity(e.target.value)}
+            className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+            placeholder={`Nhập số ${item.uom.toLowerCase()}...`}
+            autoFocus
+            step="any"
+          />
+        </div>
+
+        <div className="flex space-x-3 mt-6">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="w-full text-lg bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center shadow-md"
+          >
+            <X className="mr-2" /> Hủy
+          </button>
+          <button
+            type="submit"
+            className="w-full text-lg bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center shadow-md"
+          >
+            <Check className="mr-2" /> Xác Nhận
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+export default IssueQuantityInput;
+
+
+// Path: src/pages/qr-scan/components/ModeSelector.tsx
+
+import React from "react";
+import { ArrowRight, ArrowLeft } from "lucide-react";
+import type { OperationMode } from "../types";
+
+interface ModeSelectorProps {
+  onSelectMode: (mode: OperationMode) => void;
+}
+
+const ModeSelector: React.FC<ModeSelectorProps> = ({ onSelectMode }) => {
+  return (
+    <div className="w-full max-w-md mx-auto p-4 flex flex-col items-center justify-center min-h-[70vh]">
+      <div className="text-center mb-8">
+        <h1 className="text-2xl font-bold text-gray-800">Chọn Tác Vụ</h1>
+        <p className="text-gray-600">
+          Vui lòng chọn quy trình bạn muốn thực hiện.
+        </p>
+      </div>
+      <div className="w-full space-y-4">
+        <button
+          onClick={() => onSelectMode("INBOUND")}
+          className="w-full text-lg bg-blue-600 hover:bg-blue-700 text-white font-bold py-6 px-4 rounded-lg flex items-center justify-between shadow-lg transition-transform transform hover:scale-105"
+        >
+          <span>
+            <ArrowRight className="inline-block mr-3" />
+            Nhập Kho / Cất Hàng
+          </span>
+          <span className="text-sm opacity-80">INBOUND</span>
+        </button>
+        <button
+          onClick={() => onSelectMode("OUTBOUND")}
+          className="w-full text-lg bg-green-600 hover:bg-green-700 text-white font-bold py-6 px-4 rounded-lg flex items-center justify-between shadow-lg transition-transform transform hover:scale-105"
+        >
+          <span>
+            <ArrowLeft className="inline-block mr-3" />
+            Xuất Kho / Soạn Hàng
+          </span>
+          <span className="text-sm opacity-80">OUTBOUND</span>
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default ModeSelector;
+
+// Path: src/pages/qr-scan/components/PickingList.tsx
+
+import React from "react";
+import type { IssueRequest } from "../types";
+import { PackageSearch, ArrowLeft } from "lucide-react";
+
+interface PickingListProps {
+  request: IssueRequest;
+  onStartScanning: () => void;
+  onBack: () => void;
+}
+
+const PickingList: React.FC<PickingListProps> = ({
+  request,
+  onStartScanning,
+  onBack,
+}) => {
+  const isCompleted = request.pickingList.every(
+    (item) => item.pickedQuantity >= item.requiredQuantity
+  );
+
+  return (
+    <div className="w-full max-w-lg mx-auto p-4 animate-fade-in">
+      <button
+        onClick={onBack}
+        className="flex items-center text-gray-600 hover:text-gray-900 font-semibold mb-4"
+      >
+        <ArrowLeft size={20} className="mr-2" />
+        Quay lại
+      </button>
+      <div className="bg-white rounded-lg shadow-lg p-6 border border-gray-200">
+        <div className="text-center mb-4 border-b pb-4">
+          <h2 className="text-xl font-bold text-gray-800">
+            Phiếu Yêu Cầu Xuất Kho
+          </h2>
+          <p className="font-mono text-blue-600 bg-blue-100 px-3 py-1 rounded-full inline-block mt-1">
+            {request.id}
+          </p>
+          <p className="text-sm text-gray-500 mt-2">
+            Nơi nhận: <strong>{request.destination}</strong>
+          </p>
+        </div>
+
+        <div className="space-y-4">
+          {request.pickingList.map((item) => (
+            <div key={item.sku} className="p-3 bg-gray-50 rounded-md border">
+              <p className="font-bold text-gray-800">{item.name}</p>
+              <p className="text-sm text-gray-500">SKU: {item.sku}</p>
+              <div className="mt-2">
+                <div className="w-full bg-gray-200 rounded-full h-2.5">
+                  <div
+                    className="bg-green-500 h-2.5 rounded-full"
+                    style={{
+                      width: `${Math.min(
+                        100,
+                        (item.pickedQuantity / item.requiredQuantity) * 100
+                      )}%`,
+                    }}
+                  ></div>
+                </div>
+                <p className="text-xs text-right mt-1 font-medium">
+                  Đã lấy: {item.pickedQuantity.toLocaleString()} /{" "}
+                  {item.requiredQuantity.toLocaleString()} {item.uom}
+                </p>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Vị trí gợi ý:{" "}
+                <span className="font-mono bg-gray-200 px-1 rounded">
+                  {item.locations.join(", ")}
+                </span>
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-6">
+        {isCompleted ? (
+          <div className="text-center p-4 bg-green-100 text-green-800 rounded-lg">
+            <p className="font-bold">Đã hoàn thành phiếu soạn hàng!</p>
+          </div>
+        ) : (
+          <button
+            onClick={onStartScanning}
+            className="w-full text-lg bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-4 rounded-lg flex items-center justify-center shadow-md"
+          >
+            <PackageSearch className="mr-3" /> Bắt Đầu Quét Hàng
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default PickingList;
+
+// Path: src/pages/qr-scan/components/Scanner.tsx
+
+import { Camera } from "lucide-react";
+import React from "react";
+import type { OperationMode } from "../types";
+
+interface ScannerProps {
+  onScan: (data: string) => void;
+  scanPrompt: string;
+  mode: OperationMode | "SELECT";
+}
+
+const Scanner: React.FC<ScannerProps> = ({ onScan, scanPrompt, mode }) => {
+  const renderDevButtons = () => {
+    if (mode === "INBOUND") {
+      return (
+        <>
+          <h3 className="text-sm font-bold text-center text-gray-600">
+            GIẢ LẬP NHẬP KHO
+          </h3>
+          <button
+            onClick={() => onScan("ITEM_QR_FAB_001")}
+            className="w-full bg-blue-500 text-white py-2 rounded-md"
+          >
+            Quét Vải (Chưa có vị trí)
+          </button>
+          <button
+            onClick={() => onScan("ITEM_QR_ACC_003")}
+            className="w-full bg-blue-500 text-white py-2 rounded-md"
+          >
+            Quét Phụ Liệu (Đã có vị trí)
+          </button>
+          <button
+            onClick={() => onScan("LOC_QR_A_01_B")}
+            className="w-full bg-teal-500 text-white py-2 rounded-md"
+          >
+            Quét Vị trí Kho Vải
+          </button>
+        </>
+      );
+    }
+    if (mode === "OUTBOUND") {
+      return (
+        <>
+          <h3 className="text-sm font-bold text-center text-gray-600">
+            GIẢ LẬP XUẤT KHO
+          </h3>
+          <button
+            onClick={() => onScan("ISSUE_REQ_001")}
+            className="w-full bg-purple-500 text-white py-2 rounded-md"
+          >
+            Quét Phiếu Yêu Cầu
+          </button>
+          <button
+            onClick={() => onScan("ITEM_QR_FAB_002")}
+            className="w-full bg-blue-500 text-white py-2 rounded-md"
+          >
+            Quét Vải (Có trong phiếu)
+          </button>
+          <button
+            onClick={() => onScan("ITEM_QR_ACC_003")}
+            className="w-full bg-blue-500 text-white py-2 rounded-md"
+          >
+            Quét Phụ Liệu (Có trong phiếu)
+          </button>
+          <button
+            onClick={() => onScan("ITEM_QR_FAB_001")}
+            className="w-full bg-orange-500 text-white py-2 rounded-md"
+          >
+            Quét Vải (KHÔNG có trong phiếu)
+          </button>
+        </>
+      );
+    }
+    return null;
+  };
+
+  return (
+    <div className="w-full max-w-md mx-auto p-4 flex flex-col items-center">
+      <div className="relative w-full aspect-square bg-gray-900 rounded-lg flex items-center justify-center mb-4 border-4 border-gray-700">
+        <Camera className="w-24 h-24 text-gray-600" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/4 h-1/2 border-4 border-dashed border-green-400 rounded-lg"></div>
+      </div>
+
+      <p className="text-lg font-semibold text-center text-gray-700 mb-6">
+        {scanPrompt}
+      </p>
+
+      <div className="w-full space-y-3 p-4 bg-gray-200 rounded-lg border border-gray-300">
+        {renderDevButtons()}
+        <button
+          onClick={() => onScan("QR_INVALID")}
+          className="w-full bg-red-500 text-white py-2 rounded-md"
+        >
+          Quét Mã KHÔNG HỢP LỆ
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default Scanner;
+
+// Path: src/pages/qr-scan/components/ScanResult.tsx
+
+import React from "react";
+import type { ScannedItem, ScanAction } from "../types";
+import { Move, CheckSquare, XCircle } from "lucide-react";
+
+interface ScanResultProps {
+  item: ScannedItem;
+  onActionSelect: (action: ScanAction) => void;
+  onCancel: () => void;
+}
+
+const ScanResult: React.FC<ScanResultProps> = ({
+  item,
+  onActionSelect,
+  onCancel,
+}) => {
+  return (
+    <div className="w-full max-w-md mx-auto p-4 animate-fade-in">
+      <div className="bg-white rounded-lg shadow-lg p-6 border border-gray-200">
+        <h2 className="text-xl font-bold text-gray-800 mb-1">{item.name}</h2>
+        <p className="text-sm text-gray-500 mb-4">SKU: {item.sku}</p>
+
+        <div className="space-y-2 text-gray-700">
+          <p>
+            <strong>Số lượng:</strong> {item.quantity} {item.uom}
+          </p>
+          <p>
+            <strong>Vị trí hiện tại:</strong>
+            <span
+              className={
+                item.currentLocation
+                  ? "font-mono bg-gray-200 px-2 py-1 rounded"
+                  : "text-gray-400"
+              }
+            >
+              {item.currentLocation || "Chưa có vị trí"}
+            </span>
+          </p>
+          <p>
+            <strong>Lô hàng:</strong> {item.shipmentId}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-6 space-y-3">
+        {!item.currentLocation && (
+          <button
+            onClick={() => onActionSelect("PUT_AWAY")}
+            className="w-full text-lg bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-4 rounded-lg flex items-center justify-center shadow-md"
+          >
+            <Move className="mr-3" /> Cất Hàng
+          </button>
+        )}
+        {item.currentLocation && (
+          <button
+            onClick={() => onActionSelect("TRANSFER")}
+            className="w-full text-lg bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-4 rounded-lg flex items-center justify-center shadow-md"
+          >
+            <Move className="mr-3" /> Chuyển Vị Trí
+          </button>
+        )}
+        <button
+          onClick={() => onActionSelect("STOCK_COUNT")}
+          className="w-full text-lg bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-4 px-4 rounded-lg flex items-center justify-center shadow-md"
+        >
+          <CheckSquare className="mr-3" /> Kiểm Kê
+        </button>
+      </div>
+
+      <div className="mt-8 text-center">
+        <button
+          onClick={onCancel}
+          className="text-red-600 hover:text-red-800 font-semibold flex items-center justify-center mx-auto"
+        >
+          <XCircle className="mr-2" /> Hủy & Quét Lại
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default ScanResult;

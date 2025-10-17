@@ -1,0 +1,540 @@
+
+
+**Directory Tree:**
+
+```
+inventory-list/
+├── InventoryListPage.tsx
+├── types.ts
+└── components/
+    ├── InventoryFilters.tsx
+    ├── InventoryHeader.tsx
+    ├── InventoryTable.tsx
+    ├── StatusBadge.tsx
+    └── skeletons/
+        ├── FilterSkeleton.tsx
+        └── TableSkeleton.tsx
+```
+
+--- D:\WATATECH\WH\src\pages\inventory-list\InventoryListPage.tsx ---
+
+// Path: src/pages/inventory-list/InventoryListPage.tsx
+
+import React, { useState, useEffect } from "react";
+import { InventoryHeader } from "./components/InventoryHeader";
+import { InventoryFilters } from "./components/InventoryFilters";
+import { InventoryTable } from "./components/InventoryTable";
+import type { InventoryItem } from "./types";
+import { FilterSkeleton } from "./components/skeletons/FilterSkeleton";
+import { TableSkeleton } from "./components/skeletons/TableSkeleton";
+
+// Dữ liệu giả để demo
+const DUMMY_DATA: InventoryItem[] = [
+  {
+    id: "1",
+    sku: "FVN-102-BLUE",
+    name: "Vải Kate Ford 1.5m",
+    uom: "Mét",
+    warehouse: "Fabric WH",
+    location: "A-01-B",
+    quantityInStock: 12500,
+    quantityAvailable: 12000,
+    status: "in-stock",
+  },
+  {
+    id: "2",
+    sku: "ACC-BTN-005",
+    name: "Nút 4 lỗ 15mm",
+    uom: "Cái",
+    warehouse: "Accessory WH",
+    location: "C-12-D",
+    quantityInStock: 85000,
+    quantityAvailable: 85000,
+    status: "in-stock",
+  },
+  {
+    id: "3",
+    sku: "PAK-TAG-991",
+    name: "Thẻ bài Brand X",
+    uom: "Cái",
+    warehouse: "Packing WH",
+    location: "E-03-A",
+    quantityInStock: 2200,
+    quantityAvailable: 1800,
+    status: "low-stock",
+  },
+  {
+    id: "4",
+    sku: "ACC-ZIP-YKK",
+    name: "Dây kéo YKK 20cm",
+    uom: "Sợi",
+    warehouse: "Accessory WH",
+    location: "C-15-F",
+    quantityInStock: 0,
+    quantityAvailable: 0,
+    status: "out-of-stock",
+  },
+  {
+    id: "5",
+    sku: "FVN-DENIM-01",
+    name: "Vải Denim Washed",
+    uom: "Mét",
+    warehouse: "Fabric WH",
+    location: "A-02-C",
+    quantityInStock: 800,
+    quantityAvailable: 800,
+    status: "low-stock",
+  },
+  {
+    id: "6",
+    sku: "PAK-BOX-L",
+    name: "Thùng carton lớn",
+    uom: "Thùng",
+    warehouse: "Packing WH",
+    location: "F-01-A",
+    quantityInStock: 530,
+    quantityAvailable: 530,
+    status: "in-stock",
+  },
+];
+
+const InventoryListPage = () => {
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Giả lập việc fetch data từ API
+  useEffect(() => {
+    setIsLoading(true);
+    const timer = setTimeout(() => {
+      setInventoryItems(DUMMY_DATA);
+      setIsLoading(false);
+    }, 1500); // Giả lập độ trễ mạng 1.5s
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <div className="p-4 md:p-6 lg:p-8">
+      {/* Layout chính của trang: grid 2 cột cho desktop, 1 cột cho mobile */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 lg:gap-8">
+        {/* Cột Filter (bên trái trên desktop) */}
+        <aside className="lg:col-span-1 mb-8 lg:mb-0">
+          {isLoading ? <FilterSkeleton /> : <InventoryFilters />}
+        </aside>
+
+        {/* Cột nội dung chính (bên phải trên desktop) */}
+        <div className="lg:col-span-3">
+          {isLoading ? (
+            <TableSkeleton />
+          ) : (
+            <>
+              <InventoryHeader />
+              {inventoryItems.length > 0 ? (
+                <InventoryTable items={inventoryItems} />
+              ) : (
+                <div className="bg-white text-center p-12 rounded-lg shadow-sm">
+                  <h3 className="text-xl font-medium text-gray-900">
+                    Không tìm thấy vật tư
+                  </h3>
+                  <p className="mt-2 text-sm text-gray-500">
+                    Không có vật tư nào phù hợp với bộ lọc hiện tại.
+                  </p>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default InventoryListPage;
+
+
+--- D:\WATATECH\WH\src\pages\inventory-list\types.ts ---
+
+// Path: src/pages/inventory-list/types.ts
+
+export type InventoryStatus = 'in-stock' | 'low-stock' | 'out-of-stock';
+
+export interface InventoryItem {
+  id: string;
+  sku: string;
+  name: string;
+  uom: string; // Unit of Measure (Đơn vị tính)
+  warehouse: string;
+  location: string;
+  quantityInStock: number;
+  quantityAvailable: number;
+  status: InventoryStatus;
+}
+
+
+--- D:\WATATECH\WH\src\pages\inventory-list\components\InventoryFilters.tsx ---
+
+// Path: src/pages/inventory-list/components/InventoryFilters.tsx
+
+import React from "react";
+import { Search, SlidersHorizontal } from "lucide-react";
+
+export const InventoryFilters = () => {
+  // NOTE: For a real application, the state and onChange handlers would be passed via props.
+  return (
+    <div className="bg-white p-6 rounded-lg shadow-sm">
+      <h3 className="text-lg font-semibold text-gray-900 flex items-center mb-6">
+        <SlidersHorizontal className="w-5 h-5 mr-3 text-gray-500" />
+        Bộ lọc
+      </h3>
+
+      <div className="space-y-6">
+        {/* Search */}
+        <div>
+          <label
+            htmlFor="search"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            Tìm kiếm
+          </label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-5 w-5 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              id="search"
+              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              placeholder="Mã VT, Tên vật tư..."
+            />
+          </div>
+        </div>
+
+        {/* Warehouse Filter */}
+        <div>
+          <label
+            htmlFor="warehouse"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            Kho
+          </label>
+          <select
+            id="warehouse"
+            className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+          >
+            <option>Tất cả kho</option>
+            <option>Fabric WH</option>
+            <option>Accessory WH</option>
+            <option>Packing WH</option>
+          </select>
+        </div>
+
+        {/* Location Filter */}
+        <div>
+          <label
+            htmlFor="location"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            Vị trí
+          </label>
+          {/* In a real app, this would be a complex Tree Select component.
+              For this example, a simple input is used as a placeholder. */}
+          <input
+            type="text"
+            id="location"
+            className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            placeholder="Khu A > Dãy 01..."
+          />
+        </div>
+
+        {/* Supplier Filter */}
+        <div>
+          <label
+            htmlFor="supplier"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            Nhà cung cấp
+          </label>
+          <select
+            id="supplier"
+            className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+          >
+            <option>Tất cả NCC</option>
+            <option>Nhà cung cấp A</option>
+            <option>Nhà cung cấp B</option>
+          </select>
+        </div>
+
+        {/* Status Filter */}
+        <div>
+          <label
+            htmlFor="status"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            Trạng thái tồn kho
+          </label>
+          <select
+            id="status"
+            className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+          >
+            <option>Tất cả trạng thái</option>
+            <option>Dưới mức tối thiểu</option>
+            <option>Vượt mức tối đa</option>
+          </select>
+        </div>
+      </div>
+
+      <button className="mt-8 w-full bg-gray-100 text-gray-700 font-medium py-2 px-4 rounded-md hover:bg-gray-200">
+        Đặt lại bộ lọc
+      </button>
+    </div>
+  );
+};
+
+
+--- D:\WATATECH\WH\src\pages\inventory-list\components\InventoryHeader.tsx ---
+
+// Path: src/pages/inventory-list/components/InventoryHeader.tsx
+
+import React from "react";
+import { ChevronRight, FileDown, ClipboardList } from "lucide-react";
+
+export const InventoryHeader = () => (
+  <div className="flex flex-col md:flex-row justify-between md:items-center mb-6">
+    <div>
+      <nav className="text-sm mb-2" aria-label="Breadcrumb">
+        <ol className="list-none p-0 inline-flex items-center">
+          <li className="flex items-center">
+            <a href="#" className="text-gray-500 hover:text-gray-700">
+              Trang chủ
+            </a>
+            <ChevronRight className="h-4 w-4 text-gray-400 mx-1" />
+          </li>
+          <li className="flex items-center">
+            <span className="text-gray-500">Tồn kho</span>
+            <ChevronRight className="h-4 w-4 text-gray-400 mx-1" />
+          </li>
+          <li className="flex items-center">
+            <span className="font-semibold text-gray-800">
+              Danh sách tồn kho
+            </span>
+          </li>
+        </ol>
+      </nav>
+      <h1 className="text-3xl font-bold text-gray-900">Quản lý Tồn Kho</h1>
+    </div>
+    <div className="flex space-x-2 mt-4 md:mt-0">
+      <button className="flex items-center justify-center px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50">
+        <ClipboardList className="w-5 h-5 mr-2 text-gray-500" />
+        Kiểm kê
+      </button>
+      <button className="flex items-center justify-center px-4 py-2 bg-blue-600 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-blue-700">
+        <FileDown className="w-5 h-5 mr-2" />
+        Xuất Báo cáo
+      </button>
+    </div>
+  </div>
+);
+
+
+--- D:\WATATECH\WH\src\pages\inventory-list\components\InventoryTable.tsx ---
+
+// Path: src/pages/inventory-list/components/InventoryTable.tsx
+
+import React from "react";
+import type { InventoryItem } from "../types";
+import { ArrowUpDown, MoreHorizontal } from "lucide-react";
+import { StatusBadge } from "./StatusBadge";
+
+interface InventoryTableProps {
+  items: InventoryItem[];
+}
+
+export const InventoryTable: React.FC<InventoryTableProps> = ({ items }) => {
+  const TableHeader = ({ children }: { children: React.ReactNode }) => (
+    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+      <span className="flex items-center cursor-pointer hover:text-gray-800">
+        {children}
+        <ArrowUpDown className="w-4 h-4 ml-1.5" />
+      </span>
+    </th>
+  );
+
+  return (
+    <div className="bg-white shadow-sm rounded-lg overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <TableHeader>Mã VT (SKU)</TableHeader>
+              <TableHeader>Tên vật tư</TableHeader>
+              <TableHeader>ĐVT</TableHeader>
+              <TableHeader>Kho</TableHeader>
+              <TableHeader>Vị trí</TableHeader>
+              <TableHeader>Tồn kho</TableHeader>
+              <TableHeader>Khả dụng</TableHeader>
+              <TableHeader>Trạng thái</TableHeader>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {items.map((item) => (
+              <tr key={item.id} className="hover:bg-gray-50">
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
+                  {item.sku}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {item.name}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {item.uom}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {item.warehouse}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {item.location}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-semibold">
+                  {item.quantityInStock.toLocaleString()}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {item.quantityAvailable.toLocaleString()}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <StatusBadge status={item.status} />
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <button className="text-gray-400 hover:text-gray-600">
+                    <MoreHorizontal className="w-5 h-5" />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Pagination */}
+      <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+        <p className="text-sm text-gray-700">
+          Hiển thị <span className="font-medium">1</span> đến{" "}
+          <span className="font-medium">10</span> của{" "}
+          <span className="font-medium">97</span> kết quả
+        </p>
+        <div className="flex items-center space-x-2">
+          <button className="px-3 py-1 border border-gray-300 rounded-md text-sm text-gray-600 hover:bg-gray-50">
+            Trước
+          </button>
+          <button className="px-3 py-1 border border-gray-300 rounded-md text-sm text-gray-600 hover:bg-gray-50">
+            Sau
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
+--- D:\WATATECH\WH\src\pages\inventory-list\components\StatusBadge.tsx ---
+
+// Path: src/pages/inventory-list/components/StatusBadge.tsx
+
+import React from "react";
+import type { InventoryStatus } from "../types";
+
+interface StatusBadgeProps {
+  status: InventoryStatus;
+}
+
+const statusMap: Record<InventoryStatus, { text: string; className: string }> =
+  {
+    "in-stock": { text: "Còn hàng", className: "bg-green-100 text-green-800" },
+    "low-stock": {
+      text: "Sắp hết",
+      className: "bg-yellow-100 text-yellow-800",
+    },
+    "out-of-stock": { text: "Hết hàng", className: "bg-red-100 text-red-800" },
+  };
+
+export const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
+  const { text, className } = statusMap[status] || {
+    text: "Không rõ",
+    className: "bg-gray-100 text-gray-800",
+  };
+
+  return (
+    <span
+      className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${className}`}
+    >
+      {text}
+    </span>
+  );
+};
+
+
+--- D:\WATATECH\WH\src\pages\inventory-list\components\skeletons\FilterSkeleton.tsx ---
+
+// Path: src/pages/inventory-list/components/skeletons/FilterSkeleton.tsx
+
+import React from "react";
+
+export const FilterSkeleton = () => (
+  <div className="bg-white p-6 rounded-lg shadow space-y-6 animate-pulse">
+    {[...Array(5)].map((_, i) => (
+      <div key={i} className="space-y-2">
+        <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+        <div className="h-10 bg-gray-200 rounded w-full"></div>
+      </div>
+    ))}
+    <div className="h-10 bg-gray-200 rounded w-full mt-4"></div>
+  </div>
+);
+
+
+--- D:\WATATECH\WH\src\pages\inventory-list\components\skeletons\TableSkeleton.tsx ---
+
+// Path: src/pages/inventory-list/components/skeletons/TableSkeleton.tsx
+
+import React from "react";
+
+export const TableSkeleton = () => (
+  <div className="bg-white p-6 rounded-lg shadow animate-pulse">
+    {/* Header Skeleton */}
+    <div className="flex justify-between items-center mb-6">
+      <div className="space-y-2">
+        <div className="h-4 bg-gray-200 rounded w-32"></div>
+        <div className="h-8 bg-gray-200 rounded w-48"></div>
+      </div>
+      <div className="flex space-x-2">
+        <div className="h-10 bg-gray-200 rounded w-28"></div>
+        <div className="h-10 bg-gray-200 rounded w-28"></div>
+      </div>
+    </div>
+
+    {/* Table Content Skeleton */}
+    <div className="w-full">
+      <div className="flex bg-gray-50 p-4 rounded-t-lg">
+        {[...Array(8)].map((_, i) => (
+          <div key={i} className="flex-1 h-6 bg-gray-200 rounded mx-2"></div>
+        ))}
+      </div>
+      <div className="space-y-2 mt-2">
+        {[...Array(10)].map((_, i) => (
+          <div
+            key={i}
+            className="flex items-center p-4 border-b border-gray-100"
+          >
+            {[...Array(8)].map((_, j) => (
+              <div
+                key={j}
+                className="flex-1 h-6 bg-gray-200 rounded mx-2"
+              ></div>
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+);
+
+---

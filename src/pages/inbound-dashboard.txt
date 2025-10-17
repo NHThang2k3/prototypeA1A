@@ -1,0 +1,447 @@
+
+
+**Directory Tree:**
+
+```
+inbound-dashboard/
+├── InboundDashboardPage.tsx
+├── types.ts
+└── components/
+    ├── DashboardHeader.tsx
+    ├── ShipmentFilters.tsx
+    ├── ShipmentsTable.tsx
+    ├── StatusBadge.tsx
+    ├── SummaryCard.tsx
+    └── skeletons/
+        ├── CardSkeleton.tsx
+        └── TableSkeleton.tsx
+```
+
+--- D:\WATATECH\WH\src\pages\inbound-dashboard\InboundDashboardPage.tsx ---
+
+import React, { useState, useEffect } from "react";
+import { Truck, CalendarClock, TriangleAlert, Hourglass } from "lucide-react";
+import type { Shipment, SummaryData } from "./types";
+import { DashboardHeader } from "./components/DashboardHeader";
+import { SummaryCard } from "./components/SummaryCard";
+import { ShipmentFilters } from "./components/ShipmentFilters";
+import { ShipmentsTable } from "./components/ShipmentsTable";
+import { CardSkeleton } from "./components/skeletons/CardSkeleton";
+
+// Dữ liệu giả lập để minh họa
+const MOCK_SHIPMENTS: Shipment[] = [
+  {
+    id: "1",
+    poNumber: "PO-11223",
+    packingList: "PKL-A001",
+    supplier: "Vải Sợi Miền Nam",
+    etd: "2023-11-10",
+    eta: "2023-11-25",
+    status: "shipping",
+    creator: "An Nguyễn",
+  },
+  {
+    id: "2",
+    poNumber: "PO-11224",
+    packingList: "PKL-B002",
+    supplier: "Phụ liệu An Phước",
+    etd: "2023-11-15",
+    eta: "2023-11-28",
+    status: "arriving_soon",
+    creator: "Bình Trần",
+  },
+  {
+    id: "3",
+    poNumber: "PO-11220",
+    packingList: "PKL-C003",
+    supplier: "Global Weaving Co.",
+    etd: "2023-10-25",
+    eta: "2023-11-12",
+    status: "delayed",
+    creator: "Chi Phạm",
+  },
+  {
+    id: "4",
+    poNumber: "PO-11225",
+    packingList: "PKL-D004",
+    supplier: "Vải Sợi Miền Nam",
+    etd: "2023-11-20",
+    eta: "2023-12-05",
+    status: "pending",
+    creator: "An Nguyễn",
+  },
+  {
+    id: "5",
+    poNumber: "PO-11219",
+    packingList: "PKL-E005",
+    supplier: "Supplier Z",
+    etd: "2023-10-30",
+    eta: "2023-11-15",
+    status: "arrived",
+    creator: "Dung Lê",
+  },
+];
+
+const MOCK_SUMMARY_DATA: SummaryData[] = [
+  { title: "Đang vận chuyển", value: 12, icon: Truck, color: "bg-blue-500" },
+  {
+    title: "Sắp đến trong 7 ngày",
+    value: 3,
+    icon: CalendarClock,
+    color: "bg-cyan-500",
+  },
+  { title: "Bị trễ", value: 2, icon: TriangleAlert, color: "bg-red-500" },
+  { title: "Chờ gửi", value: 5, icon: Hourglass, color: "bg-gray-500" },
+];
+
+const InboundDashboardPage = () => {
+  const [shipments, setShipments] = useState<Shipment[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Giả lập việc gọi API
+    setIsLoading(true);
+    const timer = setTimeout(() => {
+      setShipments(MOCK_SHIPMENTS);
+      setIsLoading(false);
+    }, 1500); // 1.5 giây loading
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <div className="bg-gray-50 min-h-screen p-4 sm:p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto">
+        <DashboardHeader />
+
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+          {isLoading ? (
+            <>
+              <CardSkeleton />
+              <CardSkeleton />
+              <CardSkeleton />
+              <CardSkeleton />
+            </>
+          ) : (
+            MOCK_SUMMARY_DATA.map((item) => (
+              <SummaryCard
+                key={item.title}
+                icon={item.icon}
+                title={item.title}
+                value={item.value}
+                color={item.color}
+              />
+            ))
+          )}
+        </div>
+
+        {/* Filters */}
+        <ShipmentFilters />
+
+        {/* Data Table */}
+        <ShipmentsTable shipments={shipments} isLoading={isLoading} />
+      </div>
+    </div>
+  );
+};
+
+export default InboundDashboardPage;
+
+
+--- D:\WATATECH\WH\src\pages\inbound-dashboard\types.ts ---
+
+// Định nghĩa các trạng thái có thể có của lô hàng
+export type ShipmentStatus = 'shipping' | 'arriving_soon' | 'delayed' | 'pending' | 'arrived';
+
+// Kiểu dữ liệu cho một lô hàng
+export interface Shipment {
+  id: string;
+  poNumber: string;
+  packingList: string;
+  supplier: string;
+  etd: string; // Dạng ISO date string: "2023-11-10"
+  eta: string; // Dạng ISO date string: "2023-11-25"
+  status: ShipmentStatus;
+  creator: string;
+}
+
+// Kiểu dữ liệu cho các thẻ tóm tắt
+export interface SummaryData {
+  title: string;
+  value: number;
+  icon: React.ElementType;
+  color: string;
+}
+
+
+--- D:\WATATECH\WH\src\pages\inbound-dashboard\components\DashboardHeader.tsx ---
+
+// Path: src/pages/inbound-dashboard/components/DashboardHeader.tsx
+
+import React from "react";
+import { Search, Plus } from "lucide-react";
+import { Link } from "react-router-dom"; // <-- Bước 1: Import component Link
+
+export const DashboardHeader = () => {
+  return (
+    <div className="mb-6">
+      {/* Breadcrumb */}
+      <nav className="text-sm mb-2" aria-label="Breadcrumb">
+        <ol className="list-none p-0 inline-flex">
+          <li className="flex items-center">
+            {/* Nên dùng Link cho cả breadcrumb để điều hướng trong SPA */}
+            <Link to="/" className="text-gray-500 hover:text-gray-700">
+              Trang chủ
+            </Link>
+            <svg
+              className="fill-current w-3 h-3 mx-3"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 320 512"
+            >
+              <path d="M285.476 272.971L91.132 467.314c-9.373 9.373-24.569 9.373-33.941 0l-22.667-22.667c-9.357-9.357-9.375-24.522-.04-33.901L188.505 256 34.484 101.255c-9.335-9.379-9.317-24.544.04-33.901l22.667-22.667c9.373-9.373 24.569-9.373 33.941 0L285.475 239.03c9.373 9.372 9.373 24.568.001 33.941z" />
+            </svg>
+          </li>
+          <li className="flex items-center">
+            <span className="text-gray-700 font-medium">
+              Dashboard Hàng Nhập
+            </span>
+          </li>
+        </ol>
+      </nav>
+
+      {/* Title and Actions */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+        <h1 className="text-3xl font-bold text-gray-900 mb-4 md:mb-0">
+          Dashboard Hàng Nhập
+        </h1>
+        <div className="flex items-center space-x-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Tìm theo PO, Packing List..."
+              className="w-full md:w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+
+          {/* Bước 2: Thay thế <button> bằng <Link> và thêm prop 'to' */}
+          <Link
+            to="/import-packing-list"
+            className="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75"
+          >
+            <Plus className="-ml-1 mr-2 h-5 w-5" />
+            Nhập Packing List
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
+--- D:\WATATECH\WH\src\pages\inbound-dashboard\components\ShipmentFilters.tsx ---
+
+import React from "react";
+import { SlidersHorizontal, RotateCcw } from "lucide-react";
+
+export const ShipmentFilters = () => {
+  return (
+    <div className="bg-white p-4 rounded-lg border border-gray-200 mb-6 flex flex-wrap gap-4 items-center">
+      <h3 className="text-lg font-semibold text-gray-800 mr-4 flex items-center">
+        <SlidersHorizontal className="w-5 h-5 mr-2" />
+        Bộ lọc
+      </h3>
+
+      {/* Filter by Status */}
+      <div className="flex-grow min-w-[150px]">
+        <label
+          htmlFor="status-filter"
+          className="block text-sm font-medium text-gray-700 mb-1"
+        >
+          Trạng thái
+        </label>
+        <select
+          id="status-filter"
+          className="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+        >
+          <option>Tất cả</option>
+          <option>Đang vận chuyển</option>
+          <option>Sắp đến</option>
+          <option>Bị trễ</option>
+          <option>Chờ gửi</option>
+        </select>
+      </div>
+
+      {/* Filter by ETD */}
+      <div className="flex-grow min-w-[200px]">
+        <label
+          htmlFor="etd-filter"
+          className="block text-sm font-medium text-gray-700 mb-1"
+        >
+          Ngày dự kiến đi (ETD)
+        </label>
+        <input
+          type="date"
+          id="etd-filter"
+          className="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+        />
+      </div>
+
+      {/* Filter by ETA */}
+      <div className="flex-grow min-w-[200px]">
+        <label
+          htmlFor="eta-filter"
+          className="block text-sm font-medium text-gray-700 mb-1"
+        >
+          Ngày dự kiến đến (ETA)
+        </label>
+        <input
+          type="date"
+          id="eta-filter"
+          className="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+        />
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex items-end space-x-2 pt-5">
+        <button className="px-4 py-2 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300">
+          <RotateCcw className="w-4 h-4 mr-2 inline-block" />
+          Xóa bộ lọc
+        </button>
+      </div>
+    </div>
+  );
+};
+
+
+--- D:\WATATECH\WH\src\pages\inbound-dashboard\components\ShipmentsTable.tsx ---
+
+import React from "react";
+import type { Shipment } from "../types";
+import { StatusBadge } from "./StatusBadge";
+import { TableSkeleton } from "./skeletons/TableSkeleton";
+import { MoreHorizontal } from "lucide-react";
+
+interface ShipmentsTableProps {
+  shipments: Shipment[];
+  isLoading: boolean;
+}
+
+export const ShipmentsTable: React.FC<ShipmentsTableProps> = ({
+  shipments,
+  isLoading,
+}) => {
+  if (isLoading) {
+    return <TableSkeleton />;
+  }
+
+  if (shipments.length === 0) {
+    return (
+      <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
+        <h3 className="text-xl font-semibold text-gray-700">
+          Không tìm thấy lô hàng nào
+        </h3>
+        <p className="text-gray-500 mt-2">
+          Hãy thử thay đổi bộ lọc hoặc tạo một Packing List mới.
+        </p>
+      </div>
+    );
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("vi-VN");
+  };
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Số PO
+              </th>
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Packing List
+              </th>
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Nhà cung cấp
+              </th>
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                ETD
+              </th>
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                ETA
+              </th>
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Trạng thái
+              </th>
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Người tạo
+              </th>
+              <th scope="col" className="relative px-6 py-3">
+                <span className="sr-only">Actions</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {shipments.map((shipment) => (
+              <tr key={shipment.id} className="hover:bg-gray-50">
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  {shipment.poNumber}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 font-semibold cursor-pointer hover:underline">
+                  {shipment.packingList}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {shipment.supplier}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {formatDate(shipment.etd)}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {formatDate(shipment.eta)}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm">
+                  <StatusBadge status={shipment.status} />
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {shipment.creator}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <button className="text-gray-400 hover:text-gray-600">
+                    <MoreHorizontal className="w-5 h-5" />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {/* Pagination */}
+      <nav className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+        <div className="hidden sm:block">
+          <p className="text-sm text-gray-700">
+            Hiển thị <span className="font-medium">1</span> đến{
