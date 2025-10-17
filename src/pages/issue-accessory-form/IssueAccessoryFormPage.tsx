@@ -1,6 +1,6 @@
 // Path: src/pages/issue-accessory-form/IssueAccessoryFormPage.tsx
 
-import React, { useState } from "react";
+import { useState } from "react";
 import type { AccessoryRequestFormState, AccessoryRequestItem } from "./types";
 import PageHeader from "./components/PageHeader";
 import FormHeader from "./components/FormHeader";
@@ -21,12 +21,12 @@ const IssueAccessoryFormPage = () => {
   const [formData, setFormData] =
     useState<AccessoryRequestFormState>(initialState);
 
-  const handleFieldChange = (
-    field: keyof AccessoryRequestFormState,
-    value: any
-  ) => {
+  function handleFieldChange<K extends keyof AccessoryRequestFormState>(
+    field: K,
+    value: AccessoryRequestFormState[K]
+  ) {
     setFormData((prev) => ({ ...prev, [field]: value }));
-  };
+  }
 
   const handleProductionOrderChange = (po: string) => {
     setFormData((prev) => {
@@ -60,10 +60,10 @@ const IssueAccessoryFormPage = () => {
     setFormData((prev) => ({ ...prev, items: [...prev.items, newItem] }));
   };
 
-  const handleItemChange = (
+  const handleItemChange = <K extends keyof AccessoryRequestItem>(
     id: string,
-    field: keyof AccessoryRequestItem,
-    value: any
+    field: K,
+    value: AccessoryRequestItem[K]
   ) => {
     setFormData((prev) => ({
       ...prev,

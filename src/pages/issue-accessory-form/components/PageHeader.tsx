@@ -1,6 +1,5 @@
 // Path: src/pages/issue-accessory-form/components/PageHeader.tsx
 
-import React from "react";
 import { Boxes } from "lucide-react";
 
 const PageHeader = () => {

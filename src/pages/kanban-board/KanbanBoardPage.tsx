@@ -1,5 +1,5 @@
 // Path: src/pages/kanban-board/KanbanBoardPage.tsx
-import React, { useState } from "react";
+import { useState } from "react";
 import { DndContext, closestCorners } from "@dnd-kit/core";
 import type { DragEndEvent } from "@dnd-kit/core";
 import { mockBoards } from "./data";

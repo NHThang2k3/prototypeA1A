@@ -1,11 +1,13 @@
 // Path: src/pages/issue-transaction-reports/IssueTransactionReportsPage.tsx
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import PageHeader from "./components/PageHeader";
 import ReportFilters from "./components/ReportFilters";
 import TransactionsTable from "./components/TransactionsTable";
 import { mockTransactions } from "./data";
-import type { IssueTransaction } from "./types";
+import type { IssueTransaction, Filters } from "./types"; // <-- IMPORT TỪ ĐÂY
+
+// type Filters = Record<string, unknown>; // <-- XÓA ĐỊNH NGHĨA CỤC BỘ NÀY
 
 const IssueTransactionReportsPage = () => {
   const [transactions, setTransactions] = useState<IssueTransaction[]>([]);
@@ -22,7 +24,7 @@ const IssueTransactionReportsPage = () => {
     }, 1000); // Giả lập độ trễ 1 giây
   }, []);
 
-  const handleFilterChange = (filters: any) => {
+  const handleFilterChange = (filters: Filters) => {
     // TODO: Xử lý logic lọc dữ liệu dựa trên filters từ component ReportFilters
     console.log("Filters changed:", filters);
     // Gọi lại API hoặc lọc dữ liệu mock tại đây
@@ -31,6 +33,7 @@ const IssueTransactionReportsPage = () => {
   return (
     <div className="p-6 bg-gray-100 min-h-full">
       <PageHeader />
+      {/* Dòng 36 bây giờ sẽ không còn lỗi */}
       <ReportFilters onFilterChange={handleFilterChange} />
       <TransactionsTable transactions={transactions} isLoading={isLoading} />
       {/* Thêm Pagination ở đây nếu cần */}

@@ -12,6 +12,19 @@ export interface IssueTransaction {
   status: TransactionStatus;
 }
 
+// Thêm hoặc thay thế định nghĩa Filters ở đây
+// Đây là định nghĩa chính xác cho bộ lọc của bạn
+export interface Filters {
+  query?: string;
+  type?: string;
+  status?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+// Ghi chú: Interface ReportFilters bên dưới có vẻ không được sử dụng
+// hoặc có cấu trúc khác. Bạn có thể xóa nó đi nếu không cần thiết.
+/*
 export interface ReportFilters {
   searchTerm: string;
   status: string;
@@ -21,3 +34,4 @@ export interface ReportFilters {
     to: string;
   };
 }
+*/

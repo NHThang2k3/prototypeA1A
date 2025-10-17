@@ -1,7 +1,5 @@
 // Path: src/pages/inventory-list/components/skeletons/FilterSkeleton.tsx
 
-import React from "react";
-
 export const FilterSkeleton = () => (
   <div className="bg-white p-6 rounded-lg shadow space-y-6 animate-pulse">
     {[...Array(5)].map((_, i) => (

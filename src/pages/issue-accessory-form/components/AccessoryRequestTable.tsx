@@ -11,7 +11,7 @@ interface AccessoryRequestTableProps {
   handleItemChange: (
     id: string,
     field: keyof AccessoryRequestItem,
-    value: any
+    value: AccessoryRequestItem[keyof AccessoryRequestItem]
   ) => void;
   handleRemoveItem: (id: string) => void;
 }
@@ -83,7 +83,7 @@ const AccessoryRequestTable: React.FC<AccessoryRequestTableProps> = ({
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {items.map((item, index) => {
+            {items.map((item) => {
               const quantityExceedsStock =
                 item.quantity > item.stock && item.stock > 0;
               return (

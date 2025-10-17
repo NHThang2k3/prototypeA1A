@@ -1,7 +1,5 @@
 // Path: src/pages/location-management/components/skeletons/DetailSkeleton.tsx
 
-import React from "react";
-
 const DetailSkeleton = () => {
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm h-full overflow-y-auto animate-pulse">

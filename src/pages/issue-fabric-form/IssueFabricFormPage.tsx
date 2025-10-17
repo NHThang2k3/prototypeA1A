@@ -1,6 +1,6 @@
 // Path: src/pages/issue-fabric-form/IssueFabricFormPage.tsx
 
-import React, { useState } from "react";
+import { useState } from "react";
 import PageHeader from "./components/PageHeader";
 import FormHeader from "./components/FormHeader";
 import FabricRequestTable from "./components/FabricRequestTable";

@@ -1,7 +1,5 @@
 // Path: src/pages/inventory-list/components/skeletons/TableSkeleton.tsx
 
-import React from "react";
-
 export const TableSkeleton = () => (
   <div className="bg-white p-6 rounded-lg shadow animate-pulse">
     {/* Header Skeleton */}

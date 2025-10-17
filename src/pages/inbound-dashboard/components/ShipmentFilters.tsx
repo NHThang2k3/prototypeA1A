@@ -1,6 +1,5 @@
 // D:\WATATECH\WH\src\pages\inbound-dashboard\components\ShipmentFilters.tsx
 
-import React from "react";
 import { SlidersHorizontal, RotateCcw } from "lucide-react";
 
 export const ShipmentFilters = () => {

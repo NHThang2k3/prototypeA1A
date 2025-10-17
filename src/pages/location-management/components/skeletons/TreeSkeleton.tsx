@@ -1,7 +1,5 @@
 // Path: src/pages/location-management/components/skeletons/TreeSkeleton.tsx
 
-import React from "react";
-
 const SkeletonItem = ({ indent = 0 }: { indent?: number }) => (
   <div
     className="flex items-center p-2"

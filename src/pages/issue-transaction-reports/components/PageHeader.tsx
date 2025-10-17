@@ -1,6 +1,5 @@
 // Path: src/pages/issue-transaction-reports/components/PageHeader.tsx
 
-import React from "react";
 import { Download } from "lucide-react";
 
 const PageHeader = () => {

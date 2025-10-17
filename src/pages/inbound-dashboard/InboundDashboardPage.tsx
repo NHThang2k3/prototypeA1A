@@ -1,6 +1,6 @@
 // D:\WATATECH\WH\src\pages\inbound-dashboard\InboundDashboardPage.tsx
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Inbox, ClipboardList, PackageCheck, Hourglass } from "lucide-react";
 import type { Receipt, SummaryData } from "./types";
 import { DashboardHeader } from "./components/DashboardHeader";

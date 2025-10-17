@@ -1,6 +1,6 @@
 // Path: src/pages/inventory-list/InventoryListPage.tsx
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { InventoryHeader } from "./components/InventoryHeader";
 import { InventoryFilters } from "./components/InventoryFilters";
 import { InventoryTable } from "./components/InventoryTable";

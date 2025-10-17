@@ -1,6 +1,5 @@
 // Path: src/pages/inventory-list/components/InventoryFilters.tsx
 
-import React from "react";
 import { Search, SlidersHorizontal } from "lucide-react";
 
 export const InventoryFilters = () => {

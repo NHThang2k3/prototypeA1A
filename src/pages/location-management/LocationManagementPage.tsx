@@ -1,6 +1,6 @@
 // Path: src/pages/location-management/LocationManagementPage.tsx
 
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import LocationTree from "./components/LocationTree";
 import LocationDetail from "./components/LocationDetail";
 import PageHeader from "./components/PageHeader";

@@ -6,9 +6,9 @@ import type { AccessoryRequestFormState } from "../types";
 
 interface FormHeaderProps {
   formData: AccessoryRequestFormState;
-  handleFieldChange: (
-    field: keyof AccessoryRequestFormState,
-    value: any
+  handleFieldChange: <K extends keyof AccessoryRequestFormState>(
+    field: K,
+    value: AccessoryRequestFormState[K]
   ) => void;
   handleProductionOrderChange: (po: string) => void;
 }

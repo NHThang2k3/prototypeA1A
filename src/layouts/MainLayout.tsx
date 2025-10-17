@@ -1,6 +1,6 @@
 // Path: src/layouts/MainLayout.tsx
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import {
   Menu,

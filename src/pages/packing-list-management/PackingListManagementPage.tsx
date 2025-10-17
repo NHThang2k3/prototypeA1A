@@ -1,6 +1,6 @@
 // src/pages/packing-list-management/PackingListManagementPage.tsx
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import PageHeader from "./components/PageHeader";
 import PackingListFilters from "./components/PackingListFilters";
 import PackingListTable from "./components/PackingListTable";

@@ -1,6 +1,5 @@
 // Path: src/pages/inventory-list/components/InventoryHeader.tsx
 
-import React from "react";
 import { ChevronRight, FileDown, ClipboardList } from "lucide-react";
 
 export const InventoryHeader = () => (

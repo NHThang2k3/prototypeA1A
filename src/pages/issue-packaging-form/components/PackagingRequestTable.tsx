@@ -4,7 +4,11 @@ import type { RequestItem } from "../types";
 
 interface PackagingRequestTableProps {
   items: RequestItem[];
-  onItemChange: (id: string, field: keyof RequestItem, value: any) => void;
+  onItemChange: (
+    id: string,
+    field: keyof RequestItem,
+    value: RequestItem[keyof RequestItem]
+  ) => void;
   onRemoveItem: (id: string) => void;
   onAddItem: () => void;
 }

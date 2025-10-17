@@ -1,5 +1,3 @@
-import React from "react";
-
 export const TableSkeleton = () => (
   <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden animate-pulse">
     <div className="overflow-x-auto">

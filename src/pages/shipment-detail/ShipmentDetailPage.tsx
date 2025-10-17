@@ -1,6 +1,6 @@
 // Path: src/pages/shipment-detail/ShipmentDetailPage.tsx
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { mockShipmentData } from "./data";
 import type { Shipment, ShipmentItem, BreakdownItem } from "./types";

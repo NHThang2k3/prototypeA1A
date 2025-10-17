@@ -1,7 +1,6 @@
 // Path: src/pages/issue-fabric-form/components/PageHeader.tsx
 
 import { ChevronRight } from "lucide-react";
-import React from "react";
 
 const PageHeader = () => {
   return (
