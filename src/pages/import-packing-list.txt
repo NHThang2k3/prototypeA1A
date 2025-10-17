@@ -1,25 +1,19 @@
+// src/pages/import-packing-list/ImportPackingListFormPage.tsx
+
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-// import FormHeader from "./components/FormHeader"; // Bỏ import FormHeader
 import FileUploadZone from "./components/FileUploadZone";
 import ActionToolbar from "./components/ActionToolbar";
-import type { ShipmentItem } from "./types"; // ShipmentHeader không còn cần ở đây
+import type { ShipmentItem } from "./types";
 
 const ImportPackingListFormPage: React.FC = () => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Bỏ state headerData
-  // const [headerData, setHeaderData] = useState<ShipmentHeader>({ ... });
-
   // Dữ liệu items sẽ được điền từ file upload
   const [items, setItems] = useState<ShipmentItem[]>([]);
 
-  // Bỏ hàm handleHeaderChange
-  // const handleHeaderChange = (field: keyof ShipmentHeader, value: string) => { ... };
-
   const handleSubmit = () => {
-    // Cập nhật: chỉ gửi đi items
     console.log("Submitting form:", { items });
 
     // Validate form before submitting
@@ -56,7 +50,6 @@ const ImportPackingListFormPage: React.FC = () => {
         </div>
 
         {/* Bỏ hoàn toàn Form Header */}
-        {/* <FormHeader data={headerData} onChange={handleHeaderChange} /> */}
 
         {/* Item Details */}
         <div className="bg-white p-6 rounded-lg shadow-md">
@@ -78,7 +71,30 @@ const ImportPackingListFormPage: React.FC = () => {
 export default ImportPackingListFormPage;
 
 
---- D:\WATATECH\WH\src\pages\import-packing-list\components\ActionToolbar.tsx ---
+// src/pages/import-packing-list/types.ts
+
+// Định nghĩa cho một dòng hàng hóa trong phiếu nhập
+export interface ShipmentItem {
+  id: string; // ID tạm thời ở client để xử lý key trong list
+  sku: string;
+  name: string;
+  quantity: number;
+  uom: string; // Unit of Measure - Đơn vị tính
+  batch?: string; // Số lô/batch, không bắt buộc
+}
+
+// Định nghĩa cho thông tin chung của phiếu nhập
+export interface ShipmentHeader {
+  supplier: string;
+  poNumber: string;
+  packingListNo: string;
+  etd: string; // Expected Time of Departure
+  eta: string; // Expected Time of Arrival
+  notes: string;
+}
+
+
+// src/pages/import-packing-list/components/ActionToolbar.tsx
 
 import React from "react";
 
@@ -87,7 +103,7 @@ interface ActionToolbarProps {
   isSubmitting: boolean;
 }
 
-const ActionToolbar: React.FC<ActionToolbarProps> = ({ 
+const ActionToolbar: React.FC<ActionToolbarProps> = ({
   onSubmit,
   isSubmitting,
 }) => {
@@ -109,7 +125,7 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
 export default ActionToolbar;
 
 
---- D:\WATATECH\WH\src\pages\import-packing-list\components\FileUploadZone.tsx ---
+// src/pages/import-packing-list/components/FileUploadZone.tsx
 
 import React, { useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
@@ -180,7 +196,11 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onItemsChange }) => {
       <div
         {...getRootProps()}
         className={`w-full border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-colors
-          ${isDragActive ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-gray-400"}`}
+          ${
+            isDragActive
+              ? "border-blue-500 bg-blue-50"
+              : "border-gray-300 hover:border-gray-400"
+          }`}
       >
         <input {...getInputProps()} />
         <div className="flex flex-col items-center text-gray-500">
@@ -220,629 +240,3 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onItemsChange }) => {
 };
 
 export default FileUploadZone;
-
-
---- D:\WATATECH\WH\src\pages\import-packing-list\components\FormHeader.tsx ---
-
-import React from "react";
-import type { ShipmentHeader } from "../types";
-
-interface FormHeaderProps {
-  data: ShipmentHeader;
-  onChange: (field: keyof ShipmentHeader, value: string) => void;
-}
-
-const FormHeader: React.FC<FormHeaderProps> = ({ data, onChange }) => {
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    onChange(name as keyof ShipmentHeader, value);
-  };
-
-  return (
-    <div className="bg-white p-6 rounded-lg shadow-md">
-      <h2 className="text-xl font-semibold text-gray-800 mb-4">
-        1. Thông tin chung
-      </h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Nhà cung cấp */}
-        <div>
-          <label
-            htmlFor="supplier"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            Nhà cung cấp <span className="text-red-500">*</span>
-          </label>
-          {/* TODO: Chuyển thành component Autocomplete để tìm kiếm NCC */}
-          <input
-            type="text"
-            id="supplier"
-            name="supplier"
-            value={data.supplier}
-            onChange={handleChange}
-            className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            placeholder="Nhập tên hoặc mã nhà cung cấp"
-          />
-        </div>
-
-        {/* Số PO */}
-        <div>
-          <label
-            htmlFor="poNumber"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            Số PO
-          </label>
-          <input
-            type="text"
-            id="poNumber"
-            name="poNumber"
-            value={data.poNumber}
-            onChange={handleChange}
-            className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
-          />
-        </div>
-
-        {/* Số Packing List */}
-        <div>
-          <label
-            htmlFor="packingListNo"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            Số Packing List <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            id="packingListNo"
-            name="packingListNo"
-            value={data.packingListNo}
-            onChange={handleChange}
-            className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
-          />
-        </div>
-
-        {/* Ngày dự kiến đi (ETD) */}
-        <div>
-          <label
-            htmlFor="etd"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            Ngày dự kiến đi (ETD)
-          </label>
-          <input
-            type="date"
-            id="etd"
-            name="etd"
-            value={data.etd}
-            onChange={handleChange}
-            className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
-          />
-        </div>
-
-        {/* Ngày dự kiến đến (ETA) */}
-        <div>
-          <label
-            htmlFor="eta"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            Ngày dự kiến đến (ETA) <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="date"
-            id="eta"
-            name="eta"
-            value={data.eta}
-            onChange={handleChange}
-            className="form-input w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
-          />
-        </div>
-
-        {/* Ghi chú */}
-        <div className="md:col-span-2">
-          <label
-            htmlFor="notes"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            Ghi chú
-          </label>
-          <textarea
-            id="notes"
-            name="notes"
-            rows={3}
-            value={data.notes}
-            onChange={handleChange}
-            className="form-textarea w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            placeholder="Thêm ghi chú cho lô hàng..."
-          ></textarea>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default FormHeader;
-
-
---- D:\WATATECH\WH\src\pages\import-packing-list\components\ManualItemsTable.tsx ---
-
-import React from "react";
-import { Trash2, PlusCircle } from "lucide-react";
-// Sử dụng 'import type' để chỉ rõ ràng đây là một type import
-import type { ShipmentItem } from "../types";
-
-interface ManualItemsTableProps {
-  items: ShipmentItem[];
-  onItemsChange: (items: ShipmentItem[]) => void;
-}
-
-const ManualItemsTable: React.FC<ManualItemsTableProps> = ({ 
-  items,
-  onItemsChange,
-}) => {
-  const handleItemChange = (
-    index: number,
-    field: keyof ShipmentItem,
-    value: string | number
-  ) => {
-    // Tạo một bản sao của mảng items để không thay đổi state gốc
-    const newItems = [...items];
-
-    // Tạo một đối tượng item đã được cập nhật bằng spread syntax
-    const updatedItem = {
-      ...newItems[index], // Sao chép tất cả thuộc tính của item cũ
-      [field]: value, // Ghi đè lên thuộc tính cần thay đổi một cách linh động
-    };
-
-    // Thay thế item cũ trong mảng bằng item đã cập nhật
-    newItems[index] = updatedItem;
-
-    // TODO: Khi người dùng nhập SKU, tự động điền Tên và ĐVT từ API
-    if (field === "sku") {
-      newItems[index].name = `Tên cho SKU ${value}`; // Giả lập
-      newItems[index].uom = "Cái"; // Giả lập
-    }
-    onItemsChange(newItems);
-  };
-
-  const addNewItem = () => {
-    const newItem: ShipmentItem = {
-      id: new Date().toISOString(), // ID tạm
-      sku: "",
-      name: "",
-      quantity: 0,
-      uom: "",
-      batch: "",
-    };
-    onItemsChange([...items, newItem]);
-  };
-
-  const removeItem = (index: number) => {
-    const newItems = items.filter((_, i) => i !== index);
-    onItemsChange(newItems);
-  };
-
-  return (
-    <div>
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">
-                Mã VT (SKU)
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/3">
-                Tên vật tư
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Số lượng
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                ĐVT
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Số lô
-              </th>
-              <th className="relative px-4 py-3">
-                <span className="sr-only">Xóa</span>
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {items.map((item, index) => (
-              <tr key={item.id}>
-                <td className="px-4 py-2 whitespace-nowrap">
-                  <input
-                    type="text"
-                    value={item.sku}
-                    onChange={(e) =>
-                      handleItemChange(index, "sku", e.target.value)
-                    }
-                    className="form-input w-full text-sm border-gray-300 rounded-md"
-                  />
-                </td>
-                <td className="px-4 py-2 whitespace-nowrap">
-                  <input
-                    type="text"
-                    value={item.name}
-                    readOnly
-                    className="form-input w-full text-sm border-gray-300 rounded-md bg-gray-100"
-                  />
-                </td>
-                <td className="px-4 py-2 whitespace-nowrap">
-                  <input
-                    type="number"
-                    value={item.quantity}
-                    onChange={(e) =>
-                      handleItemChange(
-                        index,
-                        "quantity",
-                        parseInt(e.target.value, 10) || 0
-                      )
-                    }
-                    className="form-input w-full text-sm border-gray-300 rounded-md"
-                  />
-                </td>
-                <td className="px-4 py-2 whitespace-nowrap">
-                  <input
-                    type="text"
-                    value={item.uom}
-                    readOnly
-                    className="form-input w-full text-sm border-gray-300 rounded-md bg-gray-100"
-                  />
-                </td>
-                <td className="px-4 py-2 whitespace-nowrap">
-                  <input
-                    type="text"
-                    // Thêm || "" để tránh lỗi controlled-uncontrolled component khi item.batch là undefined
-                    value={item.batch || ""}
-                    onChange={(e) =>
-                      handleItemChange(index, "batch", e.target.value)
-                    }
-                    className="form-input w-full text-sm border-gray-300 rounded-md"
-                  />
-                </td>
-                <td className="px-4 py-2 whitespace-nowrap text-right text-sm font-medium">
-                  <button
-                    onClick={() => removeItem(index)}
-                    className="text-red-600 hover:text-red-800"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <button
-        onClick={addNewItem}
-        className="mt-4 flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200"
-      >
-        <PlusCircle className="w-5 h-5 mr-2" />
-        Thêm dòng
-      </button>
-    </div>
-  );
-};
-
-export default ManualItemsTable;
-
-
---- D:\WATATECH\WH\src\pages\import-packing-list\types.ts ---
-
-// Định nghĩa cho một dòng hàng hóa trong phiếu nhập
-export interface ShipmentItem {
-  id: string; // ID tạm thời ở client để xử lý key trong list
-  sku: string;
-  name: string;
-  quantity: number;
-  uom: string; // Unit of Measure - Đơn vị tính
-  batch?: string; // Số lô/batch, không bắt buộc
-}
-
-// Định nghĩa cho thông tin chung của phiếu nhập
-export interface ShipmentHeader {
-  supplier: string;
-  poNumber: string;
-  packingListNo: string;
-  etd: string; // Expected Time of Departure
-  eta: string; // Expected Time of Arrival
-  notes: string;
-}
-
-
-# File src/App.tsx
-// Path: src/App.tsx
-
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import MainLayout from "./layouts/MainLayout";
-import InboundDashboardPage from "./pages/inbound-dashboard/InboundDashboardPage";
-import InventoryListPage from "./pages/inventory-list/InventoryListPage";
-import KanbanBoardPage from "./pages/kanban-board/KanbanBoardPage";
-import ImportPackingListFormPage from "./pages/import-packing-list/ImportPackingListFormPage";
-import ShipmentDetailPage from "./pages/shipment-detail/ShipmentDetailPage";
-import LocationManagementPage from "./pages/location-management/LocationManagementPage";
-import QRScanInterfacePage from "./pages/qr-scan/QRScanInterfacePage";
-import IssueFabricFormPage from "./pages/issue-fabric-form/IssueFabricFormPage";
-import IssueAccessoryFormPage from "./pages/issue-accessory-form/IssueAccessoryFormPage";
-import IssuePackagingFormPage from "./pages/issue-packaging-form/IssuePackagingFormPage";
-import IssueTransactionReportsPage from "./pages/issue-transaction-reports/IssueTransactionReportsPage";
-import PackingListManagementPage from "./pages/packing-list-management/PackingListManagementPage";
-
-function App() {
-  return (
-    <BrowserRouter>
-      <Routes>
-        {/* Tất cả các route bên trong đây sẽ sử dụng MainLayout */}
-        <Route path="/" element={<MainLayout />}>
-          <Route index element={<InboundDashboardPage />} />
-          <Route path="dashboard" element={<InboundDashboardPage />} />
-          <Route path="inventory" element={<InventoryListPage />} />
-          <Route path="kanban" element={<KanbanBoardPage />} />
-          <Route
-            path="import-packing-list"
-            element={<ImportPackingListFormPage />}
-          />
-          <Route
-            path="shipments/:shipmentId"
-            element={<ShipmentDetailPage />}
-          />
-          <Route path="locations" element={<LocationManagementPage />} />
-          <Route path="qr-scan" element={<QRScanInterfacePage />} />
-          <Route path="issue/fabric" element={<IssueFabricFormPage />} />
-
-          <Route path="issue/accessory" element={<IssueAccessoryFormPage />} />
-          <Route path="issue/packaging" element={<IssuePackagingFormPage />} />
-
-          <Route
-            path="reports/issues"
-            element={<IssueTransactionReportsPage />}
-          />
-
-          <Route path="packing-list" element={<PackingListManagementPage />} />
-        </Route>
-
-        {/* Bạn có thể thêm các route không cần layout ở đây, ví dụ trang Login */}
-        {/* <Route path="/login" element={<LoginPage />} /> */}
-      </Routes>
-    </BrowserRouter>
-  );
-}
-
-export default App;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# File src/layouts/MainLayout.tsx
-// Path: src/layouts/MainLayout.tsx
-
-import { useState } from "react";
-import { NavLink, Outlet } from "react-router-dom";
-import {
-  Menu,
-  X,
-  LayoutDashboard,
-  Truck,
-  Bell,
-  User,
-  KanbanSquare,
-  Network,
-  QrCode,
-  FileOutput,
-  Boxes,
-  Package,
-  ScrollText,
-  ListPlus,
-  Upload,
-} from "lucide-react";
-
-const Sidebar = () => {
-  // Style chung cho NavLink
-  const linkClasses = "flex items-center px-4 py-2.5 rounded-lg";
-  const inactiveClasses = "text-gray-300 hover:bg-gray-700";
-  const activeClasses = "bg-gray-700 font-semibold text-white";
-
-  return (
-    <div className="bg-gray-800 text-white w-64 space-y-2 p-4 flex-shrink-0">
-      <div className="text-2xl font-bold mb-6">Kho Hàng Pro</div>
-      <nav>
-        <NavLink
-          to="/dashboard"
-          className={({ isActive }) =>
-            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
-          }
-        >
-          <LayoutDashboard className="w-5 h-5 mr-3" />
-          Dashboard Hàng Nhập
-        </NavLink>
-
-        <NavLink
-          to="/packing-list"
-          className={({ isActive }) =>
-            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
-          }
-        >
-          <ListPlus className="w-5 h-5 mr-3" />
-          QL Packing List / In QR
-        </NavLink>
-
-        <NavLink
-          to="/inventory" // <--- THAY ĐỔI LINK
-          className={({ isActive }) =>
-            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
-          }
-        >
-          <Truck className="w-5 h-5 mr-3" />
-          Quản lý Tồn kho
-        </NavLink>
-
-        <NavLink
-          to="/kanban"
-          className={({ isActive }) =>
-            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
-          }
-        >
-          <KanbanSquare className="w-5 h-5 mr-3" />
-          Bảng Kanban
-        </NavLink>
-
-        <NavLink
-          to="/shipments/7c3b9a1d"
-          className={({ isActive }) =>
-            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
-          }
-        >
-          <Truck className="w-5 h-5 mr-3" />
-          Chi tiết lô hàng
-        </NavLink>
-
-        <NavLink
-          to="/locations"
-          className={({ isActive }) =>
-            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
-          }
-        >
-          <Network className="w-5 h-5 mr-3" />
-          Quản lý Vị trí
-        </NavLink>
-
-        <NavLink
-          to="/qr-scan"
-          className={({ isActive }) =>
-            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
-          }
-        >
-          <QrCode className="w-5 h-5 mr-3" />
-          Quét Mã QR
-        </NavLink>
-
-        <NavLink
-          to="/issue/fabric"
-          className={({ isActive }) =>
-            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
-          }
-        >
-          <FileOutput className="w-5 h-5 mr-3" />
-          Tạo Phiếu Xuất Vải
-        </NavLink>
-
-        <NavLink
-          to="/issue/accessory" // <--- Route mới
-          className={({ isActive }) =>
-            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
-          }
-        >
-          <Boxes className="w-5 h-5 mr-3" />
-          Tạo Phiếu Xuất Phụ liệu
-        </NavLink>
-
-        <NavLink
-          to="/issue/packaging"
-          className={({ isActive }) =>
-            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
-          }
-        >
-          <Package className="w-5 h-5 mr-3" />
-          Tạo Phiếu Xuất Đóng Gói
-        </NavLink>
-
-        <NavLink
-          to="/reports/issues" // <-- Route mới
-          className={({ isActive }) =>
-            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
-          }
-        >
-          <ScrollText className="w-5 h-5 mr-3" />
-          Báo cáo Xuất Kho
-        </NavLink>
-
-        <NavLink
-          to="/import-packing-list" // <-- Route mới
-          className={({ isActive }) =>
-            `${linkClasses} ${isActive ? activeClasses : inactiveClasses}`
-          }
-        >
-          <Upload className="w-5 h-5 mr-3" />
-          Upfile Packing List
-        </NavLink>
-      </nav>
-    </div>
-  );
-};
-
-// Component Header đơn giản
-const Header = ({ onMenuClick }: { onMenuClick: () => void }) => (
-  <header className="bg-white border-b border-gray-200 p-4 flex justify-between items-center">
-    {/* Nút Menu cho mobile */}
-    <button onClick={onMenuClick} className="lg:hidden text-gray-600">
-      <Menu className="w-6 h-6" />
-    </button>
-    <div className="hidden lg:block">
-      {/* Placeholder, có thể là thanh search hoặc title */}
-    </div>
-    <div className="flex items-center space-x-4">
-      <button className="text-gray-500 hover:text-gray-700">
-        <Bell className="w-6 h-6" />
-      </button>
-      <div className="flex items-center space-x-2">
-        <User className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 p-1" />
-        <span className="text-sm font-medium text-gray-700">Admin</span>
-      </div>
-    </div>
-  </header>
-);
-
-const MainLayout = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  return (
-    <div className="flex h-screen bg-gray-100">
-      {/* Sidebar cho Desktop */}
-      <div className="hidden lg:flex">
-        <Sidebar />
-      </div>
-
-      {/* Sidebar cho Mobile (Overlay) */}
-      {sidebarOpen && (
-        <div className="lg:hidden fixed inset-0 flex z-40">
-          <div
-            className="fixed inset-0 bg-black opacity-30"
-            onClick={() => setSidebarOpen(false)}
-          ></div>
-          <Sidebar />
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="absolute top-4 right-4 text-white"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-      )}
-
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header onMenuClick={() => setSidebarOpen(true)} />
-        <main className="flex-1 overflow-x-hidden overflow-y-auto">
-          {/* Đây là nơi các trang con sẽ được render */}
-          <Outlet />
-        </main>
-      </div>
-    </div>
-  );
-};
-
-export default MainLayout;
-

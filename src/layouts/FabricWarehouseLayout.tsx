@@ -1,5 +1,11 @@
 // Path: src/layouts/FabricWarehouseLayout.tsx
-import { useState, createContext, useContext, useEffect } from "react";
+import {
+  useState,
+  createContext,
+  useContext,
+  useEffect,
+  useRef, // Thêm useRef
+} from "react";
 import { NavLink, Outlet, useLocation, Link } from "react-router-dom";
 import {
   Menu,
@@ -27,7 +33,8 @@ import {
   BellRing,
   Settings,
   MoreHorizontal,
-  ArrowLeft, // Thêm icon ArrowLeft
+  ArrowLeft,
+  Globe, // Thêm icon Globe
   type LucideIcon,
 } from "lucide-react";
 
@@ -39,7 +46,7 @@ type NavItem = {
   children?: NavItem[];
 };
 
-// --- UPDATED: Cập nhật lại các đường dẫn 'path' với tiền tố /fabric-warehouse ---
+// --- Dữ liệu Sidebar giữ nguyên bằng Tiếng Anh ---
 const sidebarNavItems: NavItem[] = [
   {
     title: "Productivity",
@@ -52,19 +59,19 @@ const sidebarNavItems: NavItem[] = [
         key: "productivity-kanban",
         children: [
           {
-            title: "Dashboard Hàng Nhập",
+            title: "Inbound Dashboard", // Đổi lại thành Tiếng Anh
             path: "/fabric-warehouse/dashboard",
             icon: LayoutDashboard,
             key: "dashboard",
           },
           {
-            title: "Quản lý Tồn Kho",
+            title: "Inventory", // Đổi lại thành Tiếng Anh
             path: "/fabric-warehouse/inventory",
             icon: Truck,
             key: "inventory",
           },
           {
-            title: "Bảng Kanban",
+            title: "Kanban Board", // Đổi lại thành Tiếng Anh
             path: "/fabric-warehouse/kanban",
             icon: KanbanSquare,
             key: "kanban",
@@ -77,29 +84,23 @@ const sidebarNavItems: NavItem[] = [
         key: "productivity-receipt",
         children: [
           {
-            title: "Upfile Packing List",
+            title: "Upload Packing List Form", // Đổi lại thành Tiếng Anh
             path: "/fabric-warehouse/import-packing-list",
             icon: Upload,
             key: "import-packing-list",
           },
           {
-            title: "QL Packing List/InQR",
+            title: "Packing List/Print QR", // Đổi lại thành Tiếng Anh
             path: "/fabric-warehouse/packing-list",
             icon: ListPlus,
             key: "packing-list",
           },
-          {
-            title: "Chi tiết lô hàng",
-            path: "/fabric-warehouse/shipments/7c3b9a1d", // Giữ nguyên ID ví dụ
-            icon: Truck,
-            key: "shipment-detail",
-          },
-          {
-            title: "Báo cáo xuất kho",
-            path: "/fabric-warehouse/reports/issues",
-            icon: ScrollText,
-            key: "reports-issues",
-          },
+          // {
+          //   title: "Shipment Details", // Đổi lại thành Tiếng Anh
+          //   path: "/fabric-warehouse/shipments/7c3b9a1d",
+          //   icon: Truck,
+          //   key: "shipment-detail",
+          // },
         ],
       },
       {
@@ -107,12 +108,23 @@ const sidebarNavItems: NavItem[] = [
         icon: Boxes,
         key: "productivity-inventory",
         children: [
-          // Chỉ giữ lại chức năng liên quan đến Vải
           {
-            title: "Quét Xuất Vải",
-            path: "/fabric-warehouse/issue/fabric", // Sửa lại path cho đúng route
-            icon: FileOutput,
-            key: "issue-fabric",
+            title: "Location Management", // Đổi lại thành Tiếng Anh
+            path: "/fabric-warehouse/locations",
+            icon: Network,
+            key: "locations",
+          },
+          {
+            title: "Scan QR", // Đổi lại thành Tiếng Anh
+            path: "/fabric-warehouse/qr-scan",
+            icon: QrCode,
+            key: "qr-scan",
+          },
+          {
+            title: "Fabric WH Report", // Đổi lại thành Tiếng Anh
+            path: "/fabric-warehouse/reports/issues",
+            icon: ScrollText,
+            key: "reports-issues",
           },
         ],
       },
@@ -122,16 +134,10 @@ const sidebarNavItems: NavItem[] = [
         key: "productivity-delivery",
         children: [
           {
-            title: "Quản lý vị trí",
-            path: "/fabric-warehouse/locations",
-            icon: Network,
-            key: "locations",
-          },
-          {
-            title: "Quét Mã QR Chung",
-            path: "/fabric-warehouse/qr-scan", // Sửa lại path cho đúng route
-            icon: QrCode,
-            key: "qr-scan",
+            title: "Issue Fabric Form", // Đổi lại thành Tiếng Anh
+            path: "/fabric-warehouse/issue/fabric",
+            icon: FileOutput,
+            key: "issue-fabric",
           },
         ],
       },
@@ -234,7 +240,6 @@ const MenuItem = ({ item }: { item: NavItem }) => {
     );
   }
 
-  // Logic active state chính xác khi so sánh path tuyệt đối
   const isActuallyActive = location.pathname === item.path;
 
   return (
@@ -252,37 +257,27 @@ const MenuItem = ({ item }: { item: NavItem }) => {
   );
 };
 
-// IMPROVEMENT: Helper function to get all descendant keys of a menu item
 const getAllDescendantKeys = (
   items: NavItem[],
   targetKey: string
 ): string[] => {
   const keys: string[] = [];
-
   const findAndCollect = (nodes: NavItem[]): boolean => {
     for (const node of nodes) {
       if (node.key === targetKey) {
-        if (node.children) {
-          collectKeys(node.children);
-        }
+        if (node.children) collectKeys(node.children);
         return true;
       }
-      if (node.children && findAndCollect(node.children)) {
-        return true;
-      }
+      if (node.children && findAndCollect(node.children)) return true;
     }
     return false;
   };
-
   const collectKeys = (nodes: NavItem[]) => {
     for (const node of nodes) {
       keys.push(node.key);
-      if (node.children) {
-        collectKeys(node.children);
-      }
+      if (node.children) collectKeys(node.children);
     }
   };
-
   findAndCollect(items);
   return keys;
 };
@@ -312,11 +307,7 @@ const Sidebar = ({ isForMobile = false }: { isForMobile?: boolean }) => {
       }
       return [];
     };
-
     const activeParentKeys = findParentKeys(sidebarNavItems, location.pathname);
-
-    // FIX: Thay vì ghi đè, chúng ta sẽ hợp nhất state cũ với các key mới
-    // Sử dụng Set để tránh các key bị trùng lặp
     setOpenKeys((prevOpenKeys) => {
       const newKeys = new Set([...prevOpenKeys, ...activeParentKeys]);
       return Array.from(newKeys);
@@ -327,7 +318,6 @@ const Sidebar = ({ isForMobile = false }: { isForMobile?: boolean }) => {
     setOpenKeys((prev) => {
       const isOpen = prev.includes(key);
       if (isOpen) {
-        // IMPROVEMENT: Khi đóng một menu, đóng luôn tất cả menu con của nó
         const descendantKeys = getAllDescendantKeys(sidebarNavItems, key);
         const keysToClose = new Set([key, ...descendantKeys]);
         return prev.filter((k) => !keysToClose.has(k));
@@ -370,7 +360,7 @@ const Sidebar = ({ isForMobile = false }: { isForMobile?: boolean }) => {
               effectiveIsCollapsed ? "hidden" : ""
             }`}
           >
-            Kho Vải
+            Fabric Warehouse
           </span>
           {effectiveIsCollapsed && <MoreHorizontal className="w-8 h-8" />}
         </div>
@@ -395,7 +385,7 @@ const Sidebar = ({ isForMobile = false }: { isForMobile?: boolean }) => {
               <span
                 className={`ml-3 font-medium ${isCollapsed ? "hidden" : ""}`}
               >
-                Thu gọn
+                Collapse
               </span>
             </button>
           </div>
@@ -405,35 +395,105 @@ const Sidebar = ({ isForMobile = false }: { isForMobile?: boolean }) => {
   );
 };
 
-// --- UPDATED: Thêm nút Quay về vào Header ---
-const Header = ({ onMenuClick }: { onMenuClick: () => void }) => (
-  <header className="bg-white border-b border-gray-200 p-4 flex justify-between items-center">
-    <div className="flex items-center gap-4">
-      <button onClick={onMenuClick} className="lg:hidden text-gray-600">
-        <Menu className="w-6 h-6" />
-      </button>
-      <Link
-        to="/"
-        className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
-      >
-        <ArrowLeft className="w-5 h-5" />
-        <span className="font-medium hidden sm:block">Chọn Module</span>
-      </Link>
-    </div>
+// --- UPDATED: Thêm dropdown chọn ngôn ngữ vào Header ---
+const Header = ({ onMenuClick }: { onMenuClick: () => void }) => {
+  const [selectedLang, setSelectedLang] = useState<"en" | "vi">("en");
+  const [isDropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-    <div className="flex items-center space-x-4">
-      <button className="text-gray-500 hover:text-gray-700">
-        <Bell className="w-6 h-6" />
-      </button>
-      <div className="flex items-center space-x-2">
-        <User className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 p-1" />
-        <span className="text-sm font-medium text-gray-700">Admin</span>
+  // Hook để đóng dropdown khi click ra ngoài
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  return (
+    <header className="bg-white border-b border-gray-200 p-4 flex justify-between items-center">
+      <div className="flex items-center gap-4">
+        <button onClick={onMenuClick} className="lg:hidden text-gray-600">
+          <Menu className="w-6 h-6" />
+        </button>
+        <Link
+          to="/"
+          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          <span className="font-medium hidden sm:block">Select Module</span>
+        </Link>
       </div>
-    </div>
-  </header>
-);
 
-// --- UPDATED: Đổi tên Component thành FabricWarehouseLayout ---
+      <div className="flex items-center space-x-4">
+        {/* --- NEW: Language Dropdown --- */}
+        <div className="relative" ref={dropdownRef}>
+          <button
+            onClick={() => setDropdownOpen(!isDropdownOpen)}
+            className="flex items-center space-x-1 text-gray-500 hover:text-gray-700 p-2 rounded-md hover:bg-gray-100 transition-colors"
+          >
+            <Globe className="w-5 h-5" />
+            <span className="text-sm font-medium uppercase">
+              {selectedLang}
+            </span>
+            <ChevronDown
+              className={`w-4 h-4 transition-transform ${
+                isDropdownOpen ? "rotate-180" : ""
+              }`}
+            />
+          </button>
+          {isDropdownOpen && (
+            <div className="absolute right-0 mt-2 w-36 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
+              <button
+                onClick={() => {
+                  setSelectedLang("en");
+                  setDropdownOpen(false);
+                }}
+                className={`w-full text-left px-4 py-2 text-sm ${
+                  selectedLang === "en"
+                    ? "bg-gray-100 text-gray-900 font-semibold"
+                    : "text-gray-700"
+                } hover:bg-gray-100`}
+              >
+                English
+              </button>
+              <button
+                onClick={() => {
+                  setSelectedLang("vi");
+                  setDropdownOpen(false);
+                }}
+                className={`w-full text-left px-4 py-2 text-sm ${
+                  selectedLang === "vi"
+                    ? "bg-gray-100 text-gray-900 font-semibold"
+                    : "text-gray-700"
+                } hover:bg-gray-100`}
+              >
+                Tiếng Việt
+              </button>
+            </div>
+          )}
+        </div>
+        {/* --- End Language Dropdown --- */}
+
+        <button className="text-gray-500 hover:text-gray-700">
+          <Bell className="w-6 h-6" />
+        </button>
+        <div className="flex items-center space-x-2">
+          <User className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 p-1" />
+          <span className="text-sm font-medium text-gray-700">Admin</span>
+        </div>
+      </div>
+    </header>
+  );
+};
+
 const FabricWarehouseLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();

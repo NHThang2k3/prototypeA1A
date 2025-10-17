@@ -1,3 +1,20 @@
+// src/pages/import-packing-list/types.ts
+
+// Định nghĩa cho một dòng hàng hóa trong file packing list excel
+export interface PackingListItem {
+  id: string; // ID tạm thời ở client để xử lý key trong list
+  poNumber: string;
+  itemCode: string;
+  color: string;
+  rollNo: string;
+  lotNo: string;
+  yards: number;
+  netWeight: number;
+  grossWeight: number;
+  width: string;
+  location: string;
+}
+
 // Định nghĩa cho một dòng hàng hóa trong phiếu nhập
 export interface ShipmentItem {
   id: string; // ID tạm thời ở client để xử lý key trong list

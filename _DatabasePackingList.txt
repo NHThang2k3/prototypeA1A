@@ -1,0 +1,243 @@
+//// ------------------------------------------------------
+//// BẢNG DỮ LIỆU GỐC (MASTER DATA)
+//// ------------------------------------------------------
+
+// Bảng lưu trữ thông tin về các công ty (Nhà cung cấp, Người mua, Người gửi hàng...)
+Table Companies {
+  company_id int [pk, increment]
+  company_name varchar(255) [not null]
+  address text
+  phone_number varchar(50)
+  fax_number varchar(50)
+  company_type company_type_enum [not null, note: 'Loại hình công ty']
+  created_at timestamp [default: `now()`]
+}
+
+Enum company_type_enum {
+  Seller
+  Shipper
+  Buyer
+  Consignee
+  Beneficiary
+}
+
+// Bảng lưu trữ thông tin về các loại vật tư (vải)
+Table Materials {
+  material_id int [pk, increment]
+  item_code varchar(100) [unique, not null, note: 'Mã vật tư của nhà cung cấp']
+  material_description text [note: 'Mô tả chi tiết về vải']
+  composition varchar(255) [note: 'Thành phần']
+  construction varchar(100) [note: 'Kiểu dệt']
+  weight_gsm decimal(10, 2) [note: 'Trọng lượng (g/m²)']
+  width_inch varchar(20) [note: 'Khổ vải (inch)']
+  hs_code varchar(20) [note: 'Mã HS']
+  yarn_code varchar(50) [note: 'Mã sợi']
+  created_at timestamp [default: `now()`]
+}
+
+// Bảng lưu thông tin các Đơn đặt hàng (Purchase Orders)
+Table PurchaseOrders {
+  po_id int [pk, increment]
+  po_number varchar(50) [unique, not null]
+  buyer_id int [not null, ref: > Companies.company_id]
+  season varchar(10)
+  created_at timestamp [default: `now()`]
+}
+
+//// ------------------------------------------------------
+//// BẢNG DỮ LIỆU GIAO DỊCH (TRANSACTIONAL DATA)
+//// ------------------------------------------------------
+
+// Bảng chứa thông tin chung của mỗi Packing List
+Table PackingLists {
+  packing_list_id int [pk, increment]
+  packing_list_number varchar(50) [unique, not null]
+  invoice_number varchar(50)
+  issue_date date [not null]
+  seller_id int [not null, ref: > Companies.company_id]
+  shipper_id int [ref: > Companies.company_id]
+  buyer_id int [not null, ref: > Companies.company_id]
+  consignee_id int [not null, ref: > Companies.company_id]
+  payment_terms varchar(100)
+  transport_method varchar(50)
+  origin_country varchar(50)
+  total_rolls int
+  total_net_weight_kg decimal(10, 2)
+  total_gross_weight_kg decimal(10, 2)
+  total_yards decimal(10, 2)
+  source_document_path varchar(255) [note: 'Đường dẫn tới file gốc']
+  created_at timestamp [default: `now()`]
+}
+
+// Bảng chứa các dòng hàng trên Packing List (gộp theo PO, Mã vải, Màu)
+Table PackingListItems {
+  item_id int [pk, increment]
+  packing_list_id int [not null, ref: > PackingLists.packing_list_id]
+  po_id int [not null, ref: > PurchaseOrders.po_id]
+  material_id int [not null, ref: > Materials.material_id]
+  color_code varchar(100)
+  color_name varchar(100)
+  contract_number varchar(50) [note: 'VD: S.C.NO']
+  is_foc boolean [default: false]
+  foc_quantity_yards decimal(10, 2)
+}
+
+// Bảng chi tiết nhất, quản lý từng cuộn vải trong kho
+Table FabricRolls {
+  roll_id int [pk, increment]
+  item_id int [not null, ref: > PackingListItems.item_id, note: 'Liên kết tới dòng hàng tương ứng']
+  roll_number_supplier varchar(50) [note: 'Số cuộn của NCC']
+  lot_number varchar(50)
+  batch_number varchar(50)
+  yards decimal(10, 2) [not null]
+  meters decimal(10, 2)
+  net_weight_kg decimal(10, 2)
+  gross_weight_kg decimal(10, 2)
+  warehouse_location varchar(100) [note: 'Vị trí trong kho']
+  status roll_status_enum [not null, default: 'In_Stock']
+  received_date datetime [note: 'Ngày thực nhập kho']
+  created_at timestamp [default: `now()`]
+}
+
+// *** ĐÃ SỬA LỖI TẠI ĐÂY ***
+// Sử dụng định danh không có khoảng trắng để dễ truy vấn hơn
+// Hoặc có thể dùng dấu ngoặc kép: "In Stock"
+Enum roll_status_enum {
+  In_Stock
+  Reserved
+  Used
+  Quarantined
+  Scrapped
+}
+
+
+
+
+---
+
+### Cấu trúc các bảng (Data Schema)
+
+Đây là các bảng cần thiết để quản lý kho vải của bạn:
+
+#### 1. Bảng `Companies`
+Lưu thông tin về tất cả các bên liên quan (nhà cung cấp, người gửi hàng, người mua...).
+
+| Tên trường (Field Name) | Kiểu dữ liệu (Data Type) | Mô tả | Ví dụ |
+| :--- | :--- | :--- | :--- |
+| `company_id` | INT, PK, AI | Khóa chính, tự tăng | 1 |
+| `company_name` | VARCHAR(255) | Tên đầy đủ của công ty | `Treasure Star International Corp` |
+| `address` | TEXT | Địa chỉ công ty | `Le Sanalele Complex...` |
+| `phone_number` | VARCHAR(50) | Số điện thoại | `0921840120` |
+| `fax_number` | VARCHAR(50) | Số Fax (nếu có) | `84-274-3740018` |
+| `company_type` | VARCHAR(50) | Loại hình (Seller, Shipper, Buyer) | `Seller` |
+
+#### 2. Bảng `Materials`
+Bảng danh mục các loại vải. Đây là dữ liệu "master" về sản phẩm.
+
+| Tên trường (Field Name) | Kiểu dữ liệu (Data Type) | Mô tả | Ví dụ |
+| :--- | :--- | :--- | :--- |
+| `material_id` | INT, PK, AI | Khóa chính, tự tăng | 101 |
+| `item_code` | VARCHAR(100) | Mã vật tư duy nhất của nhà cung cấp | `CK-102-05-00049-R+AW-048190` |
+| `material_description`| TEXT | Mô tả chi tiết về vải | `100% Recycle Polyester; Circular Knit...` |
+| `composition` | VARCHAR(255) | Thành phần | `100% Recycled Polyester` |
+| `construction` | VARCHAR(100) | Kiểu dệt (Knit/Woven) | `Circular Knit Double Knit Pique` |
+| `weight_gsm` | DECIMAL(10,2) | Trọng lượng (gram/m²) | `240.00` |
+| `width_inch` | VARCHAR(20) | Khổ vải (inch) | `53"` |
+| `hs_code` | VARCHAR(20) | Mã HS (nếu có) | `60063490` |
+| `yarn_code` | VARCHAR(50) | Mã sợi (nếu có) | `CSCK` |
+
+#### 3. Bảng `PurchaseOrders` (Đơn đặt hàng)
+Lưu thông tin về các đơn hàng (PO) vì một packing list có thể chứa hàng của nhiều PO.
+
+| Tên trường (Field Name) | Kiểu dữ liệu (Data Type) | Mô tả | Ví dụ |
+| :--- | :--- | :--- | :--- |
+| `po_id` | INT, PK, AI | Khóa chính, tự tăng | 201 |
+| `po_number` | VARCHAR(50), UNIQUE | Số PO | `POPU0018238` |
+| `buyer_id` | INT, FK | Khóa ngoại tham chiếu đến `Companies` | (ID của Alliance One) |
+| `season` | VARCHAR(10) | Mùa (nếu có) | `SP27`, `SS26` |
+
+#### 4. Bảng `PackingLists` (Thông tin chung của Packing List)
+Đây là bảng chính, chứa thông tin header của mỗi tài liệu packing list.
+
+| Tên trường (Field Name) | Kiểu dữ liệu (Data Type) | Mô tả | Ví dụ |
+| :--- | :--- | :--- | :--- |
+| `packing_list_id` | INT, PK, AI | Khóa chính, tự tăng | 1 |
+| `packing_list_number` | VARCHAR(50), UNIQUE | Số Packing List | `TSI/CSPAI250804` |
+| `invoice_number` | VARCHAR(50) | Số hóa đơn (thường đi kèm) | `HB/AO251853B` |
+| `issue_date` | DATE | Ngày phát hành | `2025-08-04` |
+| `seller_id` | INT, FK | Người bán (tham chiếu `Companies`) | (ID của Treasure Star) |
+| `shipper_id` | INT, FK | Người gửi hàng (tham chiếu `Companies`) | (ID của CHYANG SHENG) |
+| `buyer_id` | INT, FK | Người mua (tham chiếu `Companies`) | (ID của Alliance One) |
+| `consignee_id` | INT, FK | Người nhận hàng (tham chiếu `Companies`) | (ID của Alliance One) |
+| `payment_terms` | VARCHAR(100) | Điều khoản thanh toán | `T/T AFTER SHIPMENT WITHIN 60 DAYS` |
+| `transport_method`| VARCHAR(50) | Phương thức vận chuyển | `TRUCK`, `VESSEL` |
+| `origin_country` | VARCHAR(50) | Nước xuất xứ | `VIETNAM`, `TAIWAN` |
+| `total_rolls` | INT | Tổng số cuộn trên cả packing list | `407` |
+| `total_net_weight_kg` | DECIMAL(10,2) | Tổng trọng lượng tịnh | `7095.00` |
+| `total_gross_weight_kg` | DECIMAL(10,2) | Tổng trọng lượng cả bì | `7257.80` |
+| `total_yards` | DECIMAL(10,2) | Tổng số yard | `22139` |
+| `source_document_path` | VARCHAR(255) | Đường dẫn lưu file gốc (để đối chiếu) | `/path/to/TSI_CSPAI250804.pdf` |
+
+#### 5. Bảng `PackingListItems` (Các dòng hàng trên Packing List)
+Bảng này kết nối `PackingLists`, `PurchaseOrders`, và `Materials`. Một dòng trong bảng này đại diện cho một nhóm sản phẩm có cùng PO, cùng loại vải, cùng màu sắc.
+
+| Tên trường (Field Name) | Kiểu dữ liệu (Data Type) | Mô tả | Ví dụ |
+| :--- | :--- | :--- | :--- |
+| `item_id` | INT, PK, AI | Khóa chính, tự tăng | 1001 |
+| `packing_list_id` | INT, FK | Tham chiếu đến `PackingLists` | 1 |
+| `po_id` | INT, FK | Tham chiếu đến `PurchaseOrders` | 201 |
+| `material_id` | INT, FK | Tham chiếu đến `Materials` | 101 |
+| `color_code` | VARCHAR(100) | Mã màu | `137-95-00#010-40-36/...` |
+| `color_name` | VARCHAR(100) | Tên màu | `Puma White` |
+| `contract_number` | VARCHAR(50) | Số hợp đồng (S.C.NO) (nếu có) | `T2512183T2` |
+| `is_foc` | BOOLEAN | Đánh dấu đây có phải hàng FOC không | `FALSE` |
+| `foc_quantity_yards` | DECIMAL(10,2)| Số lượng yard FOC (nếu có) | `5` |
+
+#### 6. Bảng `FabricRolls` (Chi tiết từng cuộn vải)
+Đây là bảng chi tiết nhất, dùng để quản lý tồn kho ở cấp độ từng cuộn. Mỗi cuộn vải nhập về sẽ là một record trong bảng này.
+
+| Tên trường (Field Name) | Kiểu dữ liệu (Data Type) | Mô tả | Ví dụ |
+| :--- | :--- | :--- | :--- |
+| `roll_id` | INT, PK, AI | Khóa chính, tự tăng | 5001 |
+| `item_id` | INT, FK | Tham chiếu đến `PackingListItems` | 1001 |
+| `roll_number_supplier` | VARCHAR(50) | Số cuộn của nhà cung cấp | `1-6F` |
+| `lot_number` | VARCHAR(50) | Số Lô | `225624040-2` |
+| `batch_number` | VARCHAR(50) | Số Mẻ | `B506110105` |
+| `yards` | DECIMAL(10,2) | Số yard của cuộn | `65` |
+| `meters` | DECIMAL(10,2) | Số mét (nếu có, hoặc có thể tính toán) | `59.44` |
+| `net_weight_kg` | DECIMAL(10,2) | Trọng lượng tịnh (kg) | `16.5` |
+| `gross_weight_kg` | DECIMAL(10,2) | Trọng lượng cả bì (kg) | `16.9` |
+| `warehouse_location` | VARCHAR(100) | Vị trí lưu kho (kệ, khu vực) | `A-03-05` |
+| `status` | VARCHAR(20) | Trạng thái (In Stock, Used, Reserved) | `In Stock` |
+| `received_date` | DATETIME | Thời gian thực tế nhập kho | `2025-08-05 10:30:00` |
+
+### Sơ đồ quan hệ các bảng (Relationships)
+
+```
+[Companies] 1--* [PackingLists] (seller_id, shipper_id, buyer_id, consignee_id)
+[Companies] 1--* [PurchaseOrders] (buyer_id)
+
+[PurchaseOrders] 1--* [PackingListItems] (po_id)
+[Materials]      1--* [PackingListItems] (material_id)
+[PackingLists]   1--* [PackingListItems] (packing_list_id)
+
+[PackingListItems] 1--* [FabricRolls] (item_id)
+```
+*Ghi chú: `1--*` nghĩa là quan hệ một-nhiều.*
+
+
+
+
+Khi upload 1 file excel packingList lên thì phải đảm bảo file excel các cột sau:
+Số PO (PO Number)	Số Purchase Order của cuộn vải.
+Mã Item (Item Code)	Chính xác chuỗi ký tự mã vật tư mà hệ thống đã đọc được từ file.
+Màu sắc (Color)	Tên hoặc mã màu của cuộn vải.
+Số cuộn (Roll No.)	Số thứ tự cuộn vải do nhà cung cấp đánh.
+Số Lô / Mẻ (Lot / Batch No.)	Số lô/mẻ sản xuất.
+Số Yards (Yards)	Chiều dài cuộn vải (Yards).
+KL Tịnh (Kgs) (Net Weight)	Trọng lượng tịnh (Net Weight) của cuộn vải.
+KL Cả bì (Kgs) (Gross Weight)	Trọng lượng cả bì (Gross Weight).
+Chiều rộng khổ vải(Width)	Chiều rộng khổ vải
+Vị trí kho (Warehouse Location)	Vị trí sẽ lưu trữ cuộn vải này trong kho của bạn.
+
+Khi upload lên sẽ hiển 
