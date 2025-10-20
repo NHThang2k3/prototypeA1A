@@ -1,35 +1,56 @@
 // Path: src/pages/issue-fabric-form/types.ts
 
-// Đại diện cho một cây vải cụ thể có trong kho
-export interface AvailableRoll {
-  id: string;
-  location: string;
-  availableMeters: number;
+// Dữ liệu cho một JOB trong kế hoạch cắt
+export interface CuttingPlanJob {
+  ID: string;
+  PlanName: string;
+  Factory: string;
+  PlanDate: string; // Sử dụng string cho đơn giản, có thể dùng Date
+  Style: string;
+  JOB: string;
+  ItemCode: string;
+  Color: string;
+  RequestQuantity: number;
+  IssuedQuantity: number;
+  Status: "Planned" | "In Progress" | "Completed";
+  CreatedBy: string;
+  Remarks: string;
 }
 
-// Đại diện cho một cây vải đã được chọn để xuất, cùng với số lượng
-export interface SelectedRoll {
-  rollId: string;
-  quantity: number;
-  location: string;
-  availableMeters: number;
+// Dữ liệu cho một cuộn vải trong kho
+export interface InventoryRoll {
+  PONumber: string;
+  ItemCode: string;
+  Factory: string;
+  Supplier: string;
+  InvoiceNo: string;
+  ColorCode: string;
+  Color: string;
+  RollNo: string;
+  LotNo: string;
+  Yards: number; // Tổng số yards ban đầu
+  NetWeightKgs: number;
+  GrossWeightKgs: number;
+  Width: string;
+  Location: string;
+  QRCode: string;
+  DateInHouse: string;
+  Description: string;
+  QCStatus: "Passed" | "Failed" | "Pending";
+  QCDate: string;
+  QCBy: string;
+  Comment: string;
+  Printed: boolean;
+  BalanceYards: number; // Số yards còn lại
+  HourStandard: number;
+  HourRelax: number;
+  RelaxDate: string;
+  RelaxTime: string;
+  RelaxBy: string;
+  ParentQRCode: string | null;
 }
 
-// Đại diện cho một dòng yêu cầu vải trong form
-export interface FabricRequestItem {
-  id: string; // ID tạm thời ở client để quản lý
-  sku: string;
-  name: string;
-  color: string;
-  width: string;
-  availableQty: number;
-  requestedRolls: SelectedRoll[];
-}
-
-// Đại diện cho toàn bộ dữ liệu của form
-export interface FabricIssueFormData {
-  productionOrder: string;
-  requiredDate: string;
-  notes: string;
-  items: FabricRequestItem[];
+// Dữ liệu cho một cuộn vải đã được chọn để xuất
+export interface SelectedInventoryRoll extends InventoryRoll {
+  issuedYards: number; // Số yards người dùng nhập để xuất
 }

@@ -1,120 +1,110 @@
 // Path: src/pages/issue-transaction-reports/components/ReportFilters.tsx
 
-import React, { useState } from "react";
+import React from "react";
 import { Search } from "lucide-react";
-import type { Filters } from "../types"; // <-- IMPORT TỪ ĐÂY
-
-// Giả sử bạn có prop onFilterChange để cập nhật state ở component cha
-// interface Filters { // <-- XÓA ĐỊNH NGHĨA CỤC BỘ NÀY
-//   query?: string;
-//   type?: string;
-//   status?: string;
-//   dateFrom?: string;
-//   dateTo?: string;
-// }
+import type { FabricRollFilters } from "../types";
+import ColumnToggler from "./ColumnToggler";
+import { ALL_COLUMNS } from "../constants";
 
 interface ReportFiltersProps {
-  onFilterChange: (filters: Filters) => void;
+  onFilterChange: (filters: FabricRollFilters) => void;
+  visibleColumns: Set<string>;
+  onColumnToggle: (columnKey: string) => void;
 }
 
-const ReportFilters: React.FC<ReportFiltersProps> = ({ onFilterChange }) => {
-  // Sử dụng state để quản lý giá trị của các input và gọi onFilterChange khi có thay đổi.
-  const [filters, setFilters] = useState<Filters>({
-    query: "",
-    type: "",
-    status: "",
-    dateFrom: "",
-    dateTo: "",
-  });
+const ReportFilters: React.FC<ReportFiltersProps> = ({
+  onFilterChange,
+  visibleColumns,
+  onColumnToggle,
+}) => {
+  const [filters, setFilters] = React.useState<FabricRollFilters>({});
 
-  const handleChange = (patch: Partial<Filters>) => {
-    const next = { ...filters, ...patch };
-    setFilters(next);
-    onFilterChange(next);
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    const updatedFilters = { ...filters, [name]: value };
+    setFilters(updatedFilters);
+    onFilterChange(updatedFilters);
   };
 
   return (
     <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
-      {/* ...Phần còn lại của component không thay đổi... */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Search */}
-        <div className="relative">
-          <label className="text-sm font-medium text-gray-600 block mb-1">
-            Tìm kiếm Lệnh SX
+      {/* [UPDATED] Use Grid Layout with 12 columns for flexible alignment */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+        {/* Search PO / Item Code (takes up more space) */}
+        <div className="relative md:col-span-12 lg:col-span-4">
+          <label
+            htmlFor="query"
+            className="text-sm font-medium text-gray-600 block mb-1"
+          >
+            Search PO / Item Code
           </label>
           <input
+            id="query"
+            name="query"
             type="text"
-            placeholder="VD: PO-12345"
-            value={filters.query}
-            onChange={(e) => handleChange({ query: e.target.value })}
+            placeholder="e.g., POPU0018251"
+            value={filters.query || ""}
+            onChange={handleChange}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
           />
           <Search className="absolute left-3 top-9 w-5 h-5 text-gray-400" />
         </div>
 
-        {/* Filter by Type */}
-        <div>
+        {/* Filter by QC Status */}
+        <div className="md:col-span-4 lg:col-span-2">
           <label
-            htmlFor="type"
+            htmlFor="qcStatus"
             className="text-sm font-medium text-gray-600 block mb-1"
           >
-            Loại phiếu
+            QC Status
           </label>
           <select
-            id="type"
-            value={filters.type}
-            onChange={(e) => handleChange({ type: e.target.value })}
+            id="qcStatus"
+            name="qcStatus"
+            value={filters.qcStatus || ""}
+            onChange={handleChange}
             className="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
           >
-            <option value="">Tất cả</option>
-            <option value="Xuất vải">Xuất vải</option>
-            <option value="Xuất phụ liệu">Xuất phụ liệu</option>
-            <option value="Xuất đóng gói">Xuất đóng gói</option>
+            <option value="">All</option>
+            <option value="Passed">Passed</option>
+            <option value="Failed">Failed</option>
+            <option value="Pending">Pending</option>
           </select>
         </div>
 
-        {/* Filter by Status */}
-        <div>
-          <label
-            htmlFor="status"
-            className="text-sm font-medium text-gray-600 block mb-1"
-          >
-            Trạng thái
-          </label>
-          <select
-            id="status"
-            value={filters.status}
-            onChange={(e) => handleChange({ status: e.target.value })}
-            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
-          >
-            <option value="">Tất cả</option>
-            <option value="Mới yêu cầu">Mới yêu cầu</option>
-            <option value="Đang xử lý">Đang xử lý</option>
-            <option value="Đã hoàn tất">Đã hoàn tất</option>
-            <option value="Đã hủy">Đã hủy</option>
-          </select>
-        </div>
-
-        {/* Date Range Picker (giả lập bằng 2 input) */}
-        <div>
+        {/* Date Range Picker */}
+        <div className="md:col-span-12 lg:col-span-4">
           <label className="text-sm font-medium text-gray-600 block mb-1">
-            Ngày xuất
+            Date In House
           </label>
           <div className="flex items-center space-x-2">
             <input
               type="date"
-              value={filters.dateFrom}
-              onChange={(e) => handleChange({ dateFrom: e.target.value })}
+              name="dateFrom"
+              value={filters.dateFrom || ""}
+              onChange={handleChange}
               className="w-full p-2 border border-gray-300 rounded-lg"
             />
             <span className="text-gray-500">-</span>
             <input
               type="date"
-              value={filters.dateTo}
-              onChange={(e) => handleChange({ dateTo: e.target.value })}
+              name="dateTo"
+              value={filters.dateTo || ""}
+              onChange={handleChange}
               className="w-full p-2 border border-gray-300 rounded-lg"
             />
           </div>
+        </div>
+
+        {/* [NEW] Column selection button */}
+        <div className="md:col-span-4 lg:col-span-2 ">
+          <ColumnToggler
+            allColumns={ALL_COLUMNS}
+            visibleColumns={visibleColumns}
+            onColumnToggle={onColumnToggle}
+          />
         </div>
       </div>
     </div>

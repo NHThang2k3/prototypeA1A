@@ -10,7 +10,7 @@ interface PickingListProps {
   onBack: () => void;
 }
 
-const PickingList: React.FC<PickingListProps> = ({
+const PickingList: React.FC<PickingListProps> = ({ 
   request,
   onStartScanning,
   onBack,
@@ -26,18 +26,18 @@ const PickingList: React.FC<PickingListProps> = ({
         className="flex items-center text-gray-600 hover:text-gray-900 font-semibold mb-4"
       >
         <ArrowLeft size={20} className="mr-2" />
-        Quay lại
+        Back
       </button>
       <div className="bg-white rounded-lg shadow-lg p-6 border border-gray-200">
         <div className="text-center mb-4 border-b pb-4">
           <h2 className="text-xl font-bold text-gray-800">
-            Phiếu Yêu Cầu Xuất Kho
+            Warehouse Issue Request
           </h2>
           <p className="font-mono text-blue-600 bg-blue-100 px-3 py-1 rounded-full inline-block mt-1">
             {request.id}
           </p>
           <p className="text-sm text-gray-500 mt-2">
-            Nơi nhận: <strong>{request.destination}</strong>
+            Destination: <strong>{request.destination}</strong>
           </p>
         </div>
 
@@ -59,12 +59,12 @@ const PickingList: React.FC<PickingListProps> = ({
                   ></div>
                 </div>
                 <p className="text-xs text-right mt-1 font-medium">
-                  Đã lấy: {item.pickedQuantity.toLocaleString()} /{" "}
+                  Picked: {item.pickedQuantity.toLocaleString()} /{" "}
                   {item.requiredQuantity.toLocaleString()} {item.uom}
                 </p>
               </div>
               <p className="text-xs text-gray-500 mt-1">
-                Vị trí gợi ý:{" "}
+                Suggested location:{" "}
                 <span className="font-mono bg-gray-200 px-1 rounded">
                   {item.locations.join(", ")}
                 </span>
@@ -77,19 +77,18 @@ const PickingList: React.FC<PickingListProps> = ({
       <div className="mt-6">
         {isCompleted ? (
           <div className="text-center p-4 bg-green-100 text-green-800 rounded-lg">
-            <p className="font-bold">Đã hoàn thành phiếu soạn hàng!</p>
+            <p className="font-bold">Picking list completed!</p>
           </div>
         ) : (
           <button
             onClick={onStartScanning}
             className="w-full text-lg bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-4 rounded-lg flex items-center justify-center shadow-md"
           >
-            <PackageSearch className="mr-3" /> Bắt Đầu Quét Hàng
+            <PackageSearch className="mr-3" /> Start Scanning Items
           </button>
         )}
       </div>
     </div>
   );
 };
-
 export default PickingList;

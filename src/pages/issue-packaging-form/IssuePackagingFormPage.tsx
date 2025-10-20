@@ -1,58 +1,95 @@
+// Path: src/pages/issue-packaging-form/IssuePackagingFormPage.tsx
+
 import { useState } from "react";
-import { v4 as uuidv4 } from "uuid";
-import ActionToolbar from "./components/ActionToolbar";
-import FormHeader from "./components/FormHeader";
+import type { PackagingRequest, SelectedPackagingItem } from "./types";
 import PageHeader from "./components/PageHeader";
-import PackagingRequestTable from "./components/PackagingRequestTable";
-import type { RequestItem } from "./types";
+import ActionToolbar from "./components/ActionToolbar";
+import PackagingRequestSelection from "./components/PackagingRequestSelection";
+import RequestDetails from "./components/RequestDetails";
+import PackagingInventoryTable from "./components/PackagingInventoryTable";
 
 const IssuePackagingFormPage = () => {
-  const [items, setItems] = useState<RequestItem[]>([]);
+  const [selectedRequest, setSelectedRequest] =
+    useState<PackagingRequest | null>(null);
+  const [selectedItems, setSelectedItems] = useState<SelectedPackagingItem[]>([]);
 
-  const handleAddItem = () => {
-    setItems([
-      ...items,
-      {
-        id: uuidv4(),
-        materialId: null,
-        sku: "",
-        name: "",
-        uom: "",
-        stock: 0,
-        quantity: 0,
-      },
-    ]);
+  const handleRequestSelect = (request: PackagingRequest) => {
+    setSelectedRequest(request);
+    setSelectedItems([]); // Reset danh sách bao bì đã chọn khi đổi yêu cầu
   };
 
-  const handleRemoveItem = (id: string) => {
-    setItems(items.filter((item) => item.id !== id));
+  const handleClearRequest = () => {
+    setSelectedRequest(null);
+    setSelectedItems([]);
   };
 
-  const handleItemChange = (
-    id: string,
-    field: keyof RequestItem,
-    value: any
-  ) => {
-    setItems(
-      items.map((item) => (item.id === id ? { ...item, [field]: value } : item))
-    );
+  const handleSelectionChange = (items: SelectedPackagingItem[]) => {
+    setSelectedItems(items);
+  };
+
+  // Tính tổng số lượng đang được chọn để xuất
+  const totalIssuedQuantity = selectedItems.reduce(
+    (sum, item) => sum + item.issuedQuantity,
+    0
+  );
+
+  const handleSubmit = () => {
+    if (!selectedRequest) {
+      alert("Please select a request first.");
+      return;
+    }
+    if (selectedItems.length === 0) {
+      alert("Please select at least one packaging item to issue.");
+      return;
+    }
+    if (totalIssuedQuantity === 0) {
+      alert("Please enter the quantity to issue for the selected packaging.");
+      return;
+    }
+
+    const submissionData = {
+      requestId: selectedRequest.ID,
+      job: selectedRequest.JOB,
+      style: selectedRequest.Style,
+      issuedItems: selectedItems.map((item) => ({
+        QRCode: item.QRCode,
+        ItemNumber: item.ItemNumber,
+        MaterialName: item.MaterialName,
+        issuedQuantity: item.issuedQuantity,
+        Unit: item.Unit,
+      })),
+      totalIssuedQuantity: totalIssuedQuantity.toFixed(2),
+    };
+
+    console.log("Submitting Data:", submissionData);
+    alert("Packaging issued successfully! Check the console for details.");
+
+    // Reset state
+    setSelectedRequest(null);
+    setSelectedItems([]);
   };
 
   return (
-    <div>
-      <PageHeader />
-      <div className="p-6">
-        <div className="bg-white p-8 rounded-lg shadow-sm">
-          <FormHeader />
-          <PackagingRequestTable
-            items={items}
-            onAddItem={handleAddItem}
-            onRemoveItem={handleRemoveItem}
-            onItemChange={handleItemChange}
-          />
-        </div>
+    <div className="p-4 md:p-6 lg:p-8 bg-gray-50 min-h-screen">
+      <PageHeader title="Issue Packaging From Request" />
+      <div className="max-w-screen-2xl mx-auto">
+        {!selectedRequest ? (
+          <PackagingRequestSelection onRequestSelect={handleRequestSelect} />
+        ) : (
+          <div>
+            <RequestDetails
+              request={selectedRequest}
+              onClearRequest={handleClearRequest}
+              currentlyIssuingQuantity={totalIssuedQuantity}
+            />
+            <PackagingInventoryTable
+              bomId={selectedRequest.BOMID}
+              onSelectionChange={handleSelectionChange}
+            />
+          </div>
+        )}
       </div>
-      <ActionToolbar />
+      <ActionToolbar onSubmit={handleSubmit} />
     </div>
   );
 };

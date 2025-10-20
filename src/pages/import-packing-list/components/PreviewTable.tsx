@@ -1,3 +1,5 @@
+// src/pages/import-packing-list/components/PreviewTable.tsx
+
 import React from "react";
 import type { PackingListItem } from "../types";
 
@@ -7,22 +9,29 @@ interface PreviewTableProps {
 
 const PreviewTable: React.FC<PreviewTableProps> = ({ items }) => {
   const headers = [
-    "Số PO",
-    "Mã Item",
-    "Màu sắc",
-    "Số cuộn",
-    "Số Lô / Mẻ",
-    "Số Yards",
-    "KL Tịnh (Kgs)",
-    "KL Cả bì (Kgs)",
-    "Khổ vải",
-    "Vị trí kho",
+    "PO Number",
+    "Item Code",
+    "Factory",
+    "Supplier",
+    "Invoice No",
+    "Color Code",
+    "Color",
+    "Roll No",
+    "Lot No",
+    "Yards",
+    "Net Weight (Kgs)",
+    "Gross Weight (Kgs)",
+    "Width",
+    "Location",
+    "QR Code",
+    "Date In House",
+    "Description",
   ];
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">
       <h2 className="text-xl font-semibold text-gray-800 mb-4">
-        2. Xem trước dữ liệu ({items.length} dòng)
+        2. Data Preview ({items.length} rows)
       </h2>
       <div className="overflow-x-auto border border-gray-200 rounded-lg">
         <table className="min-w-full divide-y divide-gray-200">
@@ -49,6 +58,18 @@ const PreviewTable: React.FC<PreviewTableProps> = ({ items }) => {
                   {item.itemCode}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                  {item.factory}
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                  {item.supplier}
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                  {item.invoiceNo}
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                  {item.colorCode}
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
                   {item.color}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
@@ -71,6 +92,15 @@ const PreviewTable: React.FC<PreviewTableProps> = ({ items }) => {
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
                   {item.location}
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                  {item.qrCode}
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                  {item.dateInHouse}
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                  {item.description}
                 </td>
               </tr>
             ))}

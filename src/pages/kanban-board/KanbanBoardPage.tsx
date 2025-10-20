@@ -1,127 +1,157 @@
 // Path: src/pages/kanban-board/KanbanBoardPage.tsx
-import { useState } from "react";
-import { DndContext, closestCorners } from "@dnd-kit/core";
-import type { DragEndEvent } from "@dnd-kit/core";
+import { useState, useMemo } from "react";
+// DndContext and related imports are removed
 import { mockBoards } from "./data";
-import type { KanbanBoard } from "./types";
+import type { KanbanBoard, KanbanTask } from "./types";
 import KanbanColumn from "./components/KanbanColumn";
+import TaskDetailsModal from "./components/TaskDetailsModal";
+
+// Helper function to parse 'DD/MM/YYYY' string to a Date object
+const parseDate = (dateString: string): Date => {
+  const [day, month, year] = dateString.split("/").map(Number);
+  return new Date(year, month - 1, day);
+};
 
 const KanbanBoardPage = () => {
-  const [boards, setBoards] = useState<KanbanBoard[]>(mockBoards);
-  const [activeBoardId, setActiveBoardId] = useState<string>(mockBoards[0].id);
+  // The boards state is now only for displaying data, not for drag-and-drop updates.
+  const [boards] = useState<KanbanBoard[]>(mockBoards);
+  const [selectedTask, setSelectedTask] = useState<KanbanTask | null>(null);
+  const [startDateFilter, setStartDateFilter] = useState("");
+  const [endDateFilter, setEndDateFilter] = useState("");
+  const [factoryFilter, setFactoryFilter] = useState("all");
 
-  const activeBoard = boards.find((b) => b.id === activeBoardId);
+  const activeBoard = boards[0];
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
+  const factories = useMemo(() => {
+    if (!activeBoard) return [];
+    const allFactories = activeBoard.tasks.map((task) => task.factory);
+    return ["all", ...Array.from(new Set(allFactories))];
+  }, [activeBoard]);
 
-    if (!over || !activeBoard) return;
+  const filteredTaskIds = useMemo(() => {
+    if (!activeBoard) {
+      return new Set<string>();
+    }
+    const startDate = startDateFilter ? new Date(startDateFilter) : null;
+    const endDate = endDateFilter ? new Date(endDateFilter) : null;
+    if (endDate) endDate.setHours(23, 59, 59, 999);
+    const filtered = activeBoard.tasks.filter((task) => {
+      const taskDate = parseDate(task.dueDate);
+      const dateMatch =
+        (!startDate || taskDate >= startDate) &&
+        (!endDate || taskDate <= endDate);
+      const factoryMatch =
+        factoryFilter === "all" || task.factory === factoryFilter;
+      return dateMatch && factoryMatch;
+    });
+    return new Set(filtered.map((t) => t.id));
+  }, [activeBoard, startDateFilter, endDateFilter, factoryFilter]);
 
-    // Nếu kéo card vào một vị trí khác
-    if (active.id !== over.id) {
-      setBoards((prevBoards) => {
-        const newBoards = [...prevBoards];
-        const boardIndex = newBoards.findIndex((b) => b.id === activeBoardId);
-        if (boardIndex === -1) return prevBoards;
-
-        const boardToUpdate = { ...newBoards[boardIndex] };
-
-        // Tìm cột chứa card đang kéo (active) và cột đích (over)
-        const activeContainer = boardToUpdate.columns.find((c) =>
-          c.taskIds.includes(active.id as string)
-        );
-        let overContainer = boardToUpdate.columns.find((c) =>
-          c.taskIds.includes(over.id as string)
-        );
-        if (!overContainer) {
-          overContainer = boardToUpdate.columns.find((c) => c.id === over.id);
-        }
-
-        if (
-          !activeContainer ||
-          !overContainer ||
-          activeContainer === overContainer
-        ) {
-          return prevBoards; // Không thay đổi nếu kéo trong cùng cột hoặc không tìm thấy cột
-        }
-
-        // Xóa card khỏi cột cũ
-        const activeContainerIndex = boardToUpdate.columns.findIndex(
-          (c) => c.id === activeContainer!.id
-        );
-        const newActiveTaskIds = activeContainer.taskIds.filter(
-          (id) => id !== active.id
-        );
-        boardToUpdate.columns[activeContainerIndex] = {
-          ...boardToUpdate.columns[activeContainerIndex],
-          taskIds: newActiveTaskIds,
-        };
-
-        // Thêm card vào cột mới
-        const overContainerIndex = boardToUpdate.columns.findIndex(
-          (c) => c.id === overContainer!.id
-        );
-        const newOverTaskIds = [...overContainer.taskIds, active.id as string];
-        boardToUpdate.columns[overContainerIndex] = {
-          ...boardToUpdate.columns[overContainerIndex],
-          taskIds: newOverTaskIds,
-        };
-
-        newBoards[boardIndex] = boardToUpdate;
-        return newBoards;
-      });
+  const handleViewTaskDetails = (taskId: string) => {
+    const task = activeBoard.tasks.find((t) => t.id === taskId);
+    if (task) {
+      setSelectedTask(task);
     }
   };
 
+  const handleCloseModal = () => {
+    setSelectedTask(null);
+  };
+
+  // The handleDragEnd function is completely removed.
+
   if (!activeBoard) {
-    return <div className="p-8">Không tìm thấy bảng công việc.</div>;
+    return <div className="p-8">Kanban board not found.</div>;
   }
 
   return (
     <div className="p-6 md:p-8 bg-gray-50 min-h-full">
-      {/* Header của trang */}
+      {/* Header and Filters remain the same */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-800">
-          Bảng Công Việc Kanban
+          Fabric Issuing Management - Cutting Plan
         </h1>
         <p className="text-gray-500 mt-1">
-          Trực quan hóa và theo dõi luồng yêu cầu vật tư.
+          Track the progress of preparing and delivering fabric to the cutting
+          line.
         </p>
       </div>
 
-      {/* Tabs để chuyển đổi board */}
-      <div className="border-b border-gray-200 mb-6">
-        <nav className="-mb-px flex space-x-6" aria-label="Tabs">
-          {boards.map((board) => (
-            <button
-              key={board.id}
-              onClick={() => setActiveBoardId(board.id)}
-              className={`${
-                board.id === activeBoardId
-                  ? "border-blue-500 text-blue-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              } whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm`}
-            >
-              {board.name}
-            </button>
-          ))}
-        </nav>
+      <div className="flex items-end space-x-4 mb-6 bg-white p-4 rounded-lg shadow-sm border">
+        <div>
+          <label
+            htmlFor="startDate"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            From Date
+          </label>
+          <input
+            type="date"
+            id="startDate"
+            value={startDateFilter}
+            onChange={(e) => setStartDateFilter(e.target.value)}
+            className="border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+          />
+        </div>
+        <div>
+          <label
+            htmlFor="endDate"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            To Date
+          </label>
+          <input
+            type="date"
+            id="endDate"
+            value={endDateFilter}
+            onChange={(e) => setEndDateFilter(e.target.value)}
+            className="border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+          />
+        </div>
+        <div>
+          <label
+            htmlFor="factory"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            Factory
+          </label>
+          <select
+            id="factory"
+            value={factoryFilter}
+            onChange={(e) => setFactoryFilter(e.target.value)}
+            className="border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+          >
+            {factories.map((factory) => (
+              <option key={factory} value={factory}>
+                {factory === "all" ? "All Factories" : factory}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
-      {/* Bảng Kanban */}
-      <DndContext onDragEnd={handleDragEnd} collisionDetection={closestCorners}>
-        <div className="flex space-x-4 overflow-x-auto pb-4">
-          {activeBoard.columns.map((column) => {
-            const tasks = column.taskIds
-              .map((taskId) => activeBoard.tasks.find((t) => t.id === taskId)!)
-              .filter(Boolean); // Lọc ra các task undefined nếu có lỗi dữ liệu
+      {/* DndContext wrapper is removed */}
+      <div className="flex space-x-4 overflow-x-auto pb-4">
+        {activeBoard.columns.map((column) => {
+          const tasks = column.taskIds
+            .filter((taskId) => filteredTaskIds.has(taskId))
+            .map((taskId) => activeBoard.tasks.find((t) => t.id === taskId)!)
+            .filter(Boolean);
 
-            return (
-              <KanbanColumn key={column.id} column={column} tasks={tasks} />
-            );
-          })}
-        </div>
-      </DndContext>
+          return (
+            <KanbanColumn
+              key={column.id}
+              column={column}
+              tasks={tasks}
+              onViewDetails={handleViewTaskDetails}
+            />
+          );
+        })}
+      </div>
+
+      {selectedTask && (
+        <TaskDetailsModal task={selectedTask} onClose={handleCloseModal} />
+      )}
     </div>
   );
 };

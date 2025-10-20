@@ -22,25 +22,25 @@ const Scanner: React.FC<ScannerProps> = ({ onScan, scanPrompt, context }) => {
         return (
           <>
             <h3 className="text-sm font-bold text-center text-gray-600">
-              GIẢ LẬP QUÉT LẦN ĐẦU
+              SIMULATE FIRST SCAN
             </h3>
             <button
               onClick={() => onScan("LOC_QR_A_01_B")}
               className="w-full bg-teal-500 text-white py-2 rounded-md"
             >
-              Quét Vị trí Kho (Chức Năng Cất Vải)
+              Scan Warehouse Location (Put Away Function)
             </button>
             <button
               onClick={() => onScan("ITEM_QR_FAB_002")}
               className="w-full bg-blue-500 text-white py-2 rounded-md"
             >
-              Quét Vải (Chức Năng Chuyển Vị trí)
+              Scan Fabric (Transfer Location Function)
             </button>
             <button
               onClick={() => onScan("ISSUE_REQ_001")}
               className="w-full bg-purple-500 text-white py-2 rounded-md"
             >
-              Quét Phiếu Yêu Cầu (Chức Năng Xuất Kho)
+              Scan Issue Request (Issue Function)
             </button>
           </>
         );
@@ -48,26 +48,26 @@ const Scanner: React.FC<ScannerProps> = ({ onScan, scanPrompt, context }) => {
         return (
           <>
             <h3 className="text-sm font-bold text-center text-gray-600">
-              GIẢ LẬP QUÉT VẢI ĐỂ CẤT
+              SIMULATE SCANNING FABRIC FOR PUT AWAY
             </h3>
             <button
               onClick={() => onScan("ITEM_QR_FAB_001")}
               className="w-full bg-blue-500 text-white py-2 rounded-md"
             >
-              Quét Vải Cotton (Chưa có vị trí)
+              Scan Cotton Fabric (No location)
             </button>
-            {/* NEW: Thêm nút quét cuộn vải thứ hai */}
+            {/* NEW: Add button to scan second fabric roll */}
             <button
               onClick={() => onScan("ITEM_QR_FAB_004")}
               className="w-full bg-blue-500 text-white py-2 rounded-md"
             >
-              Quét Vải Denim (Chưa có vị trí)
+              Scan Denim Fabric (No location)
             </button>
             <button
               onClick={() => onScan("LOC_QR_A_01_B")}
               className="w-full bg-orange-500 text-white py-2 rounded-md"
             >
-              Quét Vị trí (Sẽ báo lỗi)
+              Scan Location (Will show error)
             </button>
           </>
         );
@@ -75,19 +75,19 @@ const Scanner: React.FC<ScannerProps> = ({ onScan, scanPrompt, context }) => {
         return (
           <>
             <h3 className="text-sm font-bold text-center text-gray-600">
-              GIẢ LẬP QUÉT VỊ TRÍ MỚI
+              SIMULATE SCANNING NEW LOCATION
             </h3>
             <button
               onClick={() => onScan("LOC_QR_C_03_A")}
               className="w-full bg-teal-500 text-white py-2 rounded-md"
             >
-              Quét Vị trí Kho C-03-A
+              Scan Warehouse Location C-03-A
             </button>
             <button
               onClick={() => onScan("ITEM_QR_FAB_001")}
               className="w-full bg-orange-500 text-white py-2 rounded-md"
             >
-              Quét Vải (Sẽ báo lỗi)
+              Scan Fabric (Will show error)
             </button>
           </>
         );
@@ -95,25 +95,25 @@ const Scanner: React.FC<ScannerProps> = ({ onScan, scanPrompt, context }) => {
         return (
           <>
             <h3 className="text-sm font-bold text-center text-gray-600">
-              GIẢ LẬP QUÉT VẢI XUẤT
+              SIMULATE SCANNING FABRIC FOR ISSUE
             </h3>
             <button
               onClick={() => onScan("ITEM_QR_FAB_002")}
               className="w-full bg-blue-500 text-white py-2 rounded-md"
             >
-              Quét Vải Đỏ (Có trong phiếu)
+              Scan Red Fabric (In request)
             </button>
             <button
               onClick={() => onScan("ITEM_QR_FAB_003")}
               className="w-full bg-blue-500 text-white py-2 rounded-md"
             >
-              Quét Vải Lụa (Có trong phiếu)
+              Scan Silk Fabric (In request)
             </button>
             <button
               onClick={() => onScan("ITEM_QR_FAB_001")}
               className="w-full bg-orange-500 text-white py-2 rounded-md"
             >
-              Quét Vải Xanh (KHÔNG có trong phiếu)
+              Scan Blue Fabric (NOT in request)
             </button>
           </>
         );
@@ -137,7 +137,7 @@ const Scanner: React.FC<ScannerProps> = ({ onScan, scanPrompt, context }) => {
           onClick={() => onScan("QR_INVALID")}
           className="w-full bg-red-500 text-white py-2 rounded-md"
         >
-          Quét Mã KHÔNG HỢP LỆ
+          Scan INVALID QR Code
         </button>
       </div>
     </div>

@@ -7,10 +7,10 @@ interface Props {
 }
 
 const PriorityTag: React.FC<Props> = ({ priority }) => {
-  const colorClasses = {
-    "Khẩn cấp": "bg-red-100 text-red-800",
-    Cao: "bg-yellow-100 text-yellow-800",
-    Thường: "bg-green-100 text-green-800",
+  const colorClasses: Record<Priority, string> = {
+    Urgent: "bg-red-100 text-red-800",
+    High: "bg-yellow-100 text-yellow-800",
+    Normal: "bg-green-100 text-green-800",
   };
 
   return (

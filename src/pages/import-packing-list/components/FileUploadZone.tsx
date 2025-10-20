@@ -1,3 +1,5 @@
+// src/pages/import-packing-list/components/FileUploadZone.tsx
+
 import React, { useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import {
@@ -16,16 +18,23 @@ interface FileUploadZoneProps {
 
 // Ánh xạ từ tên cột trong Excel sang key trong object PackingListItem
 const headerMapping: { [key: string]: keyof Omit<PackingListItem, "id"> } = {
-  "Số PO": "poNumber",
-  "Mã Item": "itemCode",
-  "Màu sắc": "color",
-  "Số cuộn": "rollNo",
-  "Số Lô / Mẻ": "lotNo",
-  "Số Yards": "yards",
-  "KL Tịnh (Kgs)": "netWeight",
-  "KL Cả bì (Kgs)": "grossWeight",
-  "Chiều rộng khổ vải": "width",
-  "Vị trí kho": "location",
+  "PO Number": "poNumber",
+  "Item Code": "itemCode",
+  Factory: "factory", // Mới
+  Supplier: "supplier", // Mới
+  "Invoice No": "invoiceNo", // Mới
+  "Color Code": "colorCode", // Mới
+  Color: "color",
+  "Roll No": "rollNo",
+  "Lot No": "lotNo",
+  Yards: "yards",
+  "Net Weight (Kgs)": "netWeight",
+  "Gross Weight (Kgs)": "grossWeight",
+  Width: "width",
+  Location: "location",
+  "QR Code": "qrCode", // Mới
+  "Date In House": "dateInHouse", // Mới
+  Description: "description", // Mới
 };
 const requiredHeaders = Object.keys(headerMapping);
 
@@ -46,19 +55,18 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onItemsChange }) => {
       reader.onload = (event) => {
         try {
           const data = event.target?.result;
-          if (!data) throw new Error("Không thể đọc file.");
+          if (!data) throw new Error("Could not read file.");
 
           const workbook = XLSX.read(data, { type: "array" });
           const sheetName = workbook.SheetNames[0];
-          if (!sheetName) throw new Error("File Excel không có sheet nào.");
+          if (!sheetName) throw new Error("Excel file has no sheets.");
 
           const worksheet = workbook.Sheets[sheetName];
-          // FIX 1: Thay any[] bằng kiểu cụ thể hơn
           const json: { [key: string]: string | number }[] =
             XLSX.utils.sheet_to_json(worksheet, { raw: false, defval: "" });
 
           if (json.length === 0) {
-            throw new Error("File không có dữ liệu hoặc sheet đầu tiên trống.");
+            throw new Error("File has no data or the first sheet is empty.");
           }
 
           const fileHeaders = Object.keys(json[0] || {});
@@ -68,7 +76,7 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onItemsChange }) => {
 
           if (missingHeaders.length > 0) {
             throw new Error(
-              `File thiếu các cột bắt buộc: ${missingHeaders.join(", ")}`
+              `File is missing required columns: ${missingHeaders.join(", ")}`
             );
           }
 
@@ -76,7 +84,6 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onItemsChange }) => {
             .map((row, index) => {
               if (Object.values(row).every((val) => val === "")) return null;
 
-              // FIX 2: Thay any bằng Partial<PackingListItem>
               const newItem: Partial<PackingListItem> = {
                 id: `${file.name}-${index}`,
               };
@@ -92,9 +99,9 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onItemsChange }) => {
                   const numValue = parseFloat(String(value));
                   if (isNaN(numValue)) {
                     throw new Error(
-                      `Dữ liệu không hợp lệ ở dòng ${
+                      `Invalid data at row ${
                         index + 2
-                      }, cột "${header}": "${value}" không phải là số.`
+                      }, column "${header}": "${value}" is not a number.`
                     );
                   }
                   newItem[key] = numValue;
@@ -107,13 +114,12 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onItemsChange }) => {
             .filter((item): item is PackingListItem => item !== null);
 
           if (parsedItems.length === 0) {
-            throw new Error("Không tìm thấy dữ liệu hợp lệ trong file.");
+            throw new Error("No valid data found in the file.");
           }
 
           onItemsChange(parsedItems);
-          // FIX 3: Thay e: any bằng e: unknown và kiểm tra kiểu
         } catch (e: unknown) {
-          let message = "Đã xảy ra lỗi khi xử lý file.";
+          let message = "An error occurred while processing the file.";
           if (e instanceof Error) {
             message = e.message;
           }
@@ -126,15 +132,14 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onItemsChange }) => {
       };
 
       reader.onerror = () => {
-        setError("Không thể đọc file. Vui lòng thử lại.");
+        setError("Could not read the file. Please try again.");
         setIsParsing(false);
         setUploadedFile(null);
       };
-
       reader.readAsArrayBuffer(file);
     },
     [onItemsChange]
-  ); // FIX 4.1: Bọc handleFileParse bằng useCallback
+  );
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
@@ -143,7 +148,7 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onItemsChange }) => {
       }
     },
     [handleFileParse]
-  ); // FIX 4.2: Thêm dependency còn thiếu
+  );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -178,9 +183,11 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onItemsChange }) => {
           <div className="flex flex-col items-center text-gray-500">
             <UploadCloud className="w-12 h-12 mb-4" />
             <p className="font-semibold">
-              Kéo thả file vào đây, hoặc nhấn để chọn file
+              Drag and drop the file here, or click to select a file
             </p>
-            <p className="text-sm">Chỉ hỗ trợ file Excel (.xls, .xlsx)</p>
+            <p className="text-sm">
+              Only Excel files (.xls, .xlsx) are supported
+            </p>
           </div>
         </div>
       )}
@@ -189,7 +196,7 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onItemsChange }) => {
         <div className="w-full text-center p-12 border-2 border-dashed border-gray-300 rounded-lg">
           <div className="flex flex-col items-center text-gray-600">
             <Loader2 className="w-12 h-12 mb-4 animate-spin" />
-            <p className="font-semibold">Đang xử lý file...</p>
+            <p className="font-semibold">Processing file...</p>
             <p className="text-sm">{uploadedFile?.name}</p>
           </div>
         </div>
@@ -206,7 +213,7 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onItemsChange }) => {
             </div>
             <div className="ml-3">
               <h3 className="text-sm font-medium text-red-800">
-                Lỗi xử lý file
+                File Processing Error
               </h3>
               <div className="mt-2 text-sm text-red-700">
                 <p>{error}</p>
@@ -217,7 +224,7 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onItemsChange }) => {
                   type="button"
                   className="text-sm font-medium text-red-800 hover:text-red-600"
                 >
-                  Tải lại file khác
+                  Upload another file
                 </button>
               </div>
             </div>
@@ -238,9 +245,12 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onItemsChange }) => {
           </div>
           <div className="flex items-center space-x-3">
             <p className="text-sm font-semibold text-green-600">
-              Xử lý thành công
+              Processed successfully
             </p>
-            <button onClick={handleRemoveFile} title="Xóa file và tải lại">
+            <button
+              onClick={handleRemoveFile}
+              title="Remove file and re-upload"
+            >
               <XCircle className="w-5 h-5 text-gray-500 hover:text-gray-800" />
             </button>
           </div>

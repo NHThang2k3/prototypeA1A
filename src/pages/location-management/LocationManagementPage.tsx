@@ -1,153 +1,103 @@
 // Path: src/pages/location-management/LocationManagementPage.tsx
 
-import { useState, useEffect, useCallback } from "react";
-import LocationTree from "./components/LocationTree";
-import LocationDetail from "./components/LocationDetail";
+import { useState, useEffect } from "react";
 import PageHeader from "./components/PageHeader";
 import LocationFormModal from "./components/LocationFormModal";
-import TreeSkeleton from "./components/skeletons/TreeSkeleton";
+import LocationTable from "./components/LocationTable";
+import LocationItemsModal from "./components/LocationItemsModal"; // Import new modal
+import type { LocationItem, FabricRoll } from "./types";
+import { locationListData, getRollsByLocationId } from "./data";
 import DetailSkeleton from "./components/skeletons/DetailSkeleton";
-import type { LocationNode } from "./types";
-import { warehouseData } from "./data";
-
-// --- Thêm các hàm helper để xử lý cây dữ liệu một cách bất biến (immutable) ---
-
-// Tìm và cập nhật một node trong cây
-const updateNodeInTree = (
-  node: LocationNode,
-  updatedNode: Partial<LocationNode>
-): LocationNode => {
-  if (node.id === updatedNode.id) {
-    return {
-      ...node,
-      ...updatedNode,
-      items: node.items,
-      children: node.children,
-    };
-  }
-  return {
-    ...node,
-    children: node.children.map((child) =>
-      updateNodeInTree(child, updatedNode)
-    ),
-  };
-};
-
-// Tìm và thêm một node con mới vào cây
-const addNodeToTree = (
-  node: LocationNode,
-  parentId: string,
-  newNode: LocationNode
-): LocationNode => {
-  if (node.id === parentId) {
-    return { ...node, children: [...node.children, newNode] };
-  }
-  return {
-    ...node,
-    children: node.children.map((child) =>
-      addNodeToTree(child, parentId, newNode)
-    ),
-  };
-};
-
-const findNodeById = (node: LocationNode, id: string): LocationNode | null => {
-  if (node.id === id) return node;
-  for (const child of node.children) {
-    const found = findNodeById(child, id);
-    if (found) return found;
-  }
-  return null;
-};
 
 const LocationManagementPage = () => {
-  const [locations, setLocations] = useState<LocationNode | null>(null);
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [locations, setLocations] = useState<LocationItem[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // State quản lý modal
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalInitialData, setModalInitialData] = useState<LocationNode | null>(
+  // State to manage edit/add location modal
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const [modalInitialData, setModalInitialData] = useState<LocationItem | null>(
     null
   );
-  const [modalParentId, setModalParentId] = useState<string | null>(null);
 
-  const selectedLocation =
-    selectedNodeId && locations
-      ? findNodeById(locations, selectedNodeId)
-      : null;
+  // State to manage view fabric rolls modal
+  const [isItemsModalOpen, setIsItemsModalOpen] = useState(false);
+  const [selectedLocationForItems, setSelectedLocationForItems] = useState<{
+    location: LocationItem;
+    items: FabricRoll[];
+  } | null>(null);
 
   useEffect(() => {
     setIsLoading(true);
     setTimeout(() => {
-      setLocations(warehouseData);
-      setSelectedNodeId(warehouseData.id);
+      setLocations(locationListData);
       setIsLoading(false);
     }, 1000);
   }, []);
 
-  const handleSelectNode = useCallback((nodeId: string) => {
-    setSelectedNodeId(nodeId);
-  }, []);
-
-  const handleOpenAddModal = (parentId: string | null = null) => {
+  // --- Handlers for Location Form Modal ---
+  const handleOpenAddModal = () => {
     setModalInitialData(null);
-    setModalParentId(parentId);
-    setIsModalOpen(true);
+    setIsFormModalOpen(true);
   };
 
-  const handleOpenEditModal = (location: LocationNode) => {
+  const handleOpenEditModal = (location: LocationItem) => {
     setModalInitialData(location);
-    setModalParentId(null);
-    setIsModalOpen(true);
+    setIsFormModalOpen(true);
   };
 
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
+  const handleCloseFormModal = () => {
+    setIsFormModalOpen(false);
     setModalInitialData(null);
-    setModalParentId(null);
   };
 
-  const handleSaveLocation = (
-    data: Partial<LocationNode> & { parentId?: string | null }
+  const handleSaveLocation = (data: LocationItem) => {
+    setLocations((prevLocations) => {
+      if (!prevLocations) return [data];
+      const isEditing = prevLocations.some((loc) => loc.id === data.id);
+      if (isEditing) {
+        return prevLocations.map((loc) => (loc.id === data.id ? data : loc));
+      } else {
+        return [...prevLocations, data];
+      }
+    });
+    handleCloseFormModal();
+  };
+
+  // --- Handlers for Location Items Modal ---
+  const handleViewLocationItems = async (location: LocationItem) => {
+    const items = await getRollsByLocationId(location.id);
+    setSelectedLocationForItems({ location, items });
+    setIsItemsModalOpen(true);
+  };
+
+  const handleCloseItemsModal = () => {
+    setIsItemsModalOpen(false);
+    setSelectedLocationForItems(null);
+  };
+
+  const handleMoveRoll = (
+    rollId: string,
+    oldLocationId: string,
+    newLocationId: string
   ) => {
-    if (!locations) return;
-
-    if (data.parentId) {
-      // Thêm mới
-      const newNode: LocationNode = {
-        id: data.id!,
-        name: data.name!,
-        type: data.type!,
-        status: data.status!,
-        capacity: data.capacity,
-        items: [],
-        children: [],
-      };
-      const updatedTree = addNodeToTree(locations, data.parentId, newNode);
-      setLocations(updatedTree);
-    } else {
-      // Cập nhật
-      const updatedTree = updateNodeInTree(locations, data);
-      setLocations(updatedTree);
-    }
-
-    handleCloseModal();
+    // This is a simulation. In a real application, you would call an API here.
+    console.log(
+      `ACTION: Moving roll ${rollId} from ${oldLocationId} to ${newLocationId}`
+    );
+    alert(
+      `Roll ${rollId} will be moved to ${newLocationId}.\n(This is a simulation. Data will not be permanently changed.)`
+    );
+    // Close modal after execution
+    handleCloseItemsModal();
   };
 
   if (isLoading || !locations) {
+    // ... skeleton loading state remains unchanged
     return (
       <div className="p-6 bg-gray-50 min-h-full">
         <div className="bg-white p-4 rounded-lg shadow-sm mb-6 h-24 animate-pulse"></div>
-        <div
-          className="grid grid-cols-1 lg:grid-cols-3 gap-6"
-          style={{ height: "calc(100vh - 160px)" }}
-        >
-          <div className="lg:col-span-1">
-            <TreeSkeleton />
-          </div>
-          <div className="lg:col-span-2">
-            <DetailSkeleton />
-          </div>
+        <div style={{ height: "calc(100vh - 160px)" }}>
+          <DetailSkeleton />
         </div>
       </div>
     );
@@ -155,37 +105,29 @@ const LocationManagementPage = () => {
 
   return (
     <div className="p-6 bg-gray-50 min-h-full">
-      <PageHeader onAddRootLocation={() => handleOpenAddModal(locations.id)} />
+      <PageHeader onAddLocation={handleOpenAddModal} />
 
-      <div
-        className="grid grid-cols-1 lg:grid-cols-3 gap-6"
-        style={{ height: "calc(100vh - 160px)" }}
-      >
-        <div className="lg:col-span-1">
-          <LocationTree
-            data={locations}
-            selectedNodeId={selectedNodeId}
-            onSelectNode={handleSelectNode}
-          />
-        </div>
-
-        <div className="lg:col-span-2">
-          <LocationDetail
-            location={selectedLocation}
-            onEdit={handleOpenEditModal}
-            onAddChild={() =>
-              selectedNodeId && handleOpenAddModal(selectedNodeId)
-            }
-          />
-        </div>
+      <div style={{ height: "calc(100vh - 160px)" }}>
+        <LocationTable
+          locations={locations}
+          onEdit={handleOpenEditModal}
+          onViewItems={handleViewLocationItems}
+        />
       </div>
 
       <LocationFormModal
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
+        isOpen={isFormModalOpen}
+        onClose={handleCloseFormModal}
         onSave={handleSaveLocation}
         initialData={modalInitialData}
-        parentId={modalParentId}
+      />
+
+      <LocationItemsModal
+        isOpen={isItemsModalOpen}
+        onClose={handleCloseItemsModal}
+        location={selectedLocationForItems?.location ?? null}
+        items={selectedLocationForItems?.items ?? []}
+        onMoveRoll={handleMoveRoll}
       />
     </div>
   );

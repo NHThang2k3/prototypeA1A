@@ -1,27 +1,27 @@
 // Path: src/pages/location-management/components/PageHeader.tsx
 import React from "react";
 import { Plus } from "lucide-react";
-import { Button } from "../../../components/ui/button"; // Giả sử bạn có component này
+import { Button } from "../../../components/ui/button";
 
 interface PageHeaderProps {
-  onAddRootLocation: () => void;
+  onAddLocation: () => void; // Renamed from onAddRootLocation
 }
 
-const PageHeader: React.FC<PageHeaderProps> = ({ onAddRootLocation }) => {
+const PageHeader: React.FC<PageHeaderProps> = ({ onAddLocation }) => {
   return (
     <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
-            Quản lý Vị trí Kho
+            Warehouse Location Management
           </h1>
           <p className="text-sm text-gray-500">
-            Thiết lập, quản lý và xem xét sơ đồ logic của kho hàng.
+            View, manage, and organize all warehouse storage locations.
           </p>
         </div>
-        <Button onClick={onAddRootLocation}>
+        <Button onClick={onAddLocation}>
           <Plus className="w-4 h-4 mr-2" />
-          Thêm Vị trí Mới
+          Add New Location
         </Button>
       </div>
     </div>

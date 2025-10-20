@@ -97,48 +97,47 @@ const QRScanInterfacePage: React.FC = () => {
         location: data as ScannedLocation,
         items: [],
       });
-      toast.success(`Bắt đầu tác vụ CẤT VẢI vào vị trí: ${data.locationCode}`);
+      toast.success(`Starting PUT AWAY task for location: ${data.locationCode}`);
     } else if (data.type === "item") {
       const item = data as ScannedItem;
       if (!item.currentLocation) {
         toast.error(
-          "Cuộn vải này chưa có vị trí, không thể CHUYỂN VỊ TRÍ. Vui lòng Cất vải trước."
+          "This fabric roll has no location, cannot TRANSFER. Please Put Away first."
         );
         return;
       }
       setOperation({ name: "TRANSFER", item: data as ScannedItem });
-      toast.success(`Bắt đầu tác vụ CHUYỂN VỊ TRÍ cho cuộn vải: ${data.sku}`);
+      toast.success(`Starting TRANSFER task for fabric roll: ${data.sku}`);
     } else if (data.type === "issue_request") {
       setOperation({ name: "ISSUE", request: data as IssueRequest });
-      toast.success(`Bắt đầu tác vụ XUẤT KHO theo phiếu: ${data.id}`);
+      toast.success(`Starting ISSUE task for request: ${data.id}`);
     } else {
-      toast.error("Mã QR không phù hợp để bắt đầu một tác vụ.");
+      toast.error("QR code is not suitable for starting a task.");
     }
   };
 
   const handlePutAwayItemScan = (data: ScannedData) => {
     if (operation.name !== "PUT_AWAY") return;
-    if (data.type === "item") {
-      if (operation.items.some((item) => item.qrCode === data.qrCode)) {
-        toast.error("Cuộn vải này đã được quét rồi.");
-        return;
-      }
-      if ((data as ScannedItem).currentLocation) {
-        toast.error(
-          `Cảnh báo: Cuộn vải này đã có vị trí (${
-            (data as ScannedItem).currentLocation
-          }).`
-        );
-      }
-      setOperation({
-        ...operation,
-        items: [...operation.items, data as ScannedItem],
-      });
-      toast.success(`Đã thêm cuộn vải: ${data.sku}`);
-    } else {
-      toast.error("Vui lòng quét mã VẢI (cuộn vải).");
-    }
-  };
+        if (data.type === "item") {
+          if (operation.items.some((item) => item.qrCode === data.qrCode)) {
+            toast.error("This fabric roll has already been scanned.");
+            return;
+          }
+          if ((data as ScannedItem).currentLocation) {
+            toast.error(
+              `Warning: This fabric roll already has a location (${(data as ScannedItem).currentLocation
+              }).`
+            );
+          }
+          setOperation({
+            ...operation,
+            items: [...operation.items, data as ScannedItem],
+          });
+          toast.success(`Added fabric roll: ${data.sku}`);
+        } else {
+          toast.error("Please scan a FABRIC QR code (fabric roll).");
+        }
+      };
 
   // UPDATED: handlePutAwaySubmit để truyền dữ liệu chi tiết
   const handlePutAwaySubmit = async () => {
@@ -146,7 +145,7 @@ const QRScanInterfacePage: React.FC = () => {
     const { items, location } = operation;
     setOperation({
       name: "PROCESSING",
-      message: "Đang cập nhật vị trí cho các cuộn vải...",
+      message: "Updating location for the fabric rolls...",
     });
     try {
       const result = await submitPutAwayAction(items, location);
@@ -172,7 +171,7 @@ const QRScanInterfacePage: React.FC = () => {
     if (data.type === "location") {
       setOperation({
         name: "PROCESSING",
-        message: "Đang thực hiện chuyển vị trí...",
+        message: "Performing location transfer...",
       });
       try {
         const result = await submitTransferAction(
@@ -188,7 +187,7 @@ const QRScanInterfacePage: React.FC = () => {
         handleError(error);
       }
     } else {
-      toast.error("Vui lòng quét mã VỊ TRÍ KHO MỚI.");
+      toast.error("Please scan the NEW WAREHOUSE LOCATION QR code.");
     }
   };
 
@@ -197,63 +196,119 @@ const QRScanInterfacePage: React.FC = () => {
     if (operation.name !== "ISSUE_SCANNING_ITEM") return;
     const { request } = operation;
 
-    if (data.type !== "item") {
-      toast.error("Vui lòng quét mã VẢI.");
-      return;
-    }
+        if (data.type !== "item") {
 
-    const scannedItem = data as ScannedItem;
-    const itemInPickingList = request.pickingList.find(
-      (p) => p.sku === scannedItem.sku
-    );
+          toast.error("Please scan a FABRIC QR code.");
 
-    if (!itemInPickingList) {
-      toast.error(`Vải ${scannedItem.sku} không có trong phiếu yêu cầu này!`);
-      return;
-    }
-    const remainingNeeded =
-      itemInPickingList.requiredQuantity - itemInPickingList.pickedQuantity;
-    if (remainingNeeded <= 0) {
-      toast.error(`Đã lấy đủ số lượng cho mã vải ${scannedItem.sku}.`);
-      return;
-    }
-    const quantityToIssue = Math.min(scannedItem.quantity, remainingNeeded);
-    if (quantityToIssue <= 0) {
-      toast.error(`Không thể lấy thêm vải từ cuộn này.`);
-      return;
-    }
+          return;
 
-    setOperation({
-      name: "PROCESSING",
-      message: `Đang ghi nhận xuất ${quantityToIssue} ${scannedItem.uom}...`,
-    });
-    try {
-      const result = await submitIssueAction(
-        request,
-        scannedItem,
-        quantityToIssue
-      );
+        }
 
-      // Kiểm tra xem phiếu đã hoàn thành sau khi cập nhật chưa
-      if (isRequestCompleted(result.updatedRequest)) {
-        // Nếu hoàn thành, hiển thị màn hình feedback cuối cùng
+    
+
+        const scannedItem = data as ScannedItem;
+
+        const itemInPickingList = request.pickingList.find(
+
+          (p) => p.sku === scannedItem.sku
+
+        );
+
+    
+
+        if (!itemInPickingList) {
+
+          toast.error(`Fabric ${scannedItem.sku} is not in this request!`);
+
+          return;
+
+        }
+
+        const remainingNeeded = 
+
+          itemInPickingList.requiredQuantity - itemInPickingList.pickedQuantity;
+
+        if (remainingNeeded <= 0) {
+
+          toast.error(`Sufficient quantity already picked for fabric ${scannedItem.sku}.`);
+
+          return;
+
+        }
+
+        const quantityToIssue = Math.min(scannedItem.quantity, remainingNeeded);
+
+        if (quantityToIssue <= 0) {
+
+          toast.error(`Cannot take more fabric from this roll.`);
+
+          return;
+
+        }
+
+    
+
         setOperation({
-          name: "FEEDBACK",
-          status: "SUCCESS",
-          message: `Đã hoàn thành soạn hàng cho phiếu ${result.updatedRequest.id}!`,
+
+          name: "PROCESSING",
+
+          message: `Recording issue of ${quantityToIssue} ${scannedItem.uom}...`,
+
         });
-      } else {
-        // Nếu chưa, quay lại màn hình quét để tiếp tục
-        setOperation({
-          name: "ISSUE_SCANNING_ITEM",
-          request: result.updatedRequest,
-        });
-        toast.success(result.message);
-      }
-    } catch (error) {
-      handleError(error);
-    }
-  };
+
+        try {
+
+          const result = await submitIssueAction(
+
+            request,
+
+            scannedItem,
+
+            quantityToIssue
+
+          );
+
+    
+
+          // Check if the request is completed after the update
+
+          if (isRequestCompleted(result.updatedRequest)) {
+
+            // If completed, show the final feedback screen
+
+            setOperation({
+
+              name: "FEEDBACK",
+
+              status: "SUCCESS",
+
+              message: `Picking completed for request ${result.updatedRequest.id}! `,
+
+            });
+
+          } else {
+
+            // Otherwise, return to the scanning screen to continue
+
+            setOperation({
+
+              name: "ISSUE_SCANNING_ITEM",
+
+              request: result.updatedRequest,
+
+            });
+
+            toast.success(result.message);
+
+          }
+
+        } catch (error) {
+
+          handleError(error);
+
+        }
+
+      };
 
   // UPDATED: renderContent để truyền `details`
   const renderContent = () => {
@@ -263,7 +318,7 @@ const QRScanInterfacePage: React.FC = () => {
         return (
           <Scanner
             onScan={handleScan}
-            scanPrompt="Vui lòng quét mã QR để bắt đầu (Vị trí, Cuộn vải, hoặc Phiếu Yêu Cầu)"
+            scanPrompt="Please scan a QR code to begin (Location, Fabric Roll, or Issue Request)"
             context="INITIAL"
           />
         );
@@ -299,7 +354,7 @@ const QRScanInterfacePage: React.FC = () => {
         return (
           <Scanner
             onScan={handleScan}
-            scanPrompt={`Phiếu ${operation.request.id}: Quét mã VẢI cần lấy`}
+            scanPrompt={`Request ${operation.request.id}: Scan FABRIC QR code to pick`}
             context="ISSUE_ITEM"
           />
         );
@@ -319,7 +374,7 @@ const QRScanInterfacePage: React.FC = () => {
           />
         );
       default:
-        return <div>Trạng thái không xác định</div>;
+        return <div>Unknown state</div>;
     }
   };
 
@@ -335,7 +390,7 @@ const QRScanInterfacePage: React.FC = () => {
               className="mb-4 flex items-center text-sm font-semibold text-blue-600 hover:text-blue-800"
             >
               <ArrowLeft size={16} className="mr-1" />
-              Bắt đầu lại
+              Start Over
             </button>
           )}
         {operation.name === "ISSUE_SCANNING_ITEM" && (
@@ -346,7 +401,7 @@ const QRScanInterfacePage: React.FC = () => {
             className="mb-4 flex items-center text-sm font-semibold text-blue-600 hover:text-blue-800"
           >
             <ArrowLeft size={16} className="mr-1" />
-            Xem lại phiếu yêu cầu
+            Review Request
           </button>
         )}
         {renderContent()}

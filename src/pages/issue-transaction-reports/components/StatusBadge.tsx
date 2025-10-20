@@ -1,18 +1,18 @@
 // Path: src/pages/issue-transaction-reports/components/StatusBadge.tsx
 
 import React from "react";
-import type { TransactionStatus } from "../types";
+import type { QcStatus } from "../types";
 
 interface StatusBadgeProps {
-  status: TransactionStatus;
+  status: QcStatus;
 }
 
 const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
-  const statusStyles: Record<TransactionStatus, string> = {
-    "Đã hoàn tất": "bg-green-100 text-green-800",
-    "Đang xử lý": "bg-blue-100 text-blue-800",
-    "Mới yêu cầu": "bg-yellow-100 text-yellow-800",
-    "Đã hủy": "bg-red-100 text-red-800",
+  // [UPDATED] Thay đổi style để phù hợp với trạng thái QC mới
+  const statusStyles: Record<QcStatus, string> = {
+    Passed: "bg-green-100 text-green-800",
+    Failed: "bg-red-100 text-red-800",
+    Pending: "bg-yellow-100 text-yellow-800",
   };
 
   return (

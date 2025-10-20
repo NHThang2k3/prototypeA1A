@@ -2,7 +2,7 @@
 
 import React from "react";
 
-// Props sẽ bao gồm giá trị và hàm xử lý thay đổi
+// Props will include values and change handlers
 interface FormHeaderProps {
   productionOrder: string;
   requiredDate: string;
@@ -19,7 +19,7 @@ const FormHeader: React.FC<FormHeaderProps> = ({
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
       <h2 className="text-xl font-semibold text-gray-700 mb-4">
-        Thông tin chung
+        General Information
       </h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
@@ -27,7 +27,7 @@ const FormHeader: React.FC<FormHeaderProps> = ({
             htmlFor="productionOrder"
             className="block text-sm font-medium text-gray-600 mb-1"
           >
-            Lệnh Sản Xuất / Mã hàng
+            Production Order / Style Code
           </label>
           <input
             type="text"
@@ -35,7 +35,7 @@ const FormHeader: React.FC<FormHeaderProps> = ({
             value={productionOrder}
             onChange={(e) => onFieldChange("productionOrder", e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-            placeholder="VD: PO-456"
+            placeholder="e.g., PO-456"
           />
         </div>
         <div>
@@ -43,7 +43,7 @@ const FormHeader: React.FC<FormHeaderProps> = ({
             htmlFor="requiredDate"
             className="block text-sm font-medium text-gray-600 mb-1"
           >
-            Ngày cần hàng
+            Required Date
           </label>
           <input
             type="date"
@@ -58,7 +58,7 @@ const FormHeader: React.FC<FormHeaderProps> = ({
             htmlFor="notes"
             className="block text-sm font-medium text-gray-600 mb-1"
           >
-            Ghi chú
+            Notes
           </label>
           <textarea
             id="notes"
@@ -66,7 +66,7 @@ const FormHeader: React.FC<FormHeaderProps> = ({
             value={notes}
             onChange={(e) => onFieldChange("notes", e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-            placeholder="Yêu cầu thêm (nếu có)"
+            placeholder="Additional requests (if any)"
           ></textarea>
         </div>
       </div>

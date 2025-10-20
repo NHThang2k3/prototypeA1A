@@ -12,15 +12,19 @@ import HomePage from "./pages/home/HomePage";
 import InboundDashboardPage from "./pages/inbound-dashboard/InboundDashboardPage";
 import InventoryListPage from "./pages/inventory-list/InventoryListPage";
 import KanbanBoardPage from "./pages/kanban-board/KanbanBoardPage";
-import ImportPackingListFormPage from "./pages/import-packing-list/ImportPackingListFormPage";
-import ShipmentDetailPage from "./pages/shipment-detail/ShipmentDetailPage";
+// import ImportPackingListFormPage from "./pages/import-packing-list/ImportPackingListFormPage";
 import LocationManagementPage from "./pages/location-management/LocationManagementPage";
 import QRScanInterfacePage from "./pages/qr-scan/QRScanInterfacePage";
-import IssueFabricFormPage from "./pages/issue-fabric-form/IssueFabricFormPage";
+import IssueFabricFormPage from "./pages/issue-fabric-form/IssueFabricFromJobPage";
 import IssueAccessoryFormPage from "./pages/issue-accessory-form/IssueAccessoryFormPage";
 import IssuePackagingFormPage from "./pages/issue-packaging-form/IssuePackagingFormPage";
 import IssueTransactionReportsPage from "./pages/issue-transaction-reports/IssueTransactionReportsPage";
 import PackingListManagementPage from "./pages/packing-list-management/PackingListManagementPage";
+import AccessoryInventoryListPage from "./pages/accessory-inventory-list/AccessoryInventoryListPage";
+import SewingTrimsKanbanPage from "./pages/sewing-trims-kanban/SewingTrimsKanbanPage";
+import PackagingInventoryListPage from "./pages/packaging-inventory-list/PackagingInventoryListPage";
+import AccessoryIssueTransactionReportsPage from "./pages/accessory-issue-transaction-reports/AccessoryIssueTransactionReportsPage";
+import PackagingIssueTransactionReportsPage from "./pages/packaging-issue-transaction-reports/PackagingIssueTransactionReportsPage";
 
 function App() {
   return (
@@ -31,19 +35,14 @@ function App() {
 
         {/* === Module Kho Vải === */}
         <Route path="/fabric-warehouse" element={<FabricWarehouseLayout />}>
-          {/* Chuyển hướng từ /fabric-warehouse sang dashboard */}
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<InboundDashboardPage />} />
           <Route path="inventory" element={<InventoryListPage />} />
           <Route path="kanban" element={<KanbanBoardPage />} />
-          <Route
+          {/* <Route
             path="import-packing-list"
             element={<ImportPackingListFormPage />}
-          />
-          <Route
-            path="shipments/:shipmentId"
-            element={<ShipmentDetailPage />}
-          />
+          /> */}
           <Route path="locations" element={<LocationManagementPage />} />
           <Route path="qr-scan" element={<QRScanInterfacePage />} />
           <Route path="issue/fabric" element={<IssueFabricFormPage />} />
@@ -60,16 +59,16 @@ function App() {
           element={<AccessoryWarehouseLayout />}
         >
           <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard" element={<InboundDashboardPage />} /> // Tái
-          sử dụng dashboard
-          <Route path="inventory" element={<InventoryListPage />} /> // Tái sử
-          dụng trang tồn kho
-          <Route path="issue" element={<IssueAccessoryFormPage />} />
+          <Route path="dashboard" element={<InboundDashboardPage />} />
+          <Route path="inventory" element={<AccessoryInventoryListPage />} />
+          <Route path="kanban" element={<SewingTrimsKanbanPage />} />
+          <Route path="locations" element={<LocationManagementPage />} />
+          <Route path="qr-scan" element={<QRScanInterfacePage />} />
+          <Route path="issue/accessory" element={<IssueAccessoryFormPage />} />
           <Route
             path="reports/issues"
-            element={<IssueTransactionReportsPage />}
+            element={<AccessoryIssueTransactionReportsPage />}
           />
-          <Route path="qr-scan" element={<QRScanInterfacePage />} />
         </Route>
 
         {/* === Module Kho Đóng Gói (Ví dụ) === */}
@@ -79,13 +78,15 @@ function App() {
         >
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<InboundDashboardPage />} />
-          <Route path="inventory" element={<InventoryListPage />} />
-          <Route path="issue" element={<IssuePackagingFormPage />} />
+          <Route path="inventory" element={<PackagingInventoryListPage />} />
+          <Route path="kanban" element={<KanbanBoardPage />} />
+          <Route path="locations" element={<LocationManagementPage />} />
+          <Route path="qr-scan" element={<QRScanInterfacePage />} />
+          <Route path="issue/packaging" element={<IssuePackagingFormPage />} />
           <Route
             path="reports/issues"
-            element={<IssueTransactionReportsPage />}
+            element={<PackagingIssueTransactionReportsPage />}
           />
-          <Route path="qr-scan" element={<QRScanInterfacePage />} />
         </Route>
 
         {/* Redirect về trang chủ nếu không khớp route nào */}

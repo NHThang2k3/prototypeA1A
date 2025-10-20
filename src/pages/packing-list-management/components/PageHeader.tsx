@@ -1,22 +1,29 @@
 // src/pages/packing-list-management/components/PageHeader.tsx
 
 import React from "react";
+import { Plus } from "lucide-react";
+import { Button } from "../../../components/ui/button";
 
 interface PageHeaderProps {
-  poNumber: string;
+  onImportClick: () => void;
 }
 
-const PageHeader: React.FC<PageHeaderProps> = ({ poNumber }) => {
+const PageHeader: React.FC<PageHeaderProps> = ({ onImportClick }) => {
   return (
     <div className="flex justify-between items-center mb-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-800">
-          Chi tiết Packing List: {poNumber}
-        </h1>
-        <p className="text-gray-500 mt-1">
-          Phân rã lô hàng, quản lý và in mã QR cho từng đơn vị vật tư.
-        </p>
-      </div>
+      {/* Page title, on the left */}
+      <h1 className="text-3xl font-bold text-gray-900">
+        Packing List Management
+      </h1>
+
+      {/* Import button, on the right */}
+      <Button
+        onClick={onImportClick}
+        className="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75"
+      >
+        <Plus className="-ml-1 mr-2 h-5 w-5" />
+        Import Packing List
+      </Button>
     </div>
   );
 };

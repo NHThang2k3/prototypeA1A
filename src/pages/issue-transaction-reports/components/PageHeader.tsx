@@ -2,22 +2,38 @@
 
 import { Download } from "lucide-react";
 
-const PageHeader = () => {
+interface PageHeaderProps {
+  selectedCount: number;
+  onExport: () => void;
+}
+
+const PageHeader: React.FC<PageHeaderProps> = ({ selectedCount, onExport }) => {
+  const hasSelection = selectedCount > 0;
+
   return (
     <div className="bg-white p-4 shadow-sm mb-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Báo cáo Xuất Kho</h1>
+          {/* [UPDATED] New title */}
+          <h1 className="text-2xl font-bold text-gray-800">
+            Fabric Roll Inventory Report
+          </h1>
           <p className="text-sm text-gray-500">
-            Xem và quản lý lịch sử các giao dịch xuất kho.
+            View, filter, and export fabric roll transaction history.
           </p>
         </div>
         <button
-          className="flex items-center bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
-          onClick={() => alert("Chức năng xuất Excel đang được phát triển!")}
+          className={`flex items-center text-white px-4 py-2 rounded-lg transition-colors ${
+            hasSelection
+              ? "bg-indigo-600 hover:bg-indigo-700"
+              : "bg-gray-400 cursor-not-allowed"
+          }`}
+          onClick={onExport}
+          disabled={!hasSelection}
         >
           <Download className="w-4 h-4 mr-2" />
-          Xuất Excel
+          {/* [UPDATED] Display selected count */}
+          Export to Excel {hasSelection && `(${selectedCount})`}
         </button>
       </div>
     </div>

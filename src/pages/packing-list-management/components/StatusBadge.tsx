@@ -10,13 +10,13 @@ interface StatusBadgeProps {
 
 const statusConfig = {
   NOT_PRINTED: {
-    label: "Chưa in",
+    label: "Not Printed",
     bgColor: "bg-gray-100",
     textColor: "text-gray-800",
     icon: <Printer className="w-4 h-4" />,
   },
   PRINTED: {
-    label: "Đã in",
+    label: "Printed",
     bgColor: "bg-green-100",
     textColor: "text-green-800",
     icon: <CheckCircle className="w-4 h-4" />,

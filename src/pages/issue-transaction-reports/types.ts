@@ -1,37 +1,50 @@
 // Path: src/pages/issue-transaction-reports/types.ts
 
-export type TransactionStatus = 'Đã hoàn tất' | 'Đang xử lý' | 'Mới yêu cầu' | 'Đã hủy';
-export type TransactionType = 'Xuất vải' | 'Xuất phụ liệu' | 'Xuất đóng gói';
+// [NEW] Định nghĩa trạng thái QC
+export type QcStatus = 'Passed' | 'Failed' | 'Pending';
 
-export interface IssueTransaction {
-  id: string;
-  type: TransactionType;
-  createdAt: string; // ISO date string
-  requestor: string;
-  productionOrder: string;
-  status: TransactionStatus;
+// [NEW] Định nghĩa cấu trúc dữ liệu cho một cuộn vải, thay thế IssueTransaction
+export interface FabricRoll {
+  poNumber: string;
+  itemCode: string;
+  factory: string;
+  supplier: string;
+  invoiceNo: string;
+  colorCode: string;
+  color: string;
+  rollNo: number;
+  lotNo: string;
+  yards: number;
+  netWeightKgs: number;
+  grossWeightKgs: number;
+  width: string;
+  location: string;
+  qrCode: string; // Sử dụng làm ID duy nhất
+  dateInHouse: string; // ISO date string or formatted string
+  description: string;
+  qcStatus: QcStatus;
+  qcDate: string; // ISO date string or formatted string
+  qcBy: string;
+  comment: string;
+  printed: boolean;
+  balanceYards: number;
+  hourStandard: number;
+  hourRelax: number;
+  relaxDate: string; // ISO date string or formatted string
+  relaxTime: string;
+  relaxBy: string;
+  job: string;
+  issuedDate: string; // ISO date string or formatted string
+  issuedBy: string;
+  destination: string;
+  parentQrCode: string | null;
 }
 
-// Thêm hoặc thay thế định nghĩa Filters ở đây
-// Đây là định nghĩa chính xác cho bộ lọc của bạn
-export interface Filters {
-  query?: string;
-  type?: string;
-  status?: string;
-  dateFrom?: string;
-  dateTo?: string;
+// [UPDATED] Cập nhật định nghĩa Filters để phù hợp với dữ liệu mới
+export interface FabricRollFilters {
+  query?: string; // Dùng để tìm kiếm PO Number hoặc Item Code
+  supplier?: string;
+  qcStatus?: QcStatus | '';
+  dateFrom?: string; // Date In House from
+  dateTo?: string; // Date In House to
 }
-
-// Ghi chú: Interface ReportFilters bên dưới có vẻ không được sử dụng
-// hoặc có cấu trúc khác. Bạn có thể xóa nó đi nếu không cần thiết.
-/*
-export interface ReportFilters {
-  searchTerm: string;
-  status: string;
-  type: string;
-  dateRange: {
-    from: string;
-    to: string;
-  };
-}
-*/

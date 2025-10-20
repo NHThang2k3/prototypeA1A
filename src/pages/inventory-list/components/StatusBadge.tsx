@@ -1,25 +1,21 @@
 // Path: src/pages/inventory-list/components/StatusBadge.tsx
 
 import React from "react";
-import type { InventoryStatus } from "../types";
+import type { QCStatus } from "../types";
 
 interface StatusBadgeProps {
-  status: InventoryStatus;
+  status: QCStatus;
 }
 
-const statusMap: Record<InventoryStatus, { text: string; className: string }> =
-  {
-    "in-stock": { text: "Còn hàng", className: "bg-green-100 text-green-800" },
-    "low-stock": {
-      text: "Sắp hết",
-      className: "bg-yellow-100 text-yellow-800",
-    },
-    "out-of-stock": { text: "Hết hàng", className: "bg-red-100 text-red-800" },
-  };
+const statusMap: Record<QCStatus, { text: string; className: string }> = {
+  Passed: { text: "Passed", className: "bg-green-100 text-green-800" },
+  Failed: { text: "Failed", className: "bg-red-100 text-red-800" },
+  Pending: { text: "Pending", className: "bg-yellow-100 text-yellow-800" },
+};
 
 export const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
   const { text, className } = statusMap[status] || {
-    text: "Không rõ",
+    text: "Unknown",
     className: "bg-gray-100 text-gray-800",
   };
 

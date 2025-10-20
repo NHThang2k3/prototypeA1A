@@ -1,20 +1,31 @@
 // Path: src/layouts/PackagingWarehouseLayout.tsx
-import { useState, createContext, useContext, useEffect } from "react";
+import { useState, createContext, useContext, useEffect, useRef } from "react";
 import { NavLink, Outlet, useLocation, Link } from "react-router-dom";
 import {
   Menu,
   X,
   LayoutDashboard,
-  Truck,
   Bell,
   User,
+  KanbanSquare,
+  Network,
   QrCode,
-  Package, // Thay Boxes bằng Package
+  FileOutput,
+  Boxes,
   ScrollText,
   ChevronDown,
   ChevronLeft,
+  Zap,
+  ShieldCheck,
+  CalendarCheck,
+  Wrench,
+  FileText,
+  BarChart,
+  BellRing,
+  Settings,
   MoreHorizontal,
   ArrowLeft,
+  Globe,
   type LucideIcon,
 } from "lucide-react";
 
@@ -26,41 +37,114 @@ type NavItem = {
   children?: NavItem[];
 };
 
-// --- Menu Sidebar cho Kho Đóng Gói ---
+// --- Dữ liệu Sidebar giữ nguyên bằng Tiếng Anh ---
 const sidebarNavItems: NavItem[] = [
   {
-    title: "Dashboard",
-    path: "/packaging-warehouse/dashboard",
-    icon: LayoutDashboard,
-    key: "dashboard",
+    title: "Productivity",
+    icon: Zap,
+    key: "productivity",
+    children: [
+      {
+        title: "Kanban Board & Planning",
+        icon: KanbanSquare,
+        key: "productivity-kanban",
+        children: [
+          {
+            title: "Inbound Dashboard",
+            path: "/packaging-warehouse/dashboard",
+            icon: LayoutDashboard,
+            key: "dashboard",
+          },
+          {
+            title: "Inventory",
+            path: "/packaging-warehouse/inventory",
+            icon: Boxes,
+            key: "inventory",
+          },
+          {
+            title: "Kanban Board",
+            path: "/packaging-warehouse/kanban",
+            icon: KanbanSquare,
+            key: "kanban",
+          },
+        ],
+      },
+
+      {
+        title: "Inventory Tracking",
+        icon: Boxes,
+        key: "productivity-inventory",
+        children: [
+          {
+            title: "Location Management",
+            path: "/packaging-warehouse/locations",
+            icon: Network,
+            key: "locations",
+          },
+          {
+            title: "Scan QR",
+            path: "/packaging-warehouse/qr-scan",
+            icon: QrCode,
+            key: "qr-scan",
+          },
+          {
+            title: "Packaging WH Report",
+            path: "/packaging-warehouse/reports/issues",
+            icon: ScrollText,
+            key: "reports-issues",
+          },
+        ],
+      },
+      {
+        title: "Delivery transaction",
+        icon: Network,
+        key: "productivity-delivery",
+        children: [
+          {
+            title: "Issue Packaging Form",
+            path: "/packaging-warehouse/issue/packaging",
+            icon: FileOutput,
+            key: "issue-packaging",
+          },
+        ],
+      },
+    ],
   },
   {
-    title: "Quản lý Tồn Kho",
-    path: "/packaging-warehouse/inventory",
-    icon: Truck,
-    key: "inventory",
+    title: "Quality",
+    icon: ShieldCheck,
+    key: "quality",
+    children: [
+      {
+        title: "QC Management (Reuse)",
+        path: "#",
+        icon: FileText,
+        key: "qc-management",
+      },
+      {
+        title: "Record Supplier KPI (Reuse)",
+        path: "#",
+        icon: BarChart,
+        key: "supplier-kpi",
+      },
+      {
+        title: "Material Issue Notification (Reuse)",
+        path: "#",
+        icon: BellRing,
+        key: "material-issue",
+      },
+      { title: "Action Plan", path: "#", icon: Settings, key: "action-plan" },
+    ],
   },
   {
-    title: "Xuất Kho Đóng Gói",
-    path: "/packaging-warehouse/issue",
-    icon: Package, // Icon phù hợp
-    key: "issue-packaging",
+    title: "Availability (Other Phase)",
+    icon: CalendarCheck,
+    key: "availability",
+    path: "#",
   },
-  {
-    title: "Báo cáo Xuất Kho",
-    path: "/packaging-warehouse/reports/issues",
-    icon: ScrollText,
-    key: "reports-issues",
-  },
-  {
-    title: "Quét Mã QR",
-    path: "/packaging-warehouse/qr-scan",
-    icon: QrCode,
-    key: "qr-scan",
-  },
+  { title: "Ability (Other Phase)", icon: Wrench, key: "ability", path: "#" },
 ];
 
-// --- Context và các Component con (giữ nguyên logic) ---
 type SidebarContextType = {
   isCollapsed: boolean;
   openKeys: string[];
@@ -124,6 +208,7 @@ const MenuItem = ({ item }: { item: NavItem }) => {
   }
 
   const isActuallyActive = location.pathname === item.path;
+
   return (
     <NavLink
       to={item.path || "#"}
@@ -139,6 +224,31 @@ const MenuItem = ({ item }: { item: NavItem }) => {
   );
 };
 
+const getAllDescendantKeys = (
+  items: NavItem[],
+  targetKey: string
+): string[] => {
+  const keys: string[] = [];
+  const findAndCollect = (nodes: NavItem[]): boolean => {
+    for (const node of nodes) {
+      if (node.key === targetKey) {
+        if (node.children) collectKeys(node.children);
+        return true;
+      }
+      if (node.children && findAndCollect(node.children)) return true;
+    }
+    return false;
+  };
+  const collectKeys = (nodes: NavItem[]) => {
+    for (const node of nodes) {
+      keys.push(node.key);
+      if (node.children) collectKeys(node.children);
+    }
+  };
+  findAndCollect(items);
+  return keys;
+};
+
 const Sidebar = ({ isForMobile = false }: { isForMobile?: boolean }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const effectiveIsCollapsed = isForMobile ? false : isCollapsed;
@@ -146,18 +256,54 @@ const Sidebar = ({ isForMobile = false }: { isForMobile?: boolean }) => {
   const location = useLocation();
 
   useEffect(() => {
-    setOpenKeys([]);
+    const findParentKeys = (items: NavItem[], path: string): string[] => {
+      for (const item of items) {
+        if (item.children) {
+          const childMatch = item.children.some(
+            (c) =>
+              c.path === path ||
+              (c.children && findParentKeys([c], path).length > 0)
+          );
+          if (childMatch) {
+            const nestedKeys = findParentKeys(item.children, path);
+            return [item.key, ...nestedKeys];
+          }
+        } else if (item.path === path) {
+          return [item.key];
+        }
+      }
+      return [];
+    };
+    const activeParentKeys = findParentKeys(sidebarNavItems, location.pathname);
+    setOpenKeys((prevOpenKeys) => {
+      const newKeys = new Set([...prevOpenKeys, ...activeParentKeys]);
+      return Array.from(newKeys);
+    });
   }, [location.pathname]);
 
   const toggleMenu = (key: string) => {
-    setOpenKeys((prev) =>
-      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
-    );
+    setOpenKeys((prev) => {
+      const isOpen = prev.includes(key);
+      if (isOpen) {
+        const descendantKeys = getAllDescendantKeys(sidebarNavItems, key);
+        const keysToClose = new Set([key, ...descendantKeys]);
+        return prev.filter((k) => !keysToClose.has(k));
+      } else {
+        return [...prev, key];
+      }
+    });
   };
+
   const isLinkActive = (path?: string, children?: NavItem[]): boolean => {
-    if (path && location.pathname.startsWith(path)) return true;
-    if (children)
+    if (path && location.pathname.startsWith(path)) {
+      if (path.split("/").length === location.pathname.split("/").length) {
+        return location.pathname === path;
+      }
+      return true;
+    }
+    if (children) {
       return children.some((child) => isLinkActive(child.path, child.children));
+    }
     return false;
   };
 
@@ -181,15 +327,17 @@ const Sidebar = ({ isForMobile = false }: { isForMobile?: boolean }) => {
               effectiveIsCollapsed ? "hidden" : ""
             }`}
           >
-            Kho Đóng Gói
+            Packaging Warehouse
           </span>
           {effectiveIsCollapsed && <MoreHorizontal className="w-8 h-8" />}
         </div>
+
         <nav className="flex-1 p-2 space-y-1 overflow-y-auto scrollbar-hide">
           {sidebarNavItems.map((item) => (
             <MenuItem key={item.key} item={item} />
           ))}
         </nav>
+
         {!isForMobile && (
           <div className="p-2 border-t border-gray-700">
             <button
@@ -204,7 +352,7 @@ const Sidebar = ({ isForMobile = false }: { isForMobile?: boolean }) => {
               <span
                 className={`ml-3 font-medium ${isCollapsed ? "hidden" : ""}`}
               >
-                Thu gọn
+                Collapse
               </span>
             </button>
           </div>
@@ -214,35 +362,109 @@ const Sidebar = ({ isForMobile = false }: { isForMobile?: boolean }) => {
   );
 };
 
-const Header = ({ onMenuClick }: { onMenuClick: () => void }) => (
-  <header className="bg-white border-b border-gray-200 p-4 flex justify-between items-center">
-    <div className="flex items-center gap-4">
-      <button onClick={onMenuClick} className="lg:hidden text-gray-600">
-        <Menu className="w-6 h-6" />
-      </button>
-      <Link
-        to="/"
-        className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
-      >
-        <ArrowLeft className="w-5 h-5" />
-        <span className="font-medium hidden sm:block">Chọn Module</span>
-      </Link>
-    </div>
-    <div className="flex items-center space-x-4">
-      <button className="text-gray-500 hover:text-gray-700">
-        <Bell className="w-6 h-6" />
-      </button>
-      <div className="flex items-center space-x-2">
-        <User className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 p-1" />
-        <span className="text-sm font-medium text-gray-700">Admin</span>
+// --- UPDATED: Thêm dropdown chọn ngôn ngữ vào Header ---
+const Header = ({ onMenuClick }: { onMenuClick: () => void }) => {
+  const [selectedLang, setSelectedLang] = useState<"en" | "vi">("en");
+  const [isDropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Hook để đóng dropdown khi click ra ngoài
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  return (
+    <header className="bg-white border-b border-gray-200 p-4 flex justify-between items-center">
+      <div className="flex items-center gap-4">
+        <button onClick={onMenuClick} className="lg:hidden text-gray-600">
+          <Menu className="w-6 h-6" />
+        </button>
+        <Link
+          to="/"
+          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          <span className="font-medium hidden sm:block">Select Module</span>
+        </Link>
       </div>
-    </div>
-  </header>
-);
+
+      <div className="flex items-center space-x-4">
+        {/* --- NEW: Language Dropdown --- */}
+        <div className="relative" ref={dropdownRef}>
+          <button
+            onClick={() => setDropdownOpen(!isDropdownOpen)}
+            className="flex items-center space-x-1 text-gray-500 hover:text-gray-700 p-2 rounded-md hover:bg-gray-100 transition-colors"
+          >
+            <Globe className="w-5 h-5" />
+            <span className="text-sm font-medium uppercase">
+              {selectedLang}
+            </span>
+            <ChevronDown
+              className={`w-4 h-4 transition-transform ${
+                isDropdownOpen ? "rotate-180" : ""
+              }`}
+            />
+          </button>
+          {isDropdownOpen && (
+            <div className="absolute right-0 mt-2 w-36 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
+              <button
+                onClick={() => {
+                  setSelectedLang("en");
+                  setDropdownOpen(false);
+                }}
+                className={`w-full text-left px-4 py-2 text-sm ${
+                  selectedLang === "en"
+                    ? "bg-gray-100 text-gray-900 font-semibold"
+                    : "text-gray-700"
+                } hover:bg-gray-100`}
+              >
+                English
+              </button>
+              <button
+                onClick={() => {
+                  setSelectedLang("vi");
+                  setDropdownOpen(false);
+                }}
+                className={`w-full text-left px-4 py-2 text-sm ${
+                  selectedLang === "vi"
+                    ? "bg-gray-100 text-gray-900 font-semibold"
+                    : "text-gray-700"
+                } hover:bg-gray-100`}
+              >
+                Vietnamese
+              </button>
+            </div>
+          )}
+        </div>
+        {/* --- End Language Dropdown --- */}
+
+        <button className="text-gray-500 hover:text-gray-700">
+          <Bell className="w-6 h-6" />
+        </button>
+        <div className="flex items-center space-x-2">
+          <User className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 p-1" />
+          <span className="text-sm font-medium text-gray-700">Admin</span>
+        </div>
+      </div>
+    </header>
+  );
+};
 
 const PackagingWarehouseLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+
   useEffect(() => {
     setSidebarOpen(false);
   }, [location.pathname]);
@@ -252,6 +474,7 @@ const PackagingWarehouseLayout = () => {
       <div className="hidden lg:flex flex-shrink-0">
         <Sidebar />
       </div>
+
       <div
         className={`lg:hidden fixed inset-0 z-40 transition-opacity duration-300 ${
           sidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none"
@@ -261,6 +484,7 @@ const PackagingWarehouseLayout = () => {
           className="fixed inset-0 bg-black/60"
           onClick={() => setSidebarOpen(false)}
         ></div>
+
         <div
           className={`relative z-50 h-full transform transition-transform duration-300 ease-in-out ${
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
@@ -275,6 +499,7 @@ const PackagingWarehouseLayout = () => {
           </button>
         </div>
       </div>
+
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header onMenuClick={() => setSidebarOpen(true)} />
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-4 sm:p-6">

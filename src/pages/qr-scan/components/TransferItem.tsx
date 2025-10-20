@@ -11,7 +11,7 @@ interface TransferItemProps {
   onCancel: () => void;
 }
 
-const TransferItem: React.FC<TransferItemProps> = ({
+const TransferItem: React.FC<TransferItemProps> = ({ 
   item,
   onScanLocation,
   onCancel,
@@ -21,13 +21,13 @@ const TransferItem: React.FC<TransferItemProps> = ({
       <div className="bg-white rounded-lg shadow-lg p-6 border border-gray-200">
         <div className="text-center mb-4 border-b pb-4">
           <Move className="mx-auto h-12 w-12 text-blue-500 mb-2" />
-          <h2 className="text-xl font-bold text-gray-800">Chuyển Vị Trí Vải</h2>
-          <p className="text-sm text-gray-500 mt-2">Cuộn vải đã chọn:</p>
+          <h2 className="text-xl font-bold text-gray-800">Transfer Fabric Location</h2>
+          <p className="text-sm text-gray-500 mt-2">Selected fabric roll:</p>
           <div className="mt-2 text-left bg-gray-50 p-3 rounded-md border">
             <p className="font-bold text-gray-800">{item.name}</p>
             <p className="text-xs text-gray-500">SKU: {item.sku}</p>
             <p className="text-xs text-gray-500 mt-1">
-              Vị trí hiện tại:{" "}
+              Current location:{" "}
               <span className="font-mono bg-gray-200 px-1 rounded">
                 {item.currentLocation}
               </span>
@@ -38,7 +38,7 @@ const TransferItem: React.FC<TransferItemProps> = ({
         <div className="mt-4">
           <Scanner
             onScan={onScanLocation}
-            scanPrompt="Quét mã QR của VỊ TRÍ KHO MỚI"
+            scanPrompt="Scan the QR code of the NEW WAREHOUSE LOCATION"
             context="TRANSFER_LOCATION"
           />
         </div>
@@ -49,11 +49,10 @@ const TransferItem: React.FC<TransferItemProps> = ({
           onClick={onCancel}
           className="w-1/2 text-lg bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center shadow-md"
         >
-          <X className="mr-2" /> Hủy
+          <X className="mr-2" /> Cancel
         </button>
       </div>
     </div>
   );
 };
-
 export default TransferItem;

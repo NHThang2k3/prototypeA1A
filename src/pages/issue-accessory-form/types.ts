@@ -1,29 +1,46 @@
 // Path: src/pages/issue-accessory-form/types.ts
 
-// Đại diện cho một phụ liệu trong kho
-export interface Accessory {
-  sku: string;
-  name: string;
-  uom: 'Cái' | 'Cuộn' | 'Hộp' | 'Bộ';
-  stock: number;
+// Dữ liệu cho một yêu cầu cấp phát phụ liệu từ chuyền may
+export interface AccessoryRequest {
+  ID: string;
+  RequestName: string;
+  DateCreated: string;
+  DateRequired: string;
+  FactoryLine: string;
+  Style: string;
+  JOB: string; // Có thể là "Cắt", "May", "Hoàn thiện", etc.
+  Color: string;
+  Size: string;
+  PONumber: string;
+  RequiredQuantity: number;
+  IssuedQuantity: number;
+  Status: "New" | "Picking" | "Ready for Pickup" | "Partially Issued" | "Completed" | "Cancelled";
+  Priority: "High" | "Medium" | "Low";
+  BOMID: string;
+  CreatedBy: string;
+  Remarks: string;
 }
 
-// Đại diện cho một dòng yêu cầu phụ liệu trong form
-export interface AccessoryRequestItem {
-  id: string; // ID tạm để xử lý trong UI
-  sku: string;
-  name: string;
-  uom: string;
-  stock: number;
-  quantity: number;
+// Dữ liệu cho một loại phụ liệu trong kho
+export interface AccessoryInventoryItem {
+  QRCode: string;
+  ItemNumber: string;
+  ItemCategory: string;
+  MaterialName: string;
+  Color: string;
+  Size: string;
+  Quantity: number; // Số lượng tồn kho (Balance)
+  Unit: string;
+  Location: string;
+  BatchNumber: string;
+  DateReceived: string;
+  Supplier: string;
+  PONumber: string;
+  Status: "In Stock" | "Low Stock" | "Out of Stock";
+  Description: string;
 }
 
-// Đại diện cho toàn bộ dữ liệu của form
-export interface AccessoryRequestFormState {
-  productionOrder: string;
-  requestor: string;
-  department: string;
-  requiredDate: string | null;
-  notes: string;
-  items: AccessoryRequestItem[];
+// Dữ liệu cho một phụ liệu đã được chọn để xuất kho
+export interface SelectedAccessoryItem extends AccessoryInventoryItem {
+  issuedQuantity: number; // Số lượng người dùng nhập để xuất
 }

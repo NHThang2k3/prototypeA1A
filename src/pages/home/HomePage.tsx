@@ -4,22 +4,22 @@ import { Boxes, Package, Shirt } from "lucide-react";
 
 const modules = [
   {
-    name: "Kho Vải",
+    name: "Fabric Warehouse",
     path: "/fabric-warehouse",
     icon: Shirt,
-    description: "Quản lý nhập, xuất, tồn kho cho nguyên liệu vải.",
+    description: "Manage receiving, issuing, and inventory for fabric materials.",
   },
   {
-    name: "Kho Phụ Liệu",
+    name: "Accessory Warehouse",
     path: "/accessory-warehouse",
     icon: Boxes,
-    description: "Quản lý phụ liệu, chỉ, nút, khóa kéo và các vật tư khác.",
+    description: "Manage accessories, thread, buttons, zippers, and other supplies.",
   },
   {
-    name: "Kho Đóng Gói",
+    name: "Packaging Warehouse",
     path: "/packaging-warehouse",
     icon: Package,
-    description: "Quản lý vật tư đóng gói như thùng carton, túi, nhãn mác.",
+    description: "Manage packaging materials like cartons, bags, and labels.",
   },
 ];
 
@@ -28,10 +28,10 @@ const HomePage = () => {
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
       <header className="text-center mb-12">
         <h1 className="text-4xl font-bold text-gray-800 mb-2">
-          Hệ Thống Quản Lý Kho
+          Warehouse Management System
         </h1>
         <p className="text-lg text-gray-600">
-          Vui lòng chọn module để bắt đầu làm việc
+          Please select a module to get started
         </p>
       </header>
 

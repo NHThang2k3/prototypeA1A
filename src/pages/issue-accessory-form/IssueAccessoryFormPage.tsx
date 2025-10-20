@@ -1,111 +1,97 @@
 // Path: src/pages/issue-accessory-form/IssueAccessoryFormPage.tsx
 
 import { useState } from "react";
-import type { AccessoryRequestFormState, AccessoryRequestItem } from "./types";
+import type { AccessoryRequest, SelectedAccessoryItem } from "./types";
 import PageHeader from "./components/PageHeader";
-import FormHeader from "./components/FormHeader";
-import AccessoryRequestTable from "./components/AccessoryRequestTable";
 import ActionToolbar from "./components/ActionToolbar";
-import { mockBOMs, mockAccessories } from "./data";
-
-const initialState: AccessoryRequestFormState = {
-  productionOrder: "",
-  requestor: "Admin", // Giả sử đã đăng nhập
-  department: "Chuyền may A",
-  requiredDate: new Date().toISOString().split("T")[0], // Ngày hôm nay
-  notes: "",
-  items: [],
-};
+import AccessoryRequestSelection from "./components/AccessoryRequestSelection";
+import RequestDetails from "./components/RequestDetails";
+import AccessoryInventoryTable from "./components/AccessoryInventoryTable";
 
 const IssueAccessoryFormPage = () => {
-  const [formData, setFormData] =
-    useState<AccessoryRequestFormState>(initialState);
+  const [selectedRequest, setSelectedRequest] =
+    useState<AccessoryRequest | null>(null);
+  const [selectedItems, setSelectedItems] = useState<SelectedAccessoryItem[]>(
+    []
+  );
 
-  function handleFieldChange<K extends keyof AccessoryRequestFormState>(
-    field: K,
-    value: AccessoryRequestFormState[K]
-  ) {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  }
-
-  const handleProductionOrderChange = (po: string) => {
-    setFormData((prev) => {
-      const bomItems = mockBOMs[po] || [];
-      const newItems = bomItems.map((bomItem) => {
-        const accessoryInfo = mockAccessories.find(
-          (acc) => acc.sku === bomItem.sku
-        );
-        return {
-          id: crypto.randomUUID(),
-          sku: bomItem.sku,
-          quantity: bomItem.quantity,
-          name: accessoryInfo?.name || "N/A",
-          uom: accessoryInfo?.uom || "",
-          stock: accessoryInfo?.stock || 0,
-        };
-      });
-      return { ...prev, productionOrder: po, items: newItems };
-    });
+  const handleRequestSelect = (request: AccessoryRequest) => {
+    setSelectedRequest(request);
+    setSelectedItems([]); // Reset danh sách phụ liệu đã chọn khi đổi yêu cầu
   };
 
-  const handleAddItem = () => {
-    const newItem: AccessoryRequestItem = {
-      id: crypto.randomUUID(),
-      sku: "",
-      name: "",
-      uom: "",
-      stock: 0,
-      quantity: 0,
-    };
-    setFormData((prev) => ({ ...prev, items: [...prev.items, newItem] }));
+  const handleClearRequest = () => {
+    setSelectedRequest(null);
+    setSelectedItems([]);
   };
 
-  const handleItemChange = <K extends keyof AccessoryRequestItem>(
-    id: string,
-    field: K,
-    value: AccessoryRequestItem[K]
-  ) => {
-    setFormData((prev) => ({
-      ...prev,
-      items: prev.items.map((item) =>
-        item.id === id ? { ...item, [field]: value } : item
-      ),
-    }));
+  const handleSelectionChange = (items: SelectedAccessoryItem[]) => {
+    setSelectedItems(items);
   };
 
-  const handleRemoveItem = (id: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      items: prev.items.filter((item) => item.id !== id),
-    }));
-  };
+  // Tính tổng số lượng đang được chọn để xuất
+  const totalIssuedQuantity = selectedItems.reduce(
+    (sum, item) => sum + item.issuedQuantity,
+    0
+  );
 
   const handleSubmit = () => {
-    console.log("Submitting Form Data:", formData);
-    // Logic: validate form, gửi API
-    alert("Yêu cầu đã được gửi! (Xem chi tiết trong console)");
-  };
+    if (!selectedRequest) {
+      alert("Please select a request first.");
+      return;
+    }
+    if (selectedItems.length === 0) {
+      alert("Please select at least one accessory to issue.");
+      return;
+    }
+    if (totalIssuedQuantity === 0) {
+      alert("Please enter the quantity to issue for the selected accessories.");
+      return;
+    }
 
-  const handleSaveDraft = () => {
-    console.log("Saving Draft:", formData);
-    alert("Đã lưu nháp! (Xem chi tiết trong console)");
+    const submissionData = {
+      requestId: selectedRequest.ID,
+      job: selectedRequest.JOB,
+      style: selectedRequest.Style,
+      issuedItems: selectedItems.map((item) => ({
+        QRCode: item.QRCode,
+        ItemNumber: item.ItemNumber,
+        MaterialName: item.MaterialName,
+        issuedQuantity: item.issuedQuantity,
+        Unit: item.Unit,
+      })),
+      totalIssuedQuantity: totalIssuedQuantity.toFixed(2),
+    };
+
+    console.log("Submitting Data:", submissionData);
+    alert("Accessory issued successfully! Check the console for details.");
+
+    // Reset state
+    setSelectedRequest(null);
+    setSelectedItems([]);
   };
 
   return (
-    <div className="p-6 bg-gray-100 min-h-full">
-      <PageHeader />
-      <FormHeader
-        formData={formData}
-        handleFieldChange={handleFieldChange}
-        handleProductionOrderChange={handleProductionOrderChange}
-      />
-      <AccessoryRequestTable
-        items={formData.items}
-        handleAddItem={handleAddItem}
-        handleItemChange={handleItemChange}
-        handleRemoveItem={handleRemoveItem}
-      />
-      <ActionToolbar onSaveDraft={handleSaveDraft} onSubmit={handleSubmit} />
+    <div className="p-4 md:p-6 lg:p-8 bg-gray-50 min-h-screen">
+      <PageHeader title="Issue Accessory From Request" />
+      <div className="max-w-screen-2xl mx-auto">
+        {!selectedRequest ? (
+          <AccessoryRequestSelection onRequestSelect={handleRequestSelect} />
+        ) : (
+          <div>
+            <RequestDetails
+              request={selectedRequest}
+              onClearRequest={handleClearRequest}
+              currentlyIssuingQuantity={totalIssuedQuantity}
+            />
+            <AccessoryInventoryTable
+              bomId={selectedRequest.BOMID}
+              onSelectionChange={handleSelectionChange}
+            />
+          </div>
+        )}
+      </div>
+      <ActionToolbar onSubmit={handleSubmit} />
     </div>
   );
 };

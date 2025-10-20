@@ -13,7 +13,7 @@ interface InboundPutAwayProps {
   onCancel: () => void;
 }
 
-const InboundPutAway: React.FC<InboundPutAwayProps> = ({
+const InboundPutAway: React.FC<InboundPutAwayProps> = ({ 
   location,
   scannedItems,
   onScanItem,
@@ -25,8 +25,8 @@ const InboundPutAway: React.FC<InboundPutAwayProps> = ({
       <div className="bg-white rounded-lg shadow-lg p-6 border border-gray-200">
         <div className="text-center mb-4 border-b pb-4">
           <Warehouse className="mx-auto h-12 w-12 text-blue-500 mb-2" />
-          <h2 className="text-xl font-bold text-gray-800">Cất Vải Vào Kho</h2>
-          <p className="text-sm text-gray-500">Vị trí đã chọn:</p>
+          <h2 className="text-xl font-bold text-gray-800">Put Fabric Away</h2>
+          <p className="text-sm text-gray-500">Selected location:</p>
           <p className="font-mono text-blue-600 bg-blue-100 px-3 py-1 rounded-full inline-block mt-1">
             {location.locationCode}
           </p>
@@ -34,12 +34,12 @@ const InboundPutAway: React.FC<InboundPutAwayProps> = ({
 
         <div className="mb-4">
           <h3 className="font-semibold text-gray-700 mb-2">
-            Các cuộn vải đã quét ({scannedItems.length}):
+            Scanned fabric rolls ({scannedItems.length}):
           </h3>
           <div className="max-h-40 overflow-y-auto space-y-2 pr-2">
             {scannedItems.length === 0 ? (
               <p className="text-center text-gray-500 italic py-4">
-                Chưa có cuộn vải nào được quét.
+                No fabric rolls have been scanned yet.
               </p>
             ) : (
               scannedItems.map((item) => (
@@ -58,7 +58,7 @@ const InboundPutAway: React.FC<InboundPutAwayProps> = ({
         <div className="mt-4">
           <Scanner
             onScan={onScanItem}
-            scanPrompt="Tiếp tục quét mã QR trên các cuộn vải"
+            scanPrompt="Continue scanning QR codes on fabric rolls"
             context="PUT_AWAY_ITEM"
           />
         </div>
@@ -69,18 +69,17 @@ const InboundPutAway: React.FC<InboundPutAwayProps> = ({
           onClick={onCancel}
           className="w-1/3 text-lg bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center shadow-md"
         >
-          <X className="mr-2" /> Hủy
+          <X className="mr-2" /> Cancel
         </button>
         <button
           onClick={onSubmit}
           disabled={scannedItems.length === 0}
           className="w-2/3 text-lg bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed"
         >
-          <Check className="mr-2" /> Hoàn Tất
+          <Check className="mr-2" /> Complete
         </button>
       </div>
     </div>
   );
 };
-
 export default InboundPutAway;

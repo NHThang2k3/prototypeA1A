@@ -1,15 +1,16 @@
 // Path: src/pages/kanban-board/components/KanbanColumn.tsx
 import React from "react";
-import { SortableContext } from "@dnd-kit/sortable";
+// No longer need SortableContext
 import type { KanbanColumn as ColumnType, KanbanTask } from "../types";
 import KanbanCard from "./KanbanCard";
 
 interface Props {
   column: ColumnType;
   tasks: KanbanTask[];
+  onViewDetails: (taskId: string) => void;
 }
 
-const KanbanColumn: React.FC<Props> = ({ column, tasks }) => {
+const KanbanColumn: React.FC<Props> = ({ column, tasks, onViewDetails }) => {
   return (
     <div className="w-80 flex-shrink-0 bg-gray-100 rounded-lg p-3 flex flex-col">
       <div className="flex justify-between items-center mb-4">
@@ -18,13 +19,11 @@ const KanbanColumn: React.FC<Props> = ({ column, tasks }) => {
           {tasks.length}
         </span>
       </div>
-      {/* Container cho các card, có thể scroll nếu quá nhiều */}
       <div className="flex-1 overflow-y-auto">
-        <SortableContext items={tasks.map((t) => t.id)}>
-          {tasks.map((task) => (
-            <KanbanCard key={task.id} task={task} />
-          ))}
-        </SortableContext>
+        {/* SortableContext wrapper is removed */}
+        {tasks.map((task) => (
+          <KanbanCard key={task.id} task={task} onViewDetails={onViewDetails} />
+        ))}
       </div>
     </div>
   );

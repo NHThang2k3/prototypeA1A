@@ -1,17 +1,10 @@
 // Path: src/layouts/FabricWarehouseLayout.tsx
-import {
-  useState,
-  createContext,
-  useContext,
-  useEffect,
-  useRef, // Thêm useRef
-} from "react";
+import { useState, createContext, useContext, useEffect, useRef } from "react";
 import { NavLink, Outlet, useLocation, Link } from "react-router-dom";
 import {
   Menu,
   X,
   LayoutDashboard,
-  Truck,
   Bell,
   User,
   KanbanSquare,
@@ -21,7 +14,7 @@ import {
   Boxes,
   ScrollText,
   ListPlus,
-  Upload,
+  // Upload,
   ChevronDown,
   ChevronLeft,
   Zap,
@@ -34,7 +27,7 @@ import {
   Settings,
   MoreHorizontal,
   ArrowLeft,
-  Globe, // Thêm icon Globe
+  Globe,
   type LucideIcon,
 } from "lucide-react";
 
@@ -59,19 +52,19 @@ const sidebarNavItems: NavItem[] = [
         key: "productivity-kanban",
         children: [
           {
-            title: "Inbound Dashboard", // Đổi lại thành Tiếng Anh
+            title: "Inbound Dashboard",
             path: "/fabric-warehouse/dashboard",
             icon: LayoutDashboard,
             key: "dashboard",
           },
           {
-            title: "Inventory", // Đổi lại thành Tiếng Anh
+            title: "Inventory",
             path: "/fabric-warehouse/inventory",
-            icon: Truck,
+            icon: Boxes,
             key: "inventory",
           },
           {
-            title: "Kanban Board", // Đổi lại thành Tiếng Anh
+            title: "Kanban Board",
             path: "/fabric-warehouse/kanban",
             icon: KanbanSquare,
             key: "kanban",
@@ -83,24 +76,18 @@ const sidebarNavItems: NavItem[] = [
         icon: ScrollText,
         key: "productivity-receipt",
         children: [
+          // {
+          //   title: "Upload Packing List Form",
+          //   path: "/fabric-warehouse/import-packing-list",
+          //   icon: Upload,
+          //   key: "import-packing-list",
+          // },
           {
-            title: "Upload Packing List Form", // Đổi lại thành Tiếng Anh
-            path: "/fabric-warehouse/import-packing-list",
-            icon: Upload,
-            key: "import-packing-list",
-          },
-          {
-            title: "Packing List/Print QR", // Đổi lại thành Tiếng Anh
+            title: "Packing List/Print QR",
             path: "/fabric-warehouse/packing-list",
             icon: ListPlus,
             key: "packing-list",
           },
-          // {
-          //   title: "Shipment Details", // Đổi lại thành Tiếng Anh
-          //   path: "/fabric-warehouse/shipments/7c3b9a1d",
-          //   icon: Truck,
-          //   key: "shipment-detail",
-          // },
         ],
       },
       {
@@ -109,19 +96,19 @@ const sidebarNavItems: NavItem[] = [
         key: "productivity-inventory",
         children: [
           {
-            title: "Location Management", // Đổi lại thành Tiếng Anh
+            title: "Location Management",
             path: "/fabric-warehouse/locations",
             icon: Network,
             key: "locations",
           },
           {
-            title: "Scan QR", // Đổi lại thành Tiếng Anh
+            title: "Scan QR",
             path: "/fabric-warehouse/qr-scan",
             icon: QrCode,
             key: "qr-scan",
           },
           {
-            title: "Fabric WH Report", // Đổi lại thành Tiếng Anh
+            title: "Fabric WH Report",
             path: "/fabric-warehouse/reports/issues",
             icon: ScrollText,
             key: "reports-issues",
@@ -134,7 +121,7 @@ const sidebarNavItems: NavItem[] = [
         key: "productivity-delivery",
         children: [
           {
-            title: "Issue Fabric Form", // Đổi lại thành Tiếng Anh
+            title: "Issue Fabric Form",
             path: "/fabric-warehouse/issue/fabric",
             icon: FileOutput,
             key: "issue-fabric",
@@ -475,7 +462,7 @@ const Header = ({ onMenuClick }: { onMenuClick: () => void }) => {
                     : "text-gray-700"
                 } hover:bg-gray-100`}
               >
-                Tiếng Việt
+                Vietnamese
               </button>
             </div>
           )}

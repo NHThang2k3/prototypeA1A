@@ -33,7 +33,7 @@ const ActionFeedback: React.FC<ActionFeedbackProps> = ({
       return (
         <>
           <CheckCircle className="w-16 h-16 text-green-500 mb-4" />
-          <h2 className="text-xl font-semibold">Thành công!</h2>
+          <h2 className="text-xl font-semibold">Success!</h2>
           <p className="text-gray-600 text-center mb-4">{message}</p>
 
           <div className="w-full max-w-2xl mt-4 border rounded-lg overflow-hidden">
@@ -41,11 +41,11 @@ const ActionFeedback: React.FC<ActionFeedbackProps> = ({
               <table className="min-w-full text-sm text-left">
                 <thead className="bg-gray-100 sticky top-0">
                   <tr>
-                    <th className="p-2 font-semibold">Mã Vải (SKU)</th>
-                    <th className="p-2 font-semibold">Số Mét</th>
-                    <th className="p-2 font-semibold">Cân Nặng</th>
-                    <th className="p-2 font-semibold">Vị Trí Cất</th>
-                    <th className="p-2 font-semibold">Thời Gian</th>
+                    <th className="p-2 font-semibold">Fabric SKU</th>
+                    <th className="p-2 font-semibold">Meters</th>
+                    <th className="p-2 font-semibold">Weight</th>
+                    <th className="p-2 font-semibold">Put Away Location</th>
+                    <th className="p-2 font-semibold">Time</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white">
@@ -71,23 +71,23 @@ const ActionFeedback: React.FC<ActionFeedbackProps> = ({
             onClick={onClose}
             className="mt-6 bg-green-600 text-white font-bold py-2 px-6 rounded-lg"
           >
-            Quét Tiếp
+            Scan Next
           </button>
         </>
       );
     }
 
-    // Fallback: Hiển thị thông báo đơn giản
+    // Fallback: Display a simple message
     return (
       <>
         <CheckCircle className="w-16 h-16 text-green-500 mb-4" />
-        <h2 className="text-xl font-semibold">Thành công!</h2>
+        <h2 className="text-xl font-semibold">Success!</h2>
         <p className="text-gray-600 text-center">{message}</p>
         <button
           onClick={onClose}
           className="mt-6 bg-green-600 text-white font-bold py-2 px-6 rounded-lg"
         >
-          Quét Tiếp
+          Scan Next
         </button>
       </>
     );
@@ -99,7 +99,7 @@ const ActionFeedback: React.FC<ActionFeedbackProps> = ({
         return (
           <>
             <Loader className="w-16 h-16 text-blue-500 animate-spin mb-4" />
-            <h2 className="text-xl font-semibold">Đang xử lý...</h2>
+            <h2 className="text-xl font-semibold">Processing...</h2>
             <p className="text-gray-600">{message}</p>
           </>
         );
@@ -109,13 +109,13 @@ const ActionFeedback: React.FC<ActionFeedbackProps> = ({
         return (
           <>
             <AlertTriangle className="w-16 h-16 text-red-500 mb-4" />
-            <h2 className="text-xl font-semibold">Đã xảy ra lỗi!</h2>
+            <h2 className="text-xl font-semibold">An error occurred!</h2>
             <p className="text-gray-600 text-center">{message}</p>
             <button
               onClick={onClose}
               className="mt-6 bg-red-600 text-white font-bold py-2 px-6 rounded-lg"
             >
-              Thử Lại
+              Try Again
             </button>
           </>
         );
