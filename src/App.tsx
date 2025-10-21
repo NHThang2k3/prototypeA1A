@@ -27,6 +27,8 @@ import AccessoryIssueTransactionReportsPage from "./pages/accessory-issue-transa
 import PackagingIssueTransactionReportsPage from "./pages/packaging-issue-transaction-reports/PackagingIssueTransactionReportsPage";
 
 import CuttingLayout from "./layouts/CuttingLayout";
+import MasterPlanPage from "./pages/master-plan/MasterPlanPage";
+import BundleManagementPage from "./pages/bundle-management/BundleManagementPage";
 
 function App() {
   return (
@@ -91,24 +93,21 @@ function App() {
         <Route path="/cutting" element={<CuttingLayout />}>
           <Route
             index
-            element={<Navigate to="dashboard/performance" replace />}
+            element={<Navigate to="planning/master-plan" replace />}
           />
           {/* Ví dụ về cách thêm các page con cho module cutting */}
           <Route
             path="dashboard/performance"
             element={<div>Cutting Performance Page</div>}
           />
+          <Route path="planning/master-plan" element={<MasterPlanPage />} />
           <Route
-            path="planning/master-plan"
-            element={<div>Master Plan Page</div>}
-          />
-          <Route
-            path="planning/cutting-plans"
+            path="planning/cutting-daily-weekly"
             element={<div>Cutting Plans Page</div>}
           />
           <Route
-            path="bundle-data/import-job"
-            element={<div>Import Jobs Page</div>}
+            path="bundle-data/bundle-management"
+            element={<BundleManagementPage />}
           />
         </Route>
 

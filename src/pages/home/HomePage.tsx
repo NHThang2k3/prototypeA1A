@@ -1,6 +1,11 @@
 // Path: src/pages/home/HomePage.tsx
 import { Link } from "react-router-dom";
-import { Boxes, Package, Shirt, Scissors } from "lucide-react";
+import {
+  Boxes,
+  Package,
+  Shirt,
+  // Scissors
+} from "lucide-react";
 
 const modules = [
   {
@@ -23,13 +28,13 @@ const modules = [
     icon: Package,
     description: "Manage packaging materials like cartons, bags, and labels.",
   },
-  {
-    name: "Cutting",
-    path: "/cutting",
-    icon: Scissors,
-    description:
-      "Manage master plans, cutting processes, and performance tracking.",
-  },
+  // {
+  //   name: "Cutting",
+  //   path: "/cutting",
+  //   icon: Scissors,
+  //   description:
+  //     "Manage master plans, cutting processes, and performance tracking.",
+  // },
 ];
 
 const HomePage = () => {
@@ -37,7 +42,7 @@ const HomePage = () => {
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
       <header className="text-center mb-12">
         <h1 className="text-4xl sm:text-5xl font-bold text-gray-800 mb-2">
-          Manufacturing Execution System
+          Warehouse System
         </h1>
         <p className="text-lg text-gray-600">
           Please select a module to get started
@@ -45,7 +50,7 @@ const HomePage = () => {
       </header>
 
       {/* Cập nhật grid để hỗ trợ 4 cột trên màn hình lớn */}
-      <main className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 w-full max-w-7xl">
+      <main className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 w-full max-w-7xl">
         {modules.map((module) => (
           <Link
             key={module.name}
