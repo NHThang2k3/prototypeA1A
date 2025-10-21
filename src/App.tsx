@@ -12,7 +12,6 @@ import HomePage from "./pages/home/HomePage";
 import InboundDashboardPage from "./pages/inbound-dashboard/InboundDashboardPage";
 import InventoryListPage from "./pages/inventory-list/InventoryListPage";
 import KanbanBoardPage from "./pages/kanban-board/KanbanBoardPage";
-// import ImportPackingListFormPage from "./pages/import-packing-list/ImportPackingListFormPage";
 import LocationManagementPage from "./pages/location-management/LocationManagementPage";
 import QRScanInterfacePage from "./pages/qr-scan/QRScanInterfacePage";
 import IssueFabricFormPage from "./pages/issue-fabric-form/IssueFabricFromJobPage";
@@ -29,6 +28,8 @@ import PackagingIssueTransactionReportsPage from "./pages/packaging-issue-transa
 import CuttingLayout from "./layouts/CuttingLayout";
 import MasterPlanPage from "./pages/master-plan/MasterPlanPage";
 import BundleManagementPage from "./pages/bundle-management/BundleManagementPage";
+import CuttingDashboardPerformance from "./pages/cutting-dashboard-performance/CuttingDashboardPerformance";
+import AuditLogPage from "./pages/audit-log/AuditLogPage";
 
 function App() {
   return (
@@ -51,6 +52,7 @@ function App() {
             element={<IssueTransactionReportsPage />}
           />
           <Route path="packing-list" element={<PackingListManagementPage />} />
+          <Route path="audit-log" element={<AuditLogPage />} />
         </Route>
 
         {/* === Module Kho Phụ Liệu (Ví dụ) === */}
@@ -97,8 +99,8 @@ function App() {
           />
           {/* Ví dụ về cách thêm các page con cho module cutting */}
           <Route
-            path="dashboard/performance"
-            element={<div>Cutting Performance Page</div>}
+            path="dashboard/cutting-dashboard-performance"
+            element={<CuttingDashboardPerformance />}
           />
           <Route path="planning/master-plan" element={<MasterPlanPage />} />
           <Route

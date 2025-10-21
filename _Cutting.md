@@ -112,8 +112,22 @@ SOAD2510119 1 22/10/2025 28/12/2025 28/12/2025 1 28/12/2025 PU 900989501 21/10/2
 # Màn hình Cutting Performance Dashboard
 
 Màn hình nên hiển thị gì?
+tạo giao diện bằng react tsx, tailwindcss trong thư mục cutting-dashboard-performance
 
 - Dùng thư viện echarts để hiển thị biểu đồ
+- Màn hình sẽ hiển thị hiệu suất cắt vải hàng ngày, hàng tuần, của mỗi máy cắt, hiệu suất của từng công nhân vận hành máy cắt. Hiển thị số lượng vải đã cắt, số lượng vải bị lỗi, thời gian dừng máy, và các chỉ số hiệu suất quan trọng khác.
+- Bảng dữ liệu như sau, có thể thêm những cột khác nếu cần thiết:
+  JOB NO Style Color Total Required QTY (PCS) Required Completion Date Actual Cut QTY (PCS) Completion Rate (%) Status Actual Cutting Time (Mins) Downtime (Mins) Fabric Utilization Rate (%) Target Utilization (%) Utilization Variance (%) Defect/Recut QTY (PCS)
+  SOAD2510113/1 L JACKET BLACK 8200 15/12/2025 8200 100% Completed 3500 150 93.80% 93.50% 0.30% 50
+  SOAD2510113/2 L JACKET WHITE 4150 15/12/2025 4000 96.40% Cutting in Progress 1850 100 92.10% 93.00% -0.90% 40
+  SOAD2510114/1 KIDS TEE RED 650 5/12/2025 0 0% Waiting for Fabric 0 0 N/A 95.00% N/A 0
+  SOTSM2503115/1 SAMPLE SHOE GREY 15 25/11/2025 15 100% Completed 45 5 85.00% 86.00% -1.00% 0
+  SOAD2510116/1 TRACKPANTS NAVY 12050 10/1/2026 5000 41.50% Cutting in Progress 2100 250 94.50% 94.00% 0.50% 120
+  SOAD2510120/1 WMNS TEE PINK 5500 20/12/2025 5500 100% Completed 1400 80 96.20% 96.00% 0.20% 20
+  SOAD2510121/1 MENS SHIRT YELLOW 9800 25/01/2026 1500 15.30% Cutting in Progress 650 50 91.00% 92.00% -1.00% 85
+  SORB2510122/1 MENS SHORTS ORANGE 7100 18/11/2025 6900 97.20% Urgent Cut 2950 300 90.50% 91.00% -0.50% 60
+  SOPU2510123/1 KIDS JACKET PURPLE 3200 10/12/2025 0 0% Waiting for Setup 0 0 N/A 90.00% N/A 0
+  SOTSM2510124/1 UNISEX SCARF GREEN 15000 28/01/2026 0 0% Planned 0 0 N/A 88.00% N/A 0
 
 # Màn hình Action Plan
 
