@@ -10,6 +10,7 @@ interface Props {
   itemCode: string;
   color: string;
   onSelectionChange: (rolls: SelectedInventoryRoll[]) => void;
+  requestQuantity: number;
 }
 
 const ALL_COLUMNS = [
@@ -38,6 +39,7 @@ const InventoryTable: React.FC<Props> = ({
   itemCode,
   color,
   onSelectionChange,
+  requestQuantity,
 }) => {
   const [inventory, setInventory] = useState<InventoryRoll[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,36 +51,55 @@ const InventoryTable: React.FC<Props> = ({
   useEffect(() => {
     setLoading(true);
     setSelected(new Map());
-    getInventoryByItem(itemCode, color).then((data) => {
-      setInventory(data);
+    getInventoryByItem(itemCode, color).then((availableRolls) => {
+      setInventory(availableRolls);
+
+      const sortedRolls = [...availableRolls].sort(
+        (a, b) => a.BalanceYards - b.BalanceYards
+      );
+
+      const newSelected = new Map<string, number>();
+      let yardsStillNeeded = requestQuantity;
+
+      for (const roll of sortedRolls) {
+        if (yardsStillNeeded <= 0) break;
+
+        const yardsToIssue = Math.min(roll.BalanceYards, yardsStillNeeded);
+        newSelected.set(roll.QRCode, yardsToIssue);
+        yardsStillNeeded -= yardsToIssue;
+      }
+      setSelected(newSelected);
+
       setLoading(false);
     });
-  }, [itemCode, color]);
+  }, [itemCode, color, requestQuantity]);
 
-  const handleSelection = (roll: InventoryRoll, isChecked: boolean) => {
-    const newSelected = new Map(selected);
-    if (isChecked) {
-      newSelected.set(roll.QRCode, 0); // Start with 0 yards
-    } else {
-      newSelected.delete(roll.QRCode);
-    }
-    setSelected(newSelected);
-  };
+  // Hàm handleSelection không còn cần thiết vì không còn checkbox
 
   const handleQuantityChange = (qrCode: string, yards: number, max: number) => {
     const newQuantity = Math.max(0, Math.min(yards, max));
     const newSelected = new Map(selected);
-    if (newSelected.has(qrCode)) {
+
+    // Cập nhật số lượng cho cuộn đã có trong danh sách chọn
+    // Hoặc thêm mới nếu người dùng nhập số cho một cuộn chưa được chọn tự động
+    if (newSelected.has(qrCode) || newQuantity > 0) {
       newSelected.set(qrCode, newQuantity);
-      setSelected(newSelected);
     }
+
+    // Nếu số lượng về 0, ta có thể xóa khỏi map để giao diện gọn hơn
+    if (newQuantity === 0) {
+      newSelected.delete(qrCode);
+    }
+
+    setSelected(newSelected);
   };
 
   useEffect(() => {
     const selectedRollsData: SelectedInventoryRoll[] = [];
     selected.forEach((issuedYards, qrCode) => {
       const originalRoll = inventory.find((r) => r.QRCode === qrCode);
-      if (originalRoll) {
+      // Chỉ thêm vào danh sách cuối cùng nếu số yard xuất > 0
+      if (originalRoll && issuedYards > 0) {
         selectedRollsData.push({ ...originalRoll, issuedYards });
       }
     });
@@ -104,7 +125,7 @@ const InventoryTable: React.FC<Props> = ({
     <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mt-6">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold text-gray-700">
-          2. Select Fabric Rolls from Inventory
+          2. Fabric Rolls from Inventory (Auto-Selected)
         </h2>
         <ColumnSelector
           allColumns={ALL_COLUMNS}
@@ -117,7 +138,7 @@ const InventoryTable: React.FC<Props> = ({
         <table className="w-full text-sm text-left">
           <thead className="text-xs text-gray-700 uppercase bg-gray-50 sticky top-0">
             <tr>
-              <th className="p-3">Select</th>
+              {/* CỘT SELECT ĐÃ BỊ XÓA */}
               {ALL_COLUMNS.map(
                 (col) =>
                   visibleColumns.has(col.key) && (
@@ -134,19 +155,13 @@ const InventoryTable: React.FC<Props> = ({
               <tr
                 key={roll.QRCode}
                 className={`border-b ${
-                  selected.has(roll.QRCode)
+                  selected.has(roll.QRCode) &&
+                  (selected.get(roll.QRCode) || 0) > 0
                     ? "bg-indigo-50"
                     : "bg-white hover:bg-gray-50"
                 }`}
               >
-                <td className="p-3">
-                  <input
-                    type="checkbox"
-                    checked={selected.has(roll.QRCode)}
-                    onChange={(e) => handleSelection(roll, e.target.checked)}
-                    className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
-                  />
-                </td>
+                {/* CHECKBOX ĐÃ BỊ XÓA */}
                 {ALL_COLUMNS.map(
                   (col) =>
                     visibleColumns.has(col.key) && (
@@ -156,30 +171,32 @@ const InventoryTable: React.FC<Props> = ({
                     )
                 )}
                 <td className="p-2">
-                  {selected.has(roll.QRCode) && (
-                    <input
-                      type="number"
-                      value={selected.get(roll.QRCode)}
-                      onChange={(e) =>
-                        handleQuantityChange(
-                          roll.QRCode,
-                          parseFloat(e.target.value) || 0,
-                          roll.BalanceYards
-                        )
-                      }
-                      min="0"
-                      max={roll.BalanceYards}
-                      step="0.1"
-                      className="w-28 px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                    />
-                  )}
+                  {/* Hiển thị input cho tất cả các dòng, nhưng chỉ có giá trị cho dòng được chọn */}
+                  <input
+                    type="number"
+                    value={selected.get(roll.QRCode) || 0}
+                    onChange={(e) =>
+                      handleQuantityChange(
+                        roll.QRCode,
+                        parseFloat(e.target.value) || 0,
+                        roll.BalanceYards
+                      )
+                    }
+                    min="0"
+                    max={roll.BalanceYards}
+                    step="0.1"
+                    className="w-28 px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    // Thêm placeholder để gợi ý cho các cuộn chưa được chọn
+                    placeholder="0"
+                  />
                 </td>
               </tr>
             ))}
             {inventory.length === 0 && (
               <tr>
                 <td
-                  colSpan={visibleColumns.size + 2}
+                  // Cập nhật colSpan sau khi xóa 1 cột
+                  colSpan={visibleColumns.size + 1}
                   className="text-center py-10 text-gray-500"
                 >
                   No available inventory found for Item Code:{" "}

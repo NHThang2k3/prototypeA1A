@@ -1,7 +1,7 @@
 // Path: src/pages/issue-fabric-form/components/CuttingPlanSelection.tsx
 
-import React, { useState, useEffect, useMemo } from "react";
-import { Loader2, Search } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Loader2, Upload } from "lucide-react";
 import type { CuttingPlanJob } from "../types";
 import { getCuttingPlanJobs } from "../data";
 
@@ -10,25 +10,32 @@ interface Props {
 }
 
 const CuttingPlanSelection: React.FC<Props> = ({ onJobSelect }) => {
-  const [jobs, setJobs] = useState<CuttingPlanJob[]>([]);
+  const [allJobs, setAllJobs] = useState<CuttingPlanJob[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [factoryFilter, setFactoryFilter] = useState("");
+  const [uploadedJobs, setUploadedJobs] = useState<CuttingPlanJob[]>([]);
+  const [isSimulatingUpload, setIsSimulatingUpload] = useState(false);
 
   useEffect(() => {
+    // Tải tất cả các job có sẵn một lần để mô phỏng
     getCuttingPlanJobs().then((data) => {
-      setJobs(data);
+      setAllJobs(data);
       setLoading(false);
     });
   }, []);
 
-  const filteredJobs = useMemo(() => {
-    return jobs.filter(
-      (job) =>
-        job.JOB.toLowerCase().includes(searchTerm.toLowerCase()) &&
-        (factoryFilter === "" || job.Factory === factoryFilter)
-    );
-  }, [jobs, searchTerm, factoryFilter]);
+  // Mô phỏng việc upload và đọc file excel
+  const handleUploadClick = () => {
+    setIsSimulatingUpload(true);
+    // Giả lập độ trễ của việc đọc file
+    setTimeout(() => {
+      // Lấy một vài JOB mẫu để hiển thị (ví dụ: các job đang "Planned" hoặc "In Progress")
+      const jobsFromFile = allJobs.filter(
+        (job) => job.Status === "Planned" || job.Status === "In Progress"
+      );
+      setUploadedJobs(jobsFromFile);
+      setIsSimulatingUpload(false);
+    }, 1000);
+  };
 
   if (loading) {
     return (
@@ -40,36 +47,22 @@ const CuttingPlanSelection: React.FC<Props> = ({ onJobSelect }) => {
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-      <h2 className="text-xl font-semibold text-gray-700 mb-4">
-        1. Select a Job from Cutting Plan
-      </h2>
-      {/* Filter Controls */}
-      <div className="flex flex-wrap gap-4 mb-4">
-        <div className="relative flex-grow">
-          <Search
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-            size={20}
-          />
-          <input
-            type="text"
-            placeholder="Search by JOB..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-        </div>
-        <select
-          value={factoryFilter}
-          onChange={(e) => setFactoryFilter(e.target.value)}
-          className="px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-semibold text-gray-700">
+          1. Select a Job from Uploaded Kanban
+        </h2>
+        <button
+          onClick={handleUploadClick}
+          disabled={isSimulatingUpload}
+          className="flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 font-medium disabled:bg-gray-400"
         >
-          <option value="">All Factories</option>
-          {[...new Set(jobs.map((j) => j.Factory))].map((f) => (
-            <option key={f} value={f}>
-              {f}
-            </option>
-          ))}
-        </select>
+          {isSimulatingUpload ? (
+            <Loader2 size={18} className="mr-2 animate-spin" />
+          ) : (
+            <Upload size={18} className="mr-2" />
+          )}
+          Upload Kanban (Excel)
+        </button>
       </div>
 
       {/* Jobs Table */}
@@ -80,22 +73,40 @@ const CuttingPlanSelection: React.FC<Props> = ({ onJobSelect }) => {
               <th className="p-3">JOB</th>
               <th className="p-3">Item Code</th>
               <th className="p-3">Color</th>
-              <th className="p-3">Factory</th>
-              <th className="p-3">Plan Date</th>
+              <th className="p-3">Required</th>
+              <th className="p-3">Issued</th>
               <th className="p-3">Status</th>
               <th className="p-3">Action</th>
             </tr>
           </thead>
           <tbody>
-            {filteredJobs.map((job) => (
+            {uploadedJobs.length === 0 && !isSimulatingUpload && (
+              <tr>
+                <td colSpan={7} className="text-center py-10 text-gray-500">
+                  Please upload a Kanban file to see the list of jobs.
+                </td>
+              </tr>
+            )}
+            {isSimulatingUpload && (
+              <tr>
+                <td colSpan={7} className="text-center py-10 text-gray-500">
+                  <div className="flex justify-center items-center">
+                    <Loader2
+                      className="animate-spin text-indigo-600 mr-2"
+                      size={20}
+                    />
+                    <span>Simulating file upload...</span>
+                  </div>
+                </td>
+              </tr>
+            )}
+            {uploadedJobs.map((job) => (
               <tr key={job.ID} className="bg-white border-b hover:bg-gray-50">
                 <td className="p-3 font-semibold text-indigo-600">{job.JOB}</td>
                 <td className="p-3">{job.ItemCode}</td>
                 <td className="p-3">{job.Color}</td>
-                <td className="p-3">{job.Factory}</td>
-                <td className="p-3">
-                  {new Date(job.PlanDate).toLocaleDateString()}
-                </td>
+                <td className="p-3">{job.RequestQuantity}</td>
+                <td className="p-3">{job.IssuedQuantity}</td>
                 <td className="p-3">
                   <span
                     className={`px-2 py-1 text-xs font-medium rounded-full ${

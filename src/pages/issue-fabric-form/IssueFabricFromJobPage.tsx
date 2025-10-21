@@ -89,6 +89,10 @@ const IssueFabricFromJobPage = () => {
               itemCode={selectedJob.ItemCode}
               color={selectedJob.Color}
               onSelectionChange={handleSelectionChange}
+              // Prop mới: chỉ yêu cầu số lượng còn lại
+              requestQuantity={
+                selectedJob.RequestQuantity - selectedJob.IssuedQuantity
+              }
             />
           </div>
         )}

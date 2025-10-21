@@ -26,6 +26,8 @@ import PackagingInventoryListPage from "./pages/packaging-inventory-list/Packagi
 import AccessoryIssueTransactionReportsPage from "./pages/accessory-issue-transaction-reports/AccessoryIssueTransactionReportsPage";
 import PackagingIssueTransactionReportsPage from "./pages/packaging-issue-transaction-reports/PackagingIssueTransactionReportsPage";
 
+import CuttingLayout from "./layouts/CuttingLayout";
+
 function App() {
   return (
     <BrowserRouter>
@@ -39,10 +41,6 @@ function App() {
           <Route path="dashboard" element={<InboundDashboardPage />} />
           <Route path="inventory" element={<InventoryListPage />} />
           <Route path="kanban" element={<KanbanBoardPage />} />
-          {/* <Route
-            path="import-packing-list"
-            element={<ImportPackingListFormPage />}
-          /> */}
           <Route path="locations" element={<LocationManagementPage />} />
           <Route path="qr-scan" element={<QRScanInterfacePage />} />
           <Route path="issue/fabric" element={<IssueFabricFormPage />} />
@@ -86,6 +84,31 @@ function App() {
           <Route
             path="reports/issues"
             element={<PackagingIssueTransactionReportsPage />}
+          />
+        </Route>
+
+        {/* === Module Cutting === */}
+        <Route path="/cutting" element={<CuttingLayout />}>
+          <Route
+            index
+            element={<Navigate to="dashboard/performance" replace />}
+          />
+          {/* Ví dụ về cách thêm các page con cho module cutting */}
+          <Route
+            path="dashboard/performance"
+            element={<div>Cutting Performance Page</div>}
+          />
+          <Route
+            path="planning/master-plan"
+            element={<div>Master Plan Page</div>}
+          />
+          <Route
+            path="planning/cutting-plans"
+            element={<div>Cutting Plans Page</div>}
+          />
+          <Route
+            path="bundle-data/import-job"
+            element={<div>Import Jobs Page</div>}
           />
         </Route>
 
