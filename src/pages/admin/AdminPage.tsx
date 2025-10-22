@@ -1,358 +1,578 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, Fragment } from "react";
 import {
   Fingerprint,
   Search,
-  Download,
   CalendarDays,
   ChevronLeft,
   ChevronRight,
   Users,
   MapPin,
-  ShieldX,
+  MoreHorizontal,
+  Globe,
+  Ban,
+  Hash,
+  Dot,
+  Eye,
+  ShieldCheck,
 } from "lucide-react";
+import ReactECharts from "echarts-for-react";
+import { Menu, Transition } from "@headlessui/react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import * as XLSX from "xlsx";
-import axios from "axios"; // --- (MỚI) Import axios ---
-import { io, Socket } from "socket.io-client"; // --- (MỚI) Import socket.io-client ---
+import axios from "axios"; // <-- IMPORT MỚI
 
-// --- (MỚI) Định nghĩa URL của Backend ---
-const API_URL = "http://localhost:5000";
+// ============================================================================
+// I. CẤU TRÚC DỮ LIỆU & KIỂU DỮ LIỆU (CÓ THAY ĐỔI NHẸ)
+// ============================================================================
 
-// --- Kiểu dữ liệu (giữ nguyên) ---
+// Base URL cho API
+const API_BASE_URL = "http://localhost:5000/api";
+
+const api = axios.create({
+  baseURL: API_BASE_URL,
+});
+
+type AccessStatus = "Safe" | "Warning" | "Blocked" | "Whitelisted";
+// Kiểu dữ liệu này khớp với dữ liệu trả về từ API /api/logs
 type IPLogEntry = {
-  ID: number;
-  IPAddress: string;
-  User: string;
-  DateTime: string;
-  Status: "Allowed" | "Failed" | "Blocked";
-  Location: string;
+  id: string;
+  ipAddress: string;
+  location: { country: string; city: string };
+  isp: string;
+  lastAccess: string;
+  accessCount: number;
+  userAgent: string;
+  status: AccessStatus;
+  reputation?: { score: number | null; provider: string };
 };
 
-// --- Component StatusBadge (giữ nguyên) ---
-const StatusBadge: React.FC<{ status: IPLogEntry["Status"] }> = ({
-  status,
-}) => {
+// Kiểu dữ liệu cho các thẻ KPI
+type KpiData = {
+  totalAccess24h: number;
+  uniqueIps24h: number;
+  newlyBlockedIps: number;
+  countryCount: number;
+};
+
+// Kiểu dữ liệu cho biểu đồ
+type TrafficChartItem = {
+  time: string;
+  requests: number;
+};
+
+// ============================================================================
+// II. CÁC COMPONENT CON (CÓ THAY ĐỔI NHẸ ĐỂ NHẬN PROPS)
+// ============================================================================
+
+const StatusBadge: React.FC<{ status: AccessStatus }> = ({ status }) => {
   const baseClasses =
-    "px-2.5 py-1 text-xs font-semibold rounded-full inline-block";
-  const colorClasses = {
-    Allowed: "bg-green-100 text-green-800",
-    Failed: "bg-yellow-100 text-yellow-800",
+    "px-2.5 py-1 text-xs font-semibold rounded-full inline-flex items-center gap-1.5";
+  const colorClasses: Record<AccessStatus, string> = {
+    Safe: "bg-green-100 text-green-800",
+    Warning: "bg-yellow-100 text-yellow-800",
     Blocked: "bg-red-100 text-red-800",
+    Whitelisted: "bg-blue-100 text-blue-800",
   };
   return (
-    <span className={`${baseClasses} ${colorClasses[status]}`}>{status}</span>
+    <span className={`${baseClasses} ${colorClasses[status]}`}>
+      <Dot className="w-4 h-4 -ml-1" /> {status}
+    </span>
   );
 };
 
-// --- (CẬP NHẬT) Component Thống kê Thời gian thực ---
-const RealTimeStats: React.FC = () => {
-  const [activeUsers, setActiveUsers] = useState(0);
-  // Dữ liệu này có thể được lấy từ một API khác hoặc tính toán
-  const [todayVisits] = useState(1245);
+const ReputationScore: React.FC<{ score?: number | null }> = ({ score }) => {
+  if (score === undefined || score === null)
+    return <span className="text-gray-400">N/A</span>;
+  const getColor = () => {
+    if (score > 75) return "text-red-500";
+    if (score > 40) return "text-yellow-500";
+    return "text-green-500";
+  };
+  return (
+    <span className={`font-mono font-semibold ${getColor()}`}>{score}/100</span>
+  );
+};
 
-  useEffect(() => {
-    // Kết nối tới Socket.IO server
-    const socket: Socket = io(API_URL);
+interface KPIStatCardProps {
+  icon: React.ElementType;
+  title: string;
+  value: string;
+  iconBgColor: string;
+}
+const KPIStatCard: React.FC<KPIStatCardProps> = ({
+  icon: Icon,
+  title,
+  value,
+  iconBgColor,
+}) => (
+  <div className="bg-white p-5 shadow-sm rounded-lg flex items-center gap-5">
+    <div className={`p-3 rounded-full ${iconBgColor}`}>
+      <Icon className="w-6 h-6 text-white" />
+    </div>
+    <div>
+      <p className="text-gray-500 text-sm">{title}</p>
+      <p className="text-2xl font-bold text-gray-800">{value}</p>
+    </div>
+  </div>
+);
 
-    // Lắng nghe sự kiện 'connect'
-    socket.on("connect", () => {
-      console.log("Connected to stats socket!");
-    });
+const ActionsMenu: React.FC<{ ip: string }> = ({ ip }) => {
+  const menuItems = [
+    {
+      label: "Xem chi tiết",
+      icon: Eye,
+      onClick: () => alert(`Xem chi tiết IP: ${ip}`),
+    },
+    {
+      label: "Thêm vào Whitelist",
+      icon: ShieldCheck,
+      onClick: () => alert(`Thêm ${ip} vào Whitelist`),
+    },
+    {
+      label: "Chặn IP này",
+      icon: Ban,
+      onClick: () => alert(`Đã gửi yêu cầu chặn IP: ${ip}`),
+    },
+  ];
+  return (
+    <Menu as="div" className="relative inline-block text-left">
+      <Menu.Button className="p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors">
+        <MoreHorizontal className="w-5 h-5" />
+      </Menu.Button>
+      <Transition
+        as={Fragment}
+        enter="transition ease-out duration-100"
+        enterFrom="transform opacity-0 scale-95"
+        enterTo="transform opacity-100 scale-100"
+        leave="transition ease-in duration-75"
+        leaveFrom="transform opacity-100 scale-100"
+        leaveTo="transform opacity-0 scale-95"
+      >
+        <Menu.Items className="absolute right-0 mt-2 w-56 origin-top-right bg-white divide-y divide-gray-100 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-10">
+          <div className="px-1 py-1">
+            {menuItems.map((item) => (
+              <Menu.Item key={item.label}>
+                {({ active }) => (
+                  <button
+                    onClick={item.onClick}
+                    className={`${
+                      active ? "bg-teal-500 text-white" : "text-gray-900"
+                    } group flex rounded-md items-center w-full px-3 py-2 text-sm`}
+                  >
+                    <item.icon className="w-5 h-5 mr-2" aria-hidden="true" />
+                    {item.label}
+                  </button>
+                )}
+              </Menu.Item>
+            ))}
+          </div>
+        </Menu.Items>
+      </Transition>
+    </Menu>
+  );
+};
 
-    // Lắng nghe sự kiện 'update_stats' từ server
-    socket.on("update_stats", (data: { activeUsers: number }) => {
-      setActiveUsers(data.activeUsers);
-    });
+// ============================================================================
+// III. CÁC COMPONENT CHÍNH (ĐÃ CẬP NHẬT)
+// ============================================================================
 
-    // Lắng nghe sự kiện 'disconnect'
-    socket.on("disconnect", () => {
-      console.log("Disconnected from stats socket.");
-    });
+// --- SỬA ĐỔI: Nhận dữ liệu từ props ---
+const DashboardKPIs: React.FC<{ data: KpiData | null }> = ({ data }) => {
+  const kpiData = [
+    {
+      title: "Tổng truy cập (24h)",
+      value: data ? data.totalAccess24h.toLocaleString() : "...",
+      icon: Hash,
+      color: "bg-blue-500",
+    },
+    {
+      title: "Số IP duy nhất (24h)",
+      value: data ? data.uniqueIps24h.toLocaleString() : "...",
+      icon: Users,
+      color: "bg-purple-500",
+    },
+    {
+      title: "Số IP bị chặn mới",
+      value: data ? data.newlyBlockedIps.toLocaleString() : "...",
+      icon: Ban,
+      color: "bg-red-500",
+    },
+    {
+      title: "Số quốc gia truy cập",
+      value: data ? data.countryCount.toLocaleString() : "...",
+      icon: Globe,
+      color: "bg-green-500",
+    },
+  ];
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      {kpiData.map((kpi) => (
+        <KPIStatCard
+          key={kpi.title}
+          title={kpi.title}
+          value={kpi.value}
+          icon={kpi.icon}
+          iconBgColor={kpi.color}
+        />
+      ))}
+    </div>
+  );
+};
 
-    // Cleanup: Ngắt kết nối khi component bị unmount
-    return () => {
-      socket.disconnect();
-    };
-  }, []); // Mảng rỗng đảm bảo useEffect chỉ chạy một lần
+// --- SỬA ĐỔI: Nhận dữ liệu từ props ---
+const TrafficChart: React.FC<{ data: TrafficChartItem[] }> = ({ data }) => {
+  const getChartOptions = () => ({
+    tooltip: { trigger: "axis" },
+    grid: { left: "3%", right: "4%", bottom: "3%", containLabel: true },
+    xAxis: {
+      type: "category",
+      boundaryGap: false,
+      data: data.map((item) => item.time),
+      axisLine: { lineStyle: { color: "#a1a1aa" } },
+      axisLabel: { color: "#3f3f46" },
+    },
+    yAxis: {
+      type: "value",
+      axisLine: { lineStyle: { color: "#a1a1aa" } },
+      axisLabel: { color: "#3f3f46" },
+      splitLine: { lineStyle: { color: "#e4e4e7" } },
+    },
+    series: [
+      {
+        name: "Số Requests",
+        type: "line",
+        smooth: true,
+        data: data.map((item) => item.requests),
+        itemStyle: { color: "#14b8a6" },
+        areaStyle: {
+          color: {
+            type: "linear",
+            x: 0,
+            y: 0,
+            x2: 0,
+            y2: 1,
+            colorStops: [
+              { offset: 0, color: "rgba(20, 184, 166, 0.3)" },
+              { offset: 1, color: "rgba(20, 184, 166, 0)" },
+            ],
+          },
+        },
+      },
+    ],
+  });
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <div className="bg-white p-5 shadow-sm rounded-lg flex items-center gap-4 border-l-4 border-blue-500">
-        <Users className="w-8 h-8 text-blue-500" />
-        <div>
-          <p className="text-gray-500 text-sm">Số người dùng đang hoạt động</p>
-          <p className="text-3xl font-bold text-gray-800">{activeUsers}</p>
-        </div>
+    <div className="bg-white p-6 shadow-sm rounded-lg">
+      <h3 className="text-lg font-semibold text-gray-800 mb-4">
+        Lưu lượng truy cập trong 24 giờ qua
+      </h3>
+      <ReactECharts
+        option={getChartOptions()}
+        style={{ height: "300px", width: "100%" }}
+        notMerge={true}
+        lazyUpdate={true}
+      />
+    </div>
+  );
+};
+
+// --- Giữ nguyên ---
+interface FilterBarProps {
+  searchTerm: string;
+  onSearchChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  dateRange: [Date | null, Date | null];
+  onDateChange: (update: [Date | null, Date | null]) => void;
+}
+const FilterBar: React.FC<FilterBarProps> = ({
+  searchTerm,
+  onSearchChange,
+  dateRange,
+  onDateChange,
+}) => {
+  return (
+    <div className="p-4 flex flex-col md:flex-row items-center justify-between gap-4 border-b border-gray-200">
+      <div className="relative w-full md:max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+        <input
+          type="text"
+          placeholder="Tìm IP, Vị trí, ISP, User Agent..."
+          value={searchTerm}
+          onChange={onSearchChange}
+          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition"
+        />
       </div>
-      <div className="bg-white p-5 shadow-sm rounded-lg flex items-center gap-4 border-l-4 border-purple-500">
-        <CalendarDays className="w-8 h-8 text-purple-500" />
-        <div>
-          <p className="text-gray-500 text-sm">Tổng lượt truy cập hôm nay</p>
-          <p className="text-3xl font-bold text-gray-800">
-            {todayVisits.toLocaleString()}
-          </p>
-        </div>
+      <div className="relative w-full md:w-auto">
+        <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none z-10" />
+        <DatePicker
+          selectsRange={true}
+          startDate={dateRange[0]}
+          endDate={dateRange[1]}
+          onChange={onDateChange}
+          isClearable={true}
+          placeholderText="Lọc theo khoảng thời gian"
+          className="w-full md:w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition"
+        />
       </div>
     </div>
   );
 };
 
-// --- (CẬP NHẬT) Component Trang chính (AdminPage) ---
-const AdminPage = () => {
-  // --- (MỚI) State để lưu dữ liệu từ API và thông tin phân trang ---
-  const [logData, setLogData] = useState<IPLogEntry[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [totalPages, setTotalPages] = useState(0);
-  const [totalCount, setTotalCount] = useState(0);
+// --- Giữ nguyên ---
+interface LogsTableProps {
+  logs: IPLogEntry[];
+  isLoading: boolean;
+}
+const LogsTable: React.FC<LogsTableProps> = ({ logs, isLoading }) => {
+  const TableHeader = () => (
+    <thead className="bg-gray-50 text-gray-600 uppercase text-xs">
+      <tr>
+        {[
+          "Địa chỉ IP",
+          "Vị trí",
+          "ISP / Tổ chức",
+          "Lần truy cập gần nhất",
+          "Số truy cập",
+          "User Agent",
+          "Trạng thái",
+          "Danh tiếng",
+          "Hành động",
+        ].map((header) => (
+          <th
+            key={header}
+            scope="col"
+            className="px-6 py-3 font-semibold tracking-wider"
+          >
+            {header}
+          </th>
+        ))}
+      </tr>
+    </thead>
+  );
+  const TableRow = ({ log }: { log: IPLogEntry }) => (
+    <tr className="hover:bg-gray-50 transition-colors">
+      <td className="px-6 py-4 font-mono text-gray-800">{log.ipAddress}</td>
+      <td className="px-6 py-4">
+        <MapPin className="inline w-4 h-4 mr-2 text-gray-400" />
+        {log.location.city}, {log.location.country}
+      </td>
+      <td className="px-6 py-4">{log.isp}</td>
+      <td className="px-6 py-4 text-gray-600">
+        {new Date(log.lastAccess).toLocaleString()}
+      </td>
+      <td className="px-6 py-4 font-medium text-gray-800">
+        {log.accessCount.toLocaleString()}
+      </td>
+      <td
+        className="px-6 py-4 text-gray-600 max-w-xs truncate"
+        title={log.userAgent}
+      >
+        {log.userAgent}
+      </td>
+      <td className="px-6 py-4">
+        <StatusBadge status={log.status} />
+      </td>
+      <td className="px-6 py-4">
+        <ReputationScore score={log.reputation?.score} />
+      </td>
+      <td className="px-6 py-4 text-center">
+        <ActionsMenu ip={log.ipAddress} />
+      </td>
+    </tr>
+  );
+  return (
+    <div className="overflow-x-auto">
+      <table className="min-w-full text-sm text-left text-gray-700">
+        <TableHeader />
+        <tbody className="divide-y divide-gray-200">
+          {isLoading ? (
+            <tr>
+              <td colSpan={9} className="text-center p-8 text-gray-500">
+                Đang tải dữ liệu...
+              </td>
+            </tr>
+          ) : logs.length > 0 ? (
+            logs.map((log) => <TableRow key={log.id} log={log} />)
+          ) : (
+            <tr>
+              <td colSpan={9} className="text-center p-8 text-gray-500">
+                Không tìm thấy dữ liệu phù hợp.
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+};
 
-  // States cho việc lọc và phân trang (giữ nguyên)
+// --- Giữ nguyên ---
+interface PaginationProps {
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+}
+const Pagination: React.FC<PaginationProps> = ({
+  currentPage,
+  totalPages,
+  onPageChange,
+}) => {
+  if (totalPages <= 1) return null;
+  return (
+    <div className="flex items-center justify-between gap-2 p-4 border-t border-gray-200">
+      <span className="text-sm text-gray-700">
+        Trang <span className="font-semibold">{currentPage}</span> trên{" "}
+        <span className="font-semibold">{totalPages}</span>
+      </span>
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          className="px-3 py-1.5 flex items-center gap-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          <span>Trước</span>
+        </button>
+        <button
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          className="px-3 py-1.5 flex items-center gap-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <span>Sau</span>
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// ============================================================================
+// IV. COMPONENT CHÍNH: AdminPage (ĐÃ CẬP NHẬT LOGIC HOÀN TOÀN)
+// ============================================================================
+const AdminPage = () => {
+  // State cho dữ liệu
+  const [logData, setLogData] = useState<IPLogEntry[]>([]);
+  const [kpiData, setKpiData] = useState<KpiData | null>(null);
+  const [trafficData, setTrafficData] = useState<TrafficChartItem[]>([]);
+
+  // State cho việc tải và phân trang
+  const [isLoading, setIsLoading] = useState(true);
+  const [totalPages, setTotalPages] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // State cho bộ lọc
   const [searchTerm, setSearchTerm] = useState("");
   const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([
     null,
     null,
   ]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
 
-  // --- (MỚI) Hàm gọi API để lấy dữ liệu ---
+  // --- MỚI: Hàm fetch dữ liệu log từ API ---
   const fetchLogs = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [startDate, endDate] = dateRange;
-      const params = {
-        page: currentPage,
-        limit: rowsPerPage,
-        search: searchTerm,
-        startDate: startDate ? startDate.toISOString() : undefined,
-        endDate: endDate ? endDate.toISOString() : undefined,
-      };
+      const params = new URLSearchParams();
+      params.append("page", String(currentPage));
+      params.append("limit", "10");
+      if (searchTerm) {
+        params.append("search", searchTerm);
+      }
+      if (dateRange[0]) {
+        params.append("startDate", dateRange[0].toISOString());
+      }
+      if (dateRange[1]) {
+        params.append("endDate", dateRange[1].toISOString());
+      }
 
-      const response = await axios.get(`${API_URL}/api/logs`, { params });
+      const response = await api.get(`/logs?${params.toString()}`);
 
-      // Dữ liệu trả về từ BE có dạng { data: [...], pagination: {...} }
       setLogData(response.data.data);
-      // Giả định backend trả về totalPages và totalCount trong object pagination
-      // Nếu backend chưa có, bạn cần bổ sung logic tính toán này ở AccessLog.js
-      setTotalPages(
-        response.data.pagination.totalPages ||
-          Math.ceil(response.data.pagination.totalCount / rowsPerPage)
-      );
-      setTotalCount(response.data.pagination.totalCount || 0);
+      setTotalPages(response.data.pagination.totalPages);
     } catch (error) {
       console.error("Failed to fetch access logs:", error);
-      // Xử lý lỗi, ví dụ: hiển thị thông báo cho người dùng
+      // Optional: show an error message to the user
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage, rowsPerPage, searchTerm, dateRange]);
+  }, [currentPage, searchTerm, dateRange]);
 
-  // --- (CẬP NHẬT) useEffect để gọi API khi có thay đổi ---
+  // --- MỚI: useEffect để fetch dữ liệu tổng quan (KPIs, Chart) khi component mount ---
   useEffect(() => {
-    fetchLogs();
-  }, [fetchLogs]); // fetchLogs đã được bọc trong useCallback
+    const fetchDashboardData = async () => {
+      try {
+        const [kpiResponse, trafficResponse] = await Promise.all([
+          api.get("/stats/kpis"),
+          api.get("/stats/traffic-chart"),
+        ]);
+        setKpiData(kpiResponse.data);
+        setTrafficData(trafficResponse.data);
+      } catch (error) {
+        console.error("Failed to fetch dashboard data:", error);
+      }
+    };
+    fetchDashboardData();
+  }, []);
 
-  // --- (CẬP NHẬT) Các hàm xử lý sự kiện ---
-  const handleExportToExcel = () => {
-    // Chức năng này vẫn hoạt động phía client với dữ liệu đã được tải về
-    const worksheet = XLSX.utils.json_to_sheet(logData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "IPLogs");
-    XLSX.writeFile(workbook, "ip_log_export.xlsx");
-  };
+  // --- SỬA ĐỔI: useEffect để fetch logs khi bộ lọc hoặc trang thay đổi ---
+  useEffect(() => {
+    // Sử dụng debounce để tránh gọi API liên tục khi người dùng đang gõ
+    const handler = setTimeout(() => {
+      fetchLogs();
+    }, 300); // 300ms delay
 
-  const handleBlockIP = (ipAddress: string) => {
-    // Trong thực tế, bạn sẽ gọi API để chặn IP này
-    // Ví dụ: axios.post(`${API_URL}/api/blocklist`, { ip: ipAddress });
-    alert(`Đã gửi yêu cầu chặn IP: ${ipAddress}`);
-  };
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [fetchLogs]);
 
-  // --- (CẬP NHẬT) Logic reset trang khi tìm kiếm ---
+  // Các hàm xử lý sự kiện
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
-    setCurrentPage(1); // Reset về trang đầu tiên khi tìm kiếm
+    setCurrentPage(1); // Reset về trang 1 khi có tìm kiếm mới
   };
-
   const handleDateChange = (update: [Date | null, Date | null]) => {
     setDateRange(update);
-    setCurrentPage(1); // Reset về trang đầu tiên khi đổi ngày
+    setCurrentPage(1); // Reset về trang 1 khi có bộ lọc ngày mới
+  };
+  const handlePageChange = (page: number) => {
+    if (page > 0 && page <= totalPages) {
+      setCurrentPage(page);
+    }
   };
 
   return (
-    <div className="space-y-6">
-      {/* --- Tiêu đề trang (không đổi) --- */}
-      <div className="bg-white p-5 shadow-sm rounded-lg flex items-center gap-4 border-l-4 border-teal-600">
-        <Fingerprint className="w-8 h-8 text-teal-600" />
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">
-            IP Access Tracker & Dashboard
-          </h1>
-          <p className="text-gray-600 mt-1">
-            Theo dõi truy cập và xem thống kê website trong thời gian thực.
-          </p>
+    <div className="bg-slate-50 min-h-screen p-4 sm:p-6 lg:p-8">
+      <div className="max-w-screen-2xl mx-auto space-y-8">
+        <div className="flex items-center gap-4">
+          <div className="bg-teal-100 p-3 rounded-lg">
+            <Fingerprint className="w-8 h-8 text-teal-600" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-800">
+              Dashboard Giám Sát An Ninh
+            </h1>
+            <p className="text-gray-600 mt-1">
+              Phân tích, quản trị và bảo vệ lưu lượng truy cập hệ thống.
+            </p>
+          </div>
         </div>
-      </div>
 
-      {/* --- Khu vực Thống kê (đã kết nối) --- */}
-      <RealTimeStats />
+        {/* Các component con giờ nhận dữ liệu từ state */}
+        <DashboardKPIs data={kpiData} />
+        <TrafficChart data={trafficData} />
 
-      {/* --- Thanh Lọc và Hành động (đã kết nối) --- */}
-      <div className="bg-white p-4 shadow-sm rounded-lg space-y-4 md:space-y-0 md:flex md:items-center md:justify-between">
-        <div className="relative w-full md:max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Tìm kiếm IP, người dùng..."
-            value={searchTerm}
-            onChange={handleSearchChange}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+        <div className="bg-white shadow-sm rounded-lg overflow-hidden">
+          <FilterBar
+            searchTerm={searchTerm}
+            onSearchChange={handleSearchChange}
+            dateRange={dateRange}
+            onDateChange={handleDateChange}
           />
-        </div>
-        <div className="flex items-center gap-4 flex-wrap">
-          <div className="relative">
-            <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
-            <DatePicker
-              selectsRange={true}
-              startDate={dateRange[0]}
-              endDate={dateRange[1]}
-              onChange={handleDateChange}
-              isClearable={true}
-              placeholderText="Lọc theo khoảng thời gian"
-              className="pl-10 pr-4 py-2 border border-gray-300 rounded-md w-64 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-            />
-          </div>
-          <button
-            onClick={handleExportToExcel}
-            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white font-semibold rounded-md hover:bg-green-700 transition-colors"
-          >
-            <Download className="w-5 h-5" />
-            Xuất Excel
-          </button>
-        </div>
-      </div>
-
-      {/* --- Bảng Dữ liệu (đã kết nối) --- */}
-      <div className="bg-white shadow-sm rounded-lg overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm text-left text-gray-700">
-            {/* ... (Phần thead giữ nguyên) ... */}
-            <thead className="bg-gray-50 border-b border-gray-200 text-gray-600 uppercase">
-              <tr>
-                <th scope="col" className="px-6 py-3 font-semibold">
-                  ID
-                </th>
-                <th scope="col" className="px-6 py-3 font-semibold">
-                  Địa chỉ IP
-                </th>
-                <th scope="col" className="px-6 py-3 font-semibold">
-                  Người dùng
-                </th>
-                <th scope="col" className="px-6 py-3 font-semibold">
-                  Vị trí
-                </th>
-                <th scope="col" className="px-6 py-3 font-semibold">
-                  Trạng thái
-                </th>
-                <th scope="col" className="px-6 py-3 font-semibold">
-                  Thời gian
-                </th>
-                <th scope="col" className="px-6 py-3 font-semibold text-center">
-                  Hành động
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {isLoading ? (
-                <tr>
-                  <td colSpan={7} className="text-center p-8">
-                    Đang tải dữ liệu...
-                  </td>
-                </tr>
-              ) : logData.length > 0 ? (
-                logData.map((log) => (
-                  <tr
-                    key={log.ID}
-                    className="hover:bg-gray-50 transition-colors"
-                  >
-                    <td className="px-6 py-4 font-medium text-gray-900">
-                      {log.ID}
-                    </td>
-                    <td className="px-6 py-4 font-mono text-gray-800">
-                      {log.IPAddress}
-                    </td>
-                    <td className="px-6 py-4">{log.User}</td>
-                    <td className="px-6 py-4 text-gray-600">
-                      <MapPin className="inline w-4 h-4 mr-2" />
-                      {log.Location}
-                    </td>
-                    <td className="px-6 py-4">
-                      <StatusBadge status={log.Status} />
-                    </td>
-                    <td className="px-6 py-4 text-gray-500">{log.DateTime}</td>
-                    <td className="px-6 py-4 text-center">
-                      <button
-                        onClick={() => handleBlockIP(log.IPAddress)}
-                        className="p-2 text-red-600 hover:bg-red-100 rounded-full transition-colors"
-                        title={`Chặn IP ${log.IPAddress}`}
-                      >
-                        <ShieldX className="w-5 h-5" />
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={7} className="text-center p-8">
-                    Không tìm thấy dữ liệu phù hợp.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* --- Thanh Phân trang (đã kết nối) --- */}
-        <div className="flex items-center justify-between p-4 border-t border-gray-200">
-          <div className="text-sm text-gray-600">
-            Hiển thị <strong>{(currentPage - 1) * rowsPerPage + 1}</strong>-
-            <strong>{Math.min(currentPage * rowsPerPage, totalCount)}</strong>{" "}
-            trên tổng <strong>{totalCount}</strong> mục
-          </div>
-          <div className="flex items-center gap-4">
-            <select
-              value={rowsPerPage}
-              onChange={(e) => {
-                setRowsPerPage(Number(e.target.value));
-                setCurrentPage(1);
-              }}
-              className="border border-gray-300 rounded-md p-1.5 text-sm focus:ring-teal-500 focus:border-teal-500"
-            >
-              <option value={10}>10 / trang</option>
-              <option value={20}>20 / trang</option>
-              <option value={50}>50 / trang</option>
-            </select>
-            <span className="text-sm text-gray-600">
-              Trang {totalPages > 0 ? currentPage : 0} / {totalPages}
-            </span>
-            <div className="inline-flex rounded-md shadow-sm">
-              <button
-                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
-                className="px-3 py-1.5 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-l-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() =>
-                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                }
-                disabled={currentPage === totalPages || totalPages === 0}
-                className="px-3 py-1.5 text-sm font-medium text-gray-500 bg-white border-t border-b border-r border-gray-300 rounded-r-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
+          <LogsTable logs={logData} isLoading={isLoading} />
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+          />
         </div>
       </div>
     </div>

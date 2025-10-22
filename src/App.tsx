@@ -31,6 +31,7 @@ import BundleManagementPage from "./pages/bundle-management/BundleManagementPage
 import CuttingDashboardPerformance from "./pages/cutting-dashboard-performance/CuttingDashboardPerformance";
 import AuditLogPage from "./pages/audit-log/AuditLogPage";
 import AdminPage from "./pages/admin/AdminPage";
+import AdminLayout from "./layouts/AdminLayout";
 
 function App() {
   return (
@@ -114,7 +115,11 @@ function App() {
           />
         </Route>
 
-        <Route path="/admin" element={<AdminPage />} />
+        {/* === Module Admin === */}
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<AdminPage />} />
+        </Route>
 
         {/* Redirect về trang chủ nếu không khớp route nào */}
         <Route path="*" element={<Navigate to="/" replace />} />

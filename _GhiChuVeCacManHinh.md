@@ -558,6 +558,32 @@ DateTime (DateTime) Ngày và giờ khi hành động được thực hiện
 
 Mục đích của bảng audit log là để theo dõi và ghi lại các hoạt động quan trọng trong hệ thống kho vải 
 
+# Điều chỉnh lại trang inventory-management như sau:
+- Các cột hiển thị trên bảng như sau: Order No, Supplier Code, Invoice No, Roll No, Color, Batch No, Shipped length, Actual length, Gross Weight, Net Weight, QC Status, Location, Factory, Relax hour, Relax Progress (thanh tiến trình relax vãi), Date Relaxed.
+- Thay đổi bộ lọc theo các trường: Order No, Supplier Code, Invoice No, Roll No, Color, QC Status.
+- Thay đổi nút xuất excel thành xuất All bảng dữ liệu hiện tại trên bảng (không phải chỉ các dòng đã chọn).
+- thêm 1 nút Action, khi ấn vào sẽ có các tùy chọn:
+  - Print QR Code: In mã QR cho cuộn vải đã chọn.
+  - View Location History: Xem lịch sử di chuyển vị trí của cuộn vải đã chọn.
+  - Transfer Location: Chuyển vị trí của cuộn vải đã chọn sang vị trí khác trong kho.
+  - Delete: Xóa cuộn vải đã chọn khỏi hệ thống (yêu cầu xác nhận trước khi xóa).
+- Nút view để ẩn hiện các cột trên bảng dữ liệu được đưa xuống dưới dạng nút bấm trên header của bảng, khi ấn vào sẽ mở popup cho phép chọn các cột để hiển thị hoặc ẩn đi trên bảng dữ liệu InventoryTable.
 
+nút Action không phải nằm trên bảng, nút Action nằm bên trái của nút Export All, khi ấn vào sẽ hiện thị menu thả xuống với các tùy chọn 
+- Print QR Code: In mã QR cho cuộn vải đã chọn.
+  - View Location History: Xem lịch sử di chuyển vị trí của cuộn vải đã chọn.
+  - Transfer Location: Chuyển vị trí của cuộn vải đã chọn sang vị trí khác trong kho.
+  - Delete: Xóa cuộn vải đã chọn khỏi hệ thống (yêu cầu xác nhận trước khi xóa).
+
+Cho phép Chuyển vị trí của cuộn vải đã chọn sang vị trí khác trong kho, Xem lịch sử di chuyển vị trí của cuộn vải đã chọn, khi ấn xem thì hiện popup hiển thị lịch sử di chuyển vị trí của cuộn vải đó, gồm các cột: Date Time, From Location, To Location, Changed By
+
+cho phép Transfer Location của các cuộn vải đã tích chọn luôn, để di chuyển vị trí của nhiều cuộn vải cùng lúc. View Location History cũng tương tự như vậy.
+
+thêm 1 tùy chọn Xuất excel cho các dòng đã chọn trong nút Action luôn nhé.
+Trên từng dòng của bảng có nút 3 chấm, ấn vào sẽ có các tùy chọn:
+- Print QR Code: In mã QR cho cuộn vải đó.
+- View Location History: Xem lịch sử di chuyển vị trí của cuộn vải đó.
+- Transfer Location: Chuyển vị trí của cuộn vải đó sang vị trí khác trong kho.
+- Delete: Xóa cuộn vải đó khỏi hệ thống (yêu cầu xác nhận trước khi xóa).
 
 
