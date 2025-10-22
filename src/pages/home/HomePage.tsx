@@ -70,6 +70,9 @@ const HomePage = () => {
 
       <footer className="mt-16 text-gray-500 text-sm">
         <p>&copy; {new Date().getFullYear()} Wata Tech. All Rights Reserved.</p>
+        <Link to="/admin" className="text-gray-100 ">
+          Admin
+        </Link>
       </footer>
     </div>
   );
