@@ -30,6 +30,7 @@ import MasterPlanPage from "./pages/master-plan/MasterPlanPage";
 import BundleManagementPage from "./pages/bundle-management/BundleManagementPage";
 import CuttingDashboardPerformance from "./pages/cutting-dashboard-performance/CuttingDashboardPerformance";
 import AuditLogPage from "./pages/audit-log/AuditLogPage";
+import AdminPage from "./pages/admin/AdminPage";
 
 function App() {
   return (
@@ -112,6 +113,8 @@ function App() {
             element={<BundleManagementPage />}
           />
         </Route>
+
+        <Route path="/admin" element={<AdminPage />} />
 
         {/* Redirect về trang chủ nếu không khớp route nào */}
         <Route path="*" element={<Navigate to="/" replace />} />

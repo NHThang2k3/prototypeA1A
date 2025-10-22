@@ -1,10 +1,13 @@
 // Path: src/pages/inventory-list/types.ts
 
-// Old types are no longer needed
-// export type InventoryStatus = 'in-stock' | 'low-stock' | 'out-of-stock';
-// export interface InventoryItem { ... }
-
 export type QCStatus = 'Passed' | 'Failed' | 'Pending';
+
+export interface LocationHistoryEntry {
+  dateTime: string; // ISO 8601 format string
+  from: string;
+  to: string;
+  changedBy: string;
+}
 
 export interface FabricRoll {
   id: string; // Using QR Code as a unique ID
@@ -12,6 +15,7 @@ export interface FabricRoll {
   itemCode: string;
   factory: string;
   supplier: string;
+  supplierCode: string;
   invoiceNo: string;
   colorCode: string;
   color: string;
@@ -37,4 +41,5 @@ export interface FabricRoll {
   relaxTime: string;
   relaxBy: string;
   parentQrCode: string | null;
+  locationHistory: LocationHistoryEntry[];
 }

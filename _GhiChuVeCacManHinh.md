@@ -547,3 +547,17 @@ Sửa lại thư mục issue-packaging-form, thư mục này sẽ tương tự n
 
 sửa lại cho giao diện Issue Fabric Form Cutting Plan sẽ không cho search JOB nữa, ở đây người dùng ấn vào nút upload Kanban từ file excel, file excel sẽ chứa danh sách các JOB cần xuất vải, sau khi upload file excel thành công thì bảng Cutting Plan sẽ hiển thị danh sách các JOB đã upload từ file excel, người dùng chọn JOB từ danh sách này để xuất vải.
 Khi chọn 1 JOB từ danh sách đã upload, bảng Inventory sẽ hiển thị các cuộn vải có thể xuất cho JOB đó, hệ thống sẽ tự động chọn những cây vải phù hợp với JOB đã chọn, ưu tiên những cây vải có số yards thấp hơn để xuất trước, cây vải cuối cùng có thể điều chỉnh số yards xuất nếu số yards bị thừa so với số yards yêu cầu của JOB.
+
+tạo giao diện bằng react typescript, tailwindcss trong thư mục audit-log
+Bảng audit log gồm các trường sau đây:
+ID (ID) Mã định danh duy nhất của bản ghi
+Action (Action) Hành động đã thực hiện (Create/Update/Delete/Login/Logout)
+Module (Module) Tên module hoặc phần mềm nơi hành động được thực hiện (Relax Fabric, Issue Fabric, Inventory Management, v.v.)
+User (User) Tên người dùng đã thực hiện hành động
+DateTime (DateTime) Ngày và giờ khi hành động được thực hiện
+
+Mục đích của bảng audit log là để theo dõi và ghi lại các hoạt động quan trọng trong hệ thống kho vải 
+
+
+
+

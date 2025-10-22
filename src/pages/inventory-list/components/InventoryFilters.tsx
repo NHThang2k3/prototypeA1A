@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Search, SlidersHorizontal, ChevronDown } from "lucide-react";
+import type { QCStatus } from "../types";
 
 const inputClass =
   "mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm";
@@ -32,6 +33,38 @@ export const InventoryFilters = () => {
       {isOpen && (
         <form className="transition-opacity duration-300 ease-in-out">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
+            {/* Order No */}
+            <div>
+              <label
+                htmlFor="poNumber"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Order No
+              </label>
+              <input
+                type="text"
+                id="poNumber"
+                className={inputClass}
+                placeholder="e.g., POPU0018251"
+              />
+            </div>
+
+            {/* Supplier Code */}
+            <div>
+              <label
+                htmlFor="supplierCode"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Supplier Code
+              </label>
+              <input
+                type="text"
+                id="supplierCode"
+                className={inputClass}
+                placeholder="e.g., SUP-Y"
+              />
+            </div>
+
             {/* Invoice No */}
             <div>
               <label
@@ -45,54 +78,6 @@ export const InventoryFilters = () => {
                 id="invoiceNo"
                 className={inputClass}
                 placeholder="e.g., INV-001"
-              />
-            </div>
-
-            {/* PO Number */}
-            <div>
-              <label
-                htmlFor="poNumber"
-                className="block text-sm font-medium text-gray-700"
-              >
-                PO Number
-              </label>
-              <input
-                type="text"
-                id="poNumber"
-                className={inputClass}
-                placeholder="e.g., POPU0018251"
-              />
-            </div>
-
-            {/* Item Code */}
-            <div>
-              <label
-                htmlFor="itemCode"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Item Code
-              </label>
-              <input
-                type="text"
-                id="itemCode"
-                className={inputClass}
-                placeholder="e.g., CK-101-..."
-              />
-            </div>
-
-            {/* Color */}
-            <div>
-              <label
-                htmlFor="color"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Color
-              </label>
-              <input
-                type="text"
-                id="color"
-                className={inputClass}
-                placeholder="e.g., Puma Black"
               />
             </div>
 
@@ -112,20 +97,40 @@ export const InventoryFilters = () => {
               />
             </div>
 
-            {/* Lot No */}
+            {/* Color */}
             <div>
               <label
-                htmlFor="lotNo"
+                htmlFor="color"
                 className="block text-sm font-medium text-gray-700"
               >
-                Lot No
+                Color
               </label>
               <input
                 type="text"
-                id="lotNo"
+                id="color"
                 className={inputClass}
-                placeholder="e.g., 225628091"
+                placeholder="e.g., Puma Black"
               />
+            </div>
+
+            {/* QC Status */}
+            <div>
+              <label
+                htmlFor="qcStatus"
+                className="block text-sm font-medium text-gray-700"
+              >
+                QC Status
+              </label>
+              <select id="qcStatus" className={inputClass}>
+                <option value="">All Statuses</option>
+                {(["Passed", "Failed", "Pending"] as QCStatus[]).map(
+                  (status) => (
+                    <option key={status} value={status}>
+                      {status}
+                    </option>
+                  )
+                )}
+              </select>
             </div>
           </div>
 
