@@ -30,8 +30,7 @@ import MasterPlanPage from "./pages/master-plan/MasterPlanPage";
 import BundleManagementPage from "./pages/bundle-management/BundleManagementPage";
 import CuttingDashboardPerformance from "./pages/cutting-dashboard-performance/CuttingDashboardPerformance";
 import AuditLogPage from "./pages/audit-log/AuditLogPage";
-import AdminPage from "./pages/admin/AdminPage";
-import AdminLayout from "./layouts/AdminLayout";
+import FactoryLayout from "./layouts/FactoryLayout";
 
 function App() {
   return (
@@ -99,7 +98,6 @@ function App() {
             index
             element={<Navigate to="planning/master-plan" replace />}
           />
-          {/* Ví dụ về cách thêm các page con cho module cutting */}
           <Route
             path="dashboard/cutting-dashboard-performance"
             element={<CuttingDashboardPerformance />}
@@ -115,10 +113,11 @@ function App() {
           />
         </Route>
 
-        {/* === Module Admin === */}
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard" element={<AdminPage />} />
+        {/* === Module Factory Setting === */}
+        <Route path="/factory" element={<FactoryLayout />}>
+          <Route index element={<Navigate to="temp-warehouse" replace />} />
+          <Route path="temp-warehouse" element={<LocationManagementPage />} />
+          <Route path="audit-log" element={<AuditLogPage />} />
         </Route>
 
         {/* Redirect về trang chủ nếu không khớp route nào */}

@@ -1,4 +1,4 @@
-// Path: src/layouts/AdminLayout.tsx
+// Path: src/layouts/FactoryLayout.tsx
 import { useState, createContext, useContext, useEffect, useRef } from "react";
 import { NavLink, Outlet, useLocation, Link } from "react-router-dom";
 import {
@@ -8,8 +8,8 @@ import {
   User,
   ChevronDown,
   ChevronLeft,
-  Zap,
-  CalendarCheck,
+  ShieldAlert,
+  Archive, // Icon cho Temp Warehouse
   MoreHorizontal,
   ArrowLeft,
   Globe,
@@ -24,25 +24,21 @@ type NavItem = {
   children?: NavItem[];
 };
 
-// --- Dữ liệu Sidebar cho module Admin ---
+// --- Dữ liệu Sidebar MỚI cho FactoryLayout ---
 const sidebarNavItems: NavItem[] = [
   {
-    title: "Productivity",
-    icon: Zap,
-    key: "productivity",
-    children: [
-      {
-        title: "IP Tracking",
-        icon: CalendarCheck,
-        key: "IP_tracking",
-        path: "/admin/dashboard",
-      },
-    ],
+    title: "Temp Warehouse",
+    path: "/factory/temp-warehouse",
+    icon: Archive,
+    key: "temp-warehouse",
+  },
+  {
+    title: "Audit Log",
+    path: "/factory/audit-log",
+    icon: ShieldAlert,
+    key: "audit-log",
   },
 ];
-
-// --- TOÀN BỘ LOGIC BÊN DƯỚI ĐƯỢC GIỮ NGUYÊN ---
-// --- CHỈ THAY ĐỔI TÊN COMPONENT VÀ TIÊU ĐỀ TRONG SIDEBAR ---
 
 type SidebarContextType = {
   isCollapsed: boolean;
@@ -173,6 +169,7 @@ const Sidebar = ({ isForMobile = false }: { isForMobile?: boolean }) => {
       }
       return [];
     };
+    // Mở sẵn menu cha khi truy cập vào trang con
     const activeParentKeys = findParentKeys(sidebarNavItems, location.pathname);
     setOpenKeys((prevOpenKeys) => {
       const newKeys = new Set([...prevOpenKeys, ...activeParentKeys]);
@@ -226,7 +223,7 @@ const Sidebar = ({ isForMobile = false }: { isForMobile?: boolean }) => {
               effectiveIsCollapsed ? "hidden" : ""
             }`}
           >
-            Admin
+            Factory {/* <-- THAY ĐỔI TIÊU ĐỀ */}
           </span>
           {effectiveIsCollapsed && <MoreHorizontal className="w-8 h-8" />}
         </div>
@@ -261,6 +258,7 @@ const Sidebar = ({ isForMobile = false }: { isForMobile?: boolean }) => {
   );
 };
 
+// Component Header giữ nguyên, không cần thay đổi
 const Header = ({ onMenuClick }: { onMenuClick: () => void }) => {
   const [selectedLang, setSelectedLang] = useState<"en" | "vi">("en");
   const [isDropdownOpen, setDropdownOpen] = useState(false);
@@ -343,7 +341,6 @@ const Header = ({ onMenuClick }: { onMenuClick: () => void }) => {
             </div>
           )}
         </div>
-
         <button className="text-gray-500 hover:text-gray-700">
           <Bell className="w-6 h-6" />
         </button>
@@ -356,7 +353,8 @@ const Header = ({ onMenuClick }: { onMenuClick: () => void }) => {
   );
 };
 
-const AdminLayout = () => {
+// --- COMPONENT CHÍNH ĐÃ ĐỔI TÊN ---
+const FactoryLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
 
@@ -405,4 +403,4 @@ const AdminLayout = () => {
   );
 };
 
-export default AdminLayout;
+export default FactoryLayout;
