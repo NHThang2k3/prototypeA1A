@@ -115,8 +115,14 @@ function App() {
 
         {/* === Module Factory Setting === */}
         <Route path="/factory" element={<FactoryLayout />}>
-          <Route index element={<Navigate to="temp-warehouse" replace />} />
-          <Route path="temp-warehouse" element={<LocationManagementPage />} />
+          <Route
+            index
+            element={<Navigate to="location-management" replace />}
+          />
+          <Route
+            path="location-management"
+            element={<LocationManagementPage />}
+          />
           <Route path="audit-log" element={<AuditLogPage />} />
         </Route>
 

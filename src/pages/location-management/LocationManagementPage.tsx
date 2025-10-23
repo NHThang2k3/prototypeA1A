@@ -1,17 +1,26 @@
 // Path: src/pages/location-management/LocationManagementPage.tsx
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import PageHeader from "./components/PageHeader";
 import LocationFormModal from "./components/LocationFormModal";
 import LocationTable from "./components/LocationTable";
-import LocationItemsModal from "./components/LocationItemsModal"; // Import new modal
+import LocationItemsModal from "./components/LocationItemsModal";
 import type { LocationItem, FabricRoll } from "./types";
-import { locationListData, getRollsByLocationId } from "./data";
+import { locationListData } from "./data";
 import DetailSkeleton from "./components/skeletons/DetailSkeleton";
+// import { Button } from "../../components/ui/button";
+
+const TABS = {
+  fabric: "Fabric Warehouse",
+  accessories: "Accessories Warehouse",
+  packaging: "Packaging Warehouse",
+};
+type TabKey = keyof typeof TABS;
 
 const LocationManagementPage = () => {
   const [locations, setLocations] = useState<LocationItem[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<TabKey>("fabric");
 
   // State to manage edit/add location modal
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
@@ -63,11 +72,20 @@ const LocationManagementPage = () => {
     handleCloseFormModal();
   };
 
-  // --- Handlers for Location Items Modal ---
-  const handleViewLocationItems = async (location: LocationItem) => {
-    const items = await getRollsByLocationId(location.id);
-    setSelectedLocationForItems({ location, items });
-    setIsItemsModalOpen(true);
+  // --- Handler for Deleting a Location ---
+  const handleDeleteLocation = (locationId: string) => {
+    if (
+      window.confirm(
+        `Are you sure you want to delete location ${locationId}? This action cannot be undone.`
+      )
+    ) {
+      setLocations((prev) => {
+        if (!prev) return null;
+        // In a real app, you would also check if the location is empty before deleting.
+        return prev.filter((loc) => loc.id !== locationId);
+      });
+      console.log(`ACTION: Deleting location ${locationId}`);
+    }
   };
 
   const handleCloseItemsModal = () => {
@@ -91,6 +109,11 @@ const LocationManagementPage = () => {
     handleCloseItemsModal();
   };
 
+  const filteredLocations = useMemo(() => {
+    if (!locations) return [];
+    return locations.filter((loc) => loc.purpose === activeTab);
+  }, [locations, activeTab]);
+
   if (isLoading || !locations) {
     // ... skeleton loading state remains unchanged
     return (
@@ -107,11 +130,31 @@ const LocationManagementPage = () => {
     <div className="p-6 bg-gray-50 min-h-full">
       <PageHeader onAddLocation={handleOpenAddModal} />
 
-      <div style={{ height: "calc(100vh - 160px)" }}>
+      <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex space-x-6" aria-label="Tabs">
+            {(Object.keys(TABS) as TabKey[]).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`${
+                  activeTab === tab
+                    ? "border-blue-500 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                } whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm`}
+              >
+                {TABS[tab]}
+              </button>
+            ))}
+          </nav>
+        </div>
+      </div>
+
+      <div style={{ height: "calc(100vh - 240px)" }}>
         <LocationTable
-          locations={locations}
+          locations={filteredLocations}
           onEdit={handleOpenEditModal}
-          onViewItems={handleViewLocationItems}
+          onDelete={handleDeleteLocation}
         />
       </div>
 
@@ -120,6 +163,7 @@ const LocationManagementPage = () => {
         onClose={handleCloseFormModal}
         onSave={handleSaveLocation}
         initialData={modalInitialData}
+        defaultPurpose={activeTab}
       />
 
       <LocationItemsModal

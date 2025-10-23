@@ -10,6 +10,10 @@ export interface LocationItem {
   currentOccupancy: number;
   lastUpdated: string; // Giữ dạng string để đơn giản
   description: string;
+  qrCode: string; // Mã QR Code định danh
+  isQrPrinted: boolean; // Trạng thái đã in QR Code hay chưa
+  purpose: 'fabric' | 'accessories' | 'packaging'; // Mục đích sử dụng của kho
+  enabled: boolean; // Trạng thái hoạt động
 }
 
 // Cấu trúc một cuộn vải trong kho

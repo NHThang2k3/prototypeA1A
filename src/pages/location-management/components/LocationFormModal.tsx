@@ -10,6 +10,7 @@ interface LocationFormModalProps {
   onClose: () => void;
   onSave: (locationData: LocationItem) => void;
   initialData?: LocationItem | null;
+  defaultPurpose: "fabric" | "accessories" | "packaging";
 }
 
 const LocationFormModal: React.FC<LocationFormModalProps> = ({
@@ -17,6 +18,7 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
   onClose,
   onSave,
   initialData,
+  defaultPurpose,
 }) => {
   const [warehouse, setWarehouse] = useState("F1");
   const [shelf, setShelf] = useState<number | "">("");
@@ -24,6 +26,8 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
   const [capacity, setCapacity] = useState<number | "">("");
   const [currentOccupancy, setCurrentOccupancy] = useState<number | "">("");
   const [description, setDescription] = useState("");
+  const [purpose, setPurpose] = useState(defaultPurpose);
+  const [enabled, setEnabled] = useState(true);
 
   const isEditing = !!initialData;
 
@@ -35,6 +39,8 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
       setCapacity(initialData.capacity);
       setCurrentOccupancy(initialData.currentOccupancy);
       setDescription(initialData.description);
+      setPurpose(initialData.purpose);
+      setEnabled(initialData.enabled);
     } else if (isOpen && !initialData) {
       // Reset form
       setWarehouse("F1");
@@ -43,8 +49,10 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
       setCapacity("");
       setCurrentOccupancy(0);
       setDescription("");
+      setPurpose(defaultPurpose);
+      setEnabled(true);
     }
-  }, [isOpen, initialData]);
+  }, [isOpen, initialData, defaultPurpose]);
 
   if (!isOpen) return null;
 
@@ -70,6 +78,11 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
       currentOccupancy: Number(currentOccupancy),
       description,
       lastUpdated: new Date().toLocaleDateString("en-US"), // Update date
+      // Add QR code properties on save
+      qrCode: isEditing ? initialData!.qrCode : `LOC-${locationId}`,
+      isQrPrinted: isEditing ? initialData!.isQrPrinted : false,
+      purpose,
+      enabled,
     });
   };
 
@@ -89,8 +102,28 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
 
           {/* Body */}
           <div className="p-6 grid grid-cols-2 gap-4">
-            {/* Warehouse */}
+            {/* Purpose */}
             <div className="col-span-2">
+              <label
+                htmlFor="purpose"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Purpose *
+              </label>
+              <select
+                id="purpose"
+                value={purpose}
+                onChange={(e) => setPurpose(e.target.value as typeof purpose)}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white"
+                required
+              >
+                <option value="fabric">Fabric</option>
+                <option value="accessories">Accessories</option>
+                <option value="packaging">Packaging</option>
+              </select>
+            </div>
+            {/* Warehouse */}
+            <div>
               <label
                 htmlFor="warehouse"
                 className="block text-sm font-medium text-gray-700"
@@ -189,9 +222,25 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
                 id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                rows={3}
+                rows={2}
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
               ></textarea>
+            </div>
+            {/* Enabled */}
+            <div className="col-span-2 flex items-center">
+              <input
+                id="enabled"
+                type="checkbox"
+                checked={enabled}
+                onChange={(e) => setEnabled(e.target.checked)}
+                className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+              />
+              <label
+                htmlFor="enabled"
+                className="ml-2 block text-sm text-gray-900"
+              >
+                Enable this location for use
+              </label>
             </div>
           </div>
 

@@ -3,7 +3,7 @@
 import type { LocationItem, FabricRoll } from './types';
 
 export const locationListData: LocationItem[] = [
-  // Dữ liệu cũ giữ nguyên...
+  // --- Fabric Warehouse Data ---
   {
     id: 'F1-01-01',
     warehouse: 'F1',
@@ -13,6 +13,10 @@ export const locationListData: LocationItem[] = [
     currentOccupancy: 85,
     lastUpdated: '10/18/2025',
     description: 'Khu vực vải cotton',
+    qrCode: 'LOC-F1-01-01',
+    isQrPrinted: true,
+    purpose: 'fabric',
+    enabled: true,
   },
   {
     id: 'F2-05-03',
@@ -23,6 +27,10 @@ export const locationListData: LocationItem[] = [
     currentOccupancy: 110,
     lastUpdated: '10/17/2025',
     description: 'Khu vực vải kaki màu',
+    qrCode: 'LOC-F2-05-03',
+    isQrPrinted: true,
+    purpose: 'fabric',
+    enabled: true,
   },
   {
     id: 'F1-02-02',
@@ -33,6 +41,10 @@ export const locationListData: LocationItem[] = [
     currentOccupancy: 50,
     lastUpdated: '10/18/2025',
     description: 'Khu vực vải lụa',
+    qrCode: 'LOC-F1-02-02',
+    isQrPrinted: false,
+    purpose: 'fabric',
+    enabled: true,
   },
   {
     id: 'F3-10-08',
@@ -43,6 +55,10 @@ export const locationListData: LocationItem[] = [
     currentOccupancy: 150,
     lastUpdated: '10/16/2025',
     description: 'Khu vực vải denim (jean)',
+    qrCode: 'LOC-F3-10-08',
+    isQrPrinted: true,
+    purpose: 'fabric',
+    enabled: false,
   },
   {
     id: 'F2-03-05',
@@ -53,6 +69,10 @@ export const locationListData: LocationItem[] = [
     currentOccupancy: 75,
     lastUpdated: '10/18/2025',
     description: 'Khu vực vải voan',
+    qrCode: 'LOC-F2-03-05',
+    isQrPrinted: false,
+    purpose: 'fabric',
+    enabled: true,
   },
     {
     id: 'F1-01-02',
@@ -63,6 +83,68 @@ export const locationListData: LocationItem[] = [
     currentOccupancy: 95,
     lastUpdated: '10/19/2025',
     description: 'Khu vực vải cotton',
+    qrCode: 'LOC-F1-01-02',
+    isQrPrinted: true,
+    purpose: 'fabric',
+    enabled: true,
+  },
+  // --- Accessories Warehouse Data ---
+  {
+    id: 'A1-R1-B1',
+    warehouse: 'A1',
+    shelf: 1, // Row
+    pallet: 1, // Bin
+    capacity: 500,
+    currentOccupancy: 250,
+    lastUpdated: '10/20/2025',
+    description: 'Zippers and Buttons',
+    qrCode: 'LOC-A1-R1-B1',
+    isQrPrinted: true,
+    purpose: 'accessories',
+    enabled: true,
+  },
+  {
+    id: 'A1-R1-B2',
+    warehouse: 'A1',
+    shelf: 1, // Row
+    pallet: 2, // Bin
+    capacity: 500,
+    currentOccupancy: 450,
+    lastUpdated: '10/21/2025',
+    description: 'Thread Spools - Various Colors',
+    qrCode: 'LOC-A1-R1-B2',
+    isQrPrinted: false,
+    purpose: 'accessories',
+    enabled: true,
+  },
+  // --- Packaging Warehouse Data ---
+  {
+    id: 'P1-S1-P1',
+    warehouse: 'P1',
+    shelf: 1, // Section
+    pallet: 1, // Position
+    capacity: 1000,
+    currentOccupancy: 800,
+    lastUpdated: '10/21/2025',
+    description: 'Cardboard Boxes - Size M',
+    qrCode: 'LOC-P1-S1-P1',
+    isQrPrinted: false,
+    purpose: 'packaging',
+    enabled: true,
+  },
+   {
+    id: 'P1-S2-P1',
+    warehouse: 'P1',
+    shelf: 2, // Section
+    pallet: 1, // Position
+    capacity: 800,
+    currentOccupancy: 800,
+    lastUpdated: '10/22/2025',
+    description: 'Plastic Bags - Size L',
+    qrCode: 'LOC-P1-S2-P1',
+    isQrPrinted: true,
+    purpose: 'packaging',
+    enabled: false,
   },
 ];
 

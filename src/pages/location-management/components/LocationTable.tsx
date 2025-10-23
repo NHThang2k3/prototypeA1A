@@ -1,20 +1,20 @@
 // Path: src/pages/location-management/components/LocationTable.tsx
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import type { LocationItem } from "../types";
 import { Button } from "../../../components/ui/button";
-import { Edit, Eye, ChevronDown, ChevronRight } from "lucide-react";
+import { Edit, ChevronDown, ChevronRight, Printer, Trash2 } from "lucide-react";
 
 interface LocationTableProps {
   locations: LocationItem[];
   onEdit: (location: LocationItem) => void;
-  onViewItems: (location: LocationItem) => void;
+  onDelete: (locationId: string) => void;
 }
 
 const LocationTable: React.FC<LocationTableProps> = ({
   locations,
   onEdit,
-  onViewItems,
+  onDelete,
 }) => {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
@@ -42,14 +42,16 @@ const LocationTable: React.FC<LocationTableProps> = ({
         location.currentOccupancy;
     });
 
-    // Expand all warehouses by default
-    const initialExpanded = new Set(
-      Object.keys(warehouses).map((w) => `wh-${w}`)
-    );
-    setExpandedRows(initialExpanded);
-
     return warehouses;
   }, [locations]);
+
+  useEffect(() => {
+    // Expand all warehouses by default whenever the locations data changes
+    const initialExpanded = new Set(
+      Object.keys(groupedData).map((w) => `wh-${w}`)
+    );
+    setExpandedRows(initialExpanded);
+  }, [groupedData]);
 
   const toggleRow = (id: string) => {
     const newExpandedRows = new Set(expandedRows);
@@ -59,6 +61,14 @@ const LocationTable: React.FC<LocationTableProps> = ({
       newExpandedRows.add(id);
     }
     setExpandedRows(newExpandedRows);
+  };
+
+  const handlePrintQr = (location: LocationItem) => {
+    alert(
+      `Printing QR Code for ${location.id}...\nContent: ${location.qrCode}`
+    );
+    // In a real app, you would generate a QR code image and send it to a printer.
+    // You might also want to call an API to update the isQrPrinted status to true.
   };
 
   const renderOccupancy = (occupancy: number, capacity: number) => {
@@ -84,11 +94,20 @@ const LocationTable: React.FC<LocationTableProps> = ({
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50 sticky top-0 z-10">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/3">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">
                 Location
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Occupancy / Capacity
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Purpose
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                QR Printed
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Status
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Description
@@ -125,7 +144,7 @@ const LocationTable: React.FC<LocationTableProps> = ({
                         warehouseData.totals.capacity
                       )}
                     </td>
-                    <td colSpan={2} className="px-6 py-3 text-sm text-gray-600">
+                    <td colSpan={5} className="px-6 py-3 text-sm text-gray-600">
                       Total for warehouse {warehouseId}
                     </td>
                   </tr>
@@ -167,7 +186,7 @@ const LocationTable: React.FC<LocationTableProps> = ({
                                 )}
                               </td>
                               <td
-                                colSpan={2}
+                                colSpan={5}
                                 className="px-6 py-3 text-sm text-gray-500"
                               >
                                 Summary for shelf {shelfId}
@@ -181,27 +200,53 @@ const LocationTable: React.FC<LocationTableProps> = ({
                                   key={location.id}
                                   className="hover:bg-blue-50"
                                 >
-                                  <td className="pl-20 pr-6  whitespace-nowrap text-sm font-medium text-gray-900">
+                                  <td className="pl-20 pr-6 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
                                     {location.id}
                                   </td>
-                                  <td className="px-6 ">
+                                  <td className="px-6 py-3">
                                     {renderOccupancy(
                                       location.currentOccupancy,
                                       location.capacity
                                     )}
                                   </td>
-                                  <td className="px-6  whitespace-nowrap text-sm text-gray-500 max-w-xs truncate">
+                                  <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-500 capitalize">
+                                    {location.purpose}
+                                  </td>
+                                  <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-500">
+                                    {location.isQrPrinted ? (
+                                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                        Yes
+                                      </span>
+                                    ) : (
+                                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                        No
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-500">
+                                    {location.enabled ? (
+                                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                        Enabled
+                                      </span>
+                                    ) : (
+                                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                        Disabled
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-500 max-w-xs truncate">
                                     {location.description}
                                   </td>
-                                  <td className="px-6  whitespace-nowrap text-right text-sm font-medium">
+                                  <td className="px-6 py-3 whitespace-nowrap text-right text-sm font-medium">
                                     <Button
                                       variant="ghost"
                                       size="icon"
-                                      onClick={() => onViewItems(location)}
-                                      title="View Items"
+                                      onClick={() => handlePrintQr(location)}
+                                      title="Print QR Code"
                                     >
-                                      <Eye className="h-4 w-4" />
+                                      <Printer className="h-4 w-4" />
                                     </Button>
+
                                     <Button
                                       variant="ghost"
                                       size="icon"
@@ -209,6 +254,14 @@ const LocationTable: React.FC<LocationTableProps> = ({
                                       title="Edit Location"
                                     >
                                       <Edit className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => onDelete(location.id)}
+                                      title="Delete Location"
+                                    >
+                                      <Trash2 className="h-4 w-4 text-red-600 hover:text-red-800" />
                                     </Button>
                                   </td>
                                 </tr>

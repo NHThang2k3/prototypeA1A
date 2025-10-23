@@ -27,10 +27,10 @@ type NavItem = {
 // --- Dữ liệu Sidebar MỚI cho FactoryLayout ---
 const sidebarNavItems: NavItem[] = [
   {
-    title: "Temp Warehouse",
-    path: "/factory/temp-warehouse",
+    title: "Location Management",
+    path: "/factory/location-management",
     icon: Archive,
-    key: "temp-warehouse",
+    key: "location-management",
   },
   {
     title: "Audit Log",
