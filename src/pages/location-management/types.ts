@@ -3,6 +3,8 @@
 // Cấu trúc một vị trí kho (dạng phẳng)
 export interface LocationItem {
   id: string; // Ví dụ: 'F1-01-01'
+  country: 'Vietnam' | 'Cambodia' | 'Thailand'; // Quốc gia
+  factory: string; // Nhà máy
   warehouse: string;
   shelf: number;
   pallet: number;

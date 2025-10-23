@@ -13,6 +13,12 @@ interface LocationFormModalProps {
   defaultPurpose: "fabric" | "accessories" | "packaging";
 }
 
+const COUNTRIES: LocationItem["country"][] = [
+  "Vietnam",
+  "Cambodia",
+  "Thailand",
+];
+
 const LocationFormModal: React.FC<LocationFormModalProps> = ({
   isOpen,
   onClose,
@@ -20,6 +26,8 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
   initialData,
   defaultPurpose,
 }) => {
+  const [country, setCountry] = useState<LocationItem["country"]>("Vietnam");
+  const [factory, setFactory] = useState("");
   const [warehouse, setWarehouse] = useState("F1");
   const [shelf, setShelf] = useState<number | "">("");
   const [pallet, setPallet] = useState<number | "">("");
@@ -33,6 +41,8 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
 
   useEffect(() => {
     if (isOpen && initialData) {
+      setCountry(initialData.country);
+      setFactory(initialData.factory);
       setWarehouse(initialData.warehouse);
       setShelf(initialData.shelf);
       setPallet(initialData.pallet);
@@ -43,6 +53,8 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
       setEnabled(initialData.enabled);
     } else if (isOpen && !initialData) {
       // Reset form
+      setCountry("Vietnam");
+      setFactory("");
       setWarehouse("F1");
       setShelf("");
       setPallet("");
@@ -58,7 +70,13 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!warehouse || shelf === "" || pallet === "" || capacity === "") {
+    if (
+      !factory ||
+      !warehouse ||
+      shelf === "" ||
+      pallet === "" ||
+      capacity === ""
+    ) {
       alert("Please fill in all required fields.");
       return;
     }
@@ -71,6 +89,8 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
 
     onSave({
       id: locationId,
+      country,
+      factory,
       warehouse,
       shelf: Number(shelf),
       pallet: Number(pallet),
@@ -78,7 +98,6 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
       currentOccupancy: Number(currentOccupancy),
       description,
       lastUpdated: new Date().toLocaleDateString("en-US"), // Update date
-      // Add QR code properties on save
       qrCode: isEditing ? initialData!.qrCode : `LOC-${locationId}`,
       isQrPrinted: isEditing ? initialData!.isQrPrinted : false,
       purpose,
@@ -122,7 +141,46 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
                 <option value="packaging">Packaging</option>
               </select>
             </div>
-            {/* Warehouse */}
+            {/* Country */}
+            <div>
+              <label
+                htmlFor="country"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Country *
+              </label>
+              <select
+                id="country"
+                value={country}
+                onChange={(e) => setCountry(e.target.value as typeof country)}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white"
+                required
+              >
+                {COUNTRIES.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {/* Factory */}
+            <div>
+              <label
+                htmlFor="factory"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Factory *
+              </label>
+              <input
+                id="factory"
+                type="text"
+                value={factory}
+                onChange={(e) => setFactory(e.target.value)}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                required
+              />
+            </div>
+            {/* Warehouse, Shelf, Pallet, Capacity etc. */}
             <div>
               <label
                 htmlFor="warehouse"
@@ -139,7 +197,6 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
                 required
               />
             </div>
-            {/* Shelf */}
             <div>
               <label
                 htmlFor="shelf"
@@ -157,7 +214,6 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
                 required
               />
             </div>
-            {/* Pallet */}
             <div>
               <label
                 htmlFor="pallet"
@@ -175,7 +231,6 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
                 required
               />
             </div>
-            {/* Capacity */}
             <div>
               <label
                 htmlFor="capacity"
@@ -193,24 +248,6 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
                 required
               />
             </div>
-            {/* Current Occupancy */}
-            <div>
-              <label
-                htmlFor="currentOccupancy"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Current Occupancy
-              </label>
-              <input
-                id="currentOccupancy"
-                type="number"
-                min="0"
-                value={currentOccupancy}
-                onChange={(e) => setCurrentOccupancy(Number(e.target.value))}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-              />
-            </div>
-            {/* Description */}
             <div className="col-span-2">
               <label
                 htmlFor="description"
@@ -226,7 +263,6 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
               ></textarea>
             </div>
-            {/* Enabled */}
             <div className="col-span-2 flex items-center">
               <input
                 id="enabled"

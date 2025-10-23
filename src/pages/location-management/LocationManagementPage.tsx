@@ -21,6 +21,12 @@ const LocationManagementPage = () => {
   const [locations, setLocations] = useState<LocationItem[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabKey>("fabric");
+  const [selectedLocationIds, setSelectedLocationIds] = useState<Set<string>>(
+    new Set()
+  );
+
+  // State for Country/Factory filter
+  const [filter, setFilter] = useState({ country: "all", factory: "all" });
 
   // State to manage edit/add location modal
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
@@ -42,6 +48,11 @@ const LocationManagementPage = () => {
       setIsLoading(false);
     }, 1000);
   }, []);
+
+  // Reset selection when tab or filter changes
+  useEffect(() => {
+    setSelectedLocationIds(new Set());
+  }, [activeTab, filter]);
 
   // --- Handlers for Location Form Modal ---
   const handleOpenAddModal = () => {
@@ -72,7 +83,7 @@ const LocationManagementPage = () => {
     handleCloseFormModal();
   };
 
-  // --- Handler for Deleting a Location ---
+  // --- Handlers for Single and Bulk Actions ---
   const handleDeleteLocation = (locationId: string) => {
     if (
       window.confirm(
@@ -81,11 +92,43 @@ const LocationManagementPage = () => {
     ) {
       setLocations((prev) => {
         if (!prev) return null;
-        // In a real app, you would also check if the location is empty before deleting.
         return prev.filter((loc) => loc.id !== locationId);
+      });
+      setSelectedLocationIds((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(locationId);
+        return newSet;
       });
       console.log(`ACTION: Deleting location ${locationId}`);
     }
+  };
+
+  const handleBulkDelete = () => {
+    if (
+      window.confirm(
+        `Are you sure you want to delete ${selectedLocationIds.size} selected locations? This action cannot be undone.`
+      )
+    ) {
+      setLocations((prev) => {
+        if (!prev) return null;
+        return prev.filter((loc) => !selectedLocationIds.has(loc.id));
+      });
+      setSelectedLocationIds(new Set());
+      console.log(`ACTION: Deleting ${selectedLocationIds.size} locations.`);
+    }
+  };
+
+  const handleBulkPrint = () => {
+    const selectedLocations =
+      locations?.filter((loc) => selectedLocationIds.has(loc.id)) || [];
+    alert(
+      `Printing QR Codes for ${
+        selectedLocations.length
+      } locations:\n${selectedLocations.map((l) => l.id).join(", ")}`
+    );
+    console.log(
+      `ACTION: Printing QR Codes for ${selectedLocations.length} locations.`
+    );
   };
 
   const handleCloseItemsModal = () => {
@@ -98,24 +141,28 @@ const LocationManagementPage = () => {
     oldLocationId: string,
     newLocationId: string
   ) => {
-    // This is a simulation. In a real application, you would call an API here.
     console.log(
       `ACTION: Moving roll ${rollId} from ${oldLocationId} to ${newLocationId}`
     );
     alert(
       `Roll ${rollId} will be moved to ${newLocationId}.\n(This is a simulation. Data will not be permanently changed.)`
     );
-    // Close modal after execution
     handleCloseItemsModal();
   };
 
   const filteredLocations = useMemo(() => {
     if (!locations) return [];
-    return locations.filter((loc) => loc.purpose === activeTab);
-  }, [locations, activeTab]);
+    return locations.filter((loc) => {
+      const matchPurpose = loc.purpose === activeTab;
+      const matchCountry =
+        filter.country === "all" || loc.country === filter.country;
+      const matchFactory =
+        filter.factory === "all" || loc.factory === filter.factory;
+      return matchPurpose && matchCountry && matchFactory;
+    });
+  }, [locations, activeTab, filter]);
 
   if (isLoading || !locations) {
-    // ... skeleton loading state remains unchanged
     return (
       <div className="p-6 bg-gray-50 min-h-full">
         <div className="bg-white p-4 rounded-lg shadow-sm mb-6 h-24 animate-pulse"></div>
@@ -128,7 +175,15 @@ const LocationManagementPage = () => {
 
   return (
     <div className="p-6 bg-gray-50 min-h-full">
-      <PageHeader onAddLocation={handleOpenAddModal} />
+      <PageHeader
+        onAddLocation={handleOpenAddModal}
+        onDeleteSelected={handleBulkDelete}
+        onPrintSelected={handleBulkPrint}
+        selectedCount={selectedLocationIds.size}
+        allLocations={locations}
+        currentFilter={filter}
+        onFilterChange={setFilter}
+      />
 
       <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
         <div className="border-b border-gray-200">
@@ -155,6 +210,8 @@ const LocationManagementPage = () => {
           locations={filteredLocations}
           onEdit={handleOpenEditModal}
           onDelete={handleDeleteLocation}
+          selectedIds={selectedLocationIds}
+          onSelectionChange={setSelectedLocationIds}
         />
       </div>
 

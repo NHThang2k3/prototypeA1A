@@ -9,12 +9,16 @@ interface LocationTableProps {
   locations: LocationItem[];
   onEdit: (location: LocationItem) => void;
   onDelete: (locationId: string) => void;
+  selectedIds: Set<string>;
+  onSelectionChange: (newSelectedIds: Set<string>) => void;
 }
 
 const LocationTable: React.FC<LocationTableProps> = ({
   locations,
   onEdit,
   onDelete,
+  selectedIds,
+  onSelectionChange,
 }) => {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
@@ -63,12 +67,38 @@ const LocationTable: React.FC<LocationTableProps> = ({
     setExpandedRows(newExpandedRows);
   };
 
+  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newSelectedIds = new Set<string>();
+    if (e.target.checked) {
+      locations.forEach((loc) => newSelectedIds.add(loc.id));
+    }
+    onSelectionChange(newSelectedIds);
+  };
+
+  const handleSelectOne = (id: string, isChecked: boolean) => {
+    const newSelectedIds = new Set(selectedIds);
+    if (isChecked) {
+      newSelectedIds.add(id);
+    } else {
+      newSelectedIds.delete(id);
+    }
+    onSelectionChange(newSelectedIds);
+  };
+
+  const handleSelectGroup = (locationIds: string[], select: boolean) => {
+    const newSelectedIds = new Set(selectedIds);
+    if (select) {
+      locationIds.forEach((id) => newSelectedIds.add(id));
+    } else {
+      locationIds.forEach((id) => newSelectedIds.delete(id));
+    }
+    onSelectionChange(newSelectedIds);
+  };
+
   const handlePrintQr = (location: LocationItem) => {
     alert(
       `Printing QR Code for ${location.id}...\nContent: ${location.qrCode}`
     );
-    // In a real app, you would generate a QR code image and send it to a printer.
-    // You might also want to call an API to update the isQrPrinted status to true.
   };
 
   const renderOccupancy = (occupancy: number, capacity: number) => {
@@ -88,20 +118,29 @@ const LocationTable: React.FC<LocationTableProps> = ({
     );
   };
 
+  const isAllSelected =
+    locations.length > 0 && selectedIds.size === locations.length;
+
   return (
     <div className="bg-white rounded-lg shadow-sm overflow-hidden h-full flex flex-col">
       <div className="overflow-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50 sticky top-0 z-10">
             <tr>
+              <th className=" py-3 ">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+                  checked={isAllSelected}
+                  onChange={handleSelectAll}
+                  aria-label="Select all locations"
+                />
+              </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">
                 Location
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Occupancy / Capacity
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Purpose
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 QR Printed
@@ -121,14 +160,43 @@ const LocationTable: React.FC<LocationTableProps> = ({
             {Object.entries(groupedData).map(([warehouseId, warehouseData]) => {
               const whKey = `wh-${warehouseId}`;
               const isWhExpanded = expandedRows.has(whKey);
+
+              const warehouseLocationIds = Object.values(warehouseData.shelves)
+                .flat()
+                .map((loc) => loc.id);
+              const selectedInWarehouseCount = warehouseLocationIds.filter(
+                (id) => selectedIds.has(id)
+              ).length;
+              const isAllInWarehouseSelected =
+                warehouseLocationIds.length > 0 &&
+                selectedInWarehouseCount === warehouseLocationIds.length;
+              const isSomeInWarehouseSelected =
+                selectedInWarehouseCount > 0 && !isAllInWarehouseSelected;
+
               return (
                 <React.Fragment key={whKey}>
                   {/* Warehouse Row */}
-                  <tr
-                    className="bg-gray-100 font-bold hover:bg-gray-200 cursor-pointer"
-                    onClick={() => toggleRow(whKey)}
-                  >
-                    <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-800">
+                  <tr className="bg-gray-100 font-bold">
+                    <td className="px-6 py-3">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+                        ref={(el) => {
+                          if (el) el.indeterminate = isSomeInWarehouseSelected;
+                        }}
+                        checked={isAllInWarehouseSelected}
+                        onChange={() =>
+                          handleSelectGroup(
+                            warehouseLocationIds,
+                            !isAllInWarehouseSelected
+                          )
+                        }
+                      />
+                    </td>
+                    <td
+                      className="px-6 py-3 whitespace-nowrap text-sm text-gray-800 hover:bg-gray-200 cursor-pointer"
+                      onClick={() => toggleRow(whKey)}
+                    >
                       <div className="flex items-center">
                         {isWhExpanded ? (
                           <ChevronDown className="h-4 w-4 mr-2" />
@@ -144,17 +212,15 @@ const LocationTable: React.FC<LocationTableProps> = ({
                         warehouseData.totals.capacity
                       )}
                     </td>
-                    <td colSpan={5} className="px-6 py-3 text-sm text-gray-600">
-                      Total for warehouse {warehouseId}
-                    </td>
+                    <td colSpan={4} className="px-6 py-3"></td>
                   </tr>
 
                   {isWhExpanded &&
                     Object.entries(warehouseData.shelves).map(
-                      ([shelfId, locations]) => {
+                      ([shelfId, locationsOnShelf]) => {
                         const shelfKey = `${whKey}-sh-${shelfId}`;
                         const isShelfExpanded = expandedRows.has(shelfKey);
-                        const shelfTotals = locations.reduce(
+                        const shelfTotals = locationsOnShelf.reduce(
                           (acc, loc) => ({
                             capacity: acc.capacity + loc.capacity,
                             occupancy: acc.occupancy + loc.currentOccupancy,
@@ -162,14 +228,43 @@ const LocationTable: React.FC<LocationTableProps> = ({
                           { capacity: 0, occupancy: 0 }
                         );
 
+                        const shelfLocationIds = locationsOnShelf.map(
+                          (loc) => loc.id
+                        );
+                        const selectedInShelfCount = shelfLocationIds.filter(
+                          (id) => selectedIds.has(id)
+                        ).length;
+                        const isAllInShelfSelected =
+                          shelfLocationIds.length > 0 &&
+                          selectedInShelfCount === shelfLocationIds.length;
+                        const isSomeInShelfSelected =
+                          selectedInShelfCount > 0 && !isAllInShelfSelected;
+
                         return (
                           <React.Fragment key={shelfKey}>
                             {/* Shelf Row */}
-                            <tr
-                              className="bg-gray-50 hover:bg-gray-100 cursor-pointer"
-                              onClick={() => toggleRow(shelfKey)}
-                            >
-                              <td className="pl-12 pr-6 py-3 whitespace-nowrap text-sm text-gray-700 font-semibold">
+                            <tr className="bg-gray-50">
+                              <td className="px-6 py-3">
+                                <input
+                                  type="checkbox"
+                                  className="h-4 w-4 text-blue-600 border-gray-300 rounded ml-6"
+                                  ref={(el) => {
+                                    if (el)
+                                      el.indeterminate = isSomeInShelfSelected;
+                                  }}
+                                  checked={isAllInShelfSelected}
+                                  onChange={() =>
+                                    handleSelectGroup(
+                                      shelfLocationIds,
+                                      !isAllInShelfSelected
+                                    )
+                                  }
+                                />
+                              </td>
+                              <td
+                                className="pl-12 pr-6 py-3 whitespace-nowrap text-sm text-gray-700 font-semibold hover:bg-gray-100 cursor-pointer"
+                                onClick={() => toggleRow(shelfKey)}
+                              >
                                 <div className="flex items-center">
                                   {isShelfExpanded ? (
                                     <ChevronDown className="h-4 w-4 mr-2" />
@@ -185,21 +280,29 @@ const LocationTable: React.FC<LocationTableProps> = ({
                                   shelfTotals.capacity
                                 )}
                               </td>
-                              <td
-                                colSpan={5}
-                                className="px-6 py-3 text-sm text-gray-500"
-                              >
-                                Summary for shelf {shelfId}
-                              </td>
+                              <td colSpan={4} className="px-6 py-3"></td>
                             </tr>
 
                             {isShelfExpanded &&
-                              locations.map((location) => (
+                              locationsOnShelf.map((location) => (
                                 // Pallet/Location Row
                                 <tr
                                   key={location.id}
                                   className="hover:bg-blue-50"
                                 >
+                                  <td className="px-6 py-3">
+                                    <input
+                                      type="checkbox"
+                                      className="h-4 w-4 text-blue-600 border-gray-300 rounded ml-12"
+                                      checked={selectedIds.has(location.id)}
+                                      onChange={(e) =>
+                                        handleSelectOne(
+                                          location.id,
+                                          e.target.checked
+                                        )
+                                      }
+                                    />
+                                  </td>
                                   <td className="pl-20 pr-6 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
                                     {location.id}
                                   </td>
@@ -208,9 +311,6 @@ const LocationTable: React.FC<LocationTableProps> = ({
                                       location.currentOccupancy,
                                       location.capacity
                                     )}
-                                  </td>
-                                  <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-500 capitalize">
-                                    {location.purpose}
                                   </td>
                                   <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-500">
                                     {location.isQrPrinted ? (

@@ -3,9 +3,11 @@
 import type { LocationItem, FabricRoll } from './types';
 
 export const locationListData: LocationItem[] = [
-  // --- Fabric Warehouse Data ---
+  // --- Vietnam, Factory A ---
   {
     id: 'F1-01-01',
+    country: 'Vietnam',
+    factory: 'Factory A',
     warehouse: 'F1',
     shelf: 1,
     pallet: 1,
@@ -19,7 +21,42 @@ export const locationListData: LocationItem[] = [
     enabled: true,
   },
   {
+    id: 'F1-01-02',
+    country: 'Vietnam',
+    factory: 'Factory A',
+    warehouse: 'F1',
+    shelf: 1,
+    pallet: 2,
+    capacity: 100,
+    currentOccupancy: 95,
+    lastUpdated: '10/19/2025',
+    description: 'Khu vực vải cotton',
+    qrCode: 'LOC-F1-01-02',
+    isQrPrinted: true,
+    purpose: 'fabric',
+    enabled: true,
+  },
+    {
+    id: 'F1-02-02',
+    country: 'Vietnam',
+    factory: 'Factory A',
+    warehouse: 'F1',
+    shelf: 2,
+    pallet: 2,
+    capacity: 80,
+    currentOccupancy: 50,
+    lastUpdated: '10/18/2025',
+    description: 'Khu vực vải lụa',
+    qrCode: 'LOC-F1-02-02',
+    isQrPrinted: false,
+    purpose: 'fabric',
+    enabled: true,
+  },
+  // --- Vietnam, Factory B ---
+  {
     id: 'F2-05-03',
+    country: 'Vietnam',
+    factory: 'Factory B',
     warehouse: 'F2',
     shelf: 5,
     pallet: 3,
@@ -33,35 +70,9 @@ export const locationListData: LocationItem[] = [
     enabled: true,
   },
   {
-    id: 'F1-02-02',
-    warehouse: 'F1',
-    shelf: 2,
-    pallet: 2,
-    capacity: 80,
-    currentOccupancy: 50,
-    lastUpdated: '10/18/2025',
-    description: 'Khu vực vải lụa',
-    qrCode: 'LOC-F1-02-02',
-    isQrPrinted: false,
-    purpose: 'fabric',
-    enabled: true,
-  },
-  {
-    id: 'F3-10-08',
-    warehouse: 'F3',
-    shelf: 10,
-    pallet: 8,
-    capacity: 150,
-    currentOccupancy: 150,
-    lastUpdated: '10/16/2025',
-    description: 'Khu vực vải denim (jean)',
-    qrCode: 'LOC-F3-10-08',
-    isQrPrinted: true,
-    purpose: 'fabric',
-    enabled: false,
-  },
-  {
     id: 'F2-03-05',
+    country: 'Vietnam',
+    factory: 'Factory B',
     warehouse: 'F2',
     shelf: 3,
     pallet: 5,
@@ -74,23 +85,27 @@ export const locationListData: LocationItem[] = [
     purpose: 'fabric',
     enabled: true,
   },
-    {
-    id: 'F1-01-02',
-    warehouse: 'F1',
-    shelf: 1,
-    pallet: 2,
-    capacity: 100,
-    currentOccupancy: 95,
-    lastUpdated: '10/19/2025',
-    description: 'Khu vực vải cotton',
-    qrCode: 'LOC-F1-01-02',
+  // --- Cambodia, Factory C ---
+  {
+    id: 'F3-10-08',
+    country: 'Cambodia',
+    factory: 'Factory C',
+    warehouse: 'F3',
+    shelf: 10,
+    pallet: 8,
+    capacity: 150,
+    currentOccupancy: 150,
+    lastUpdated: '10/16/2025',
+    description: 'Khu vực vải denim (jean)',
+    qrCode: 'LOC-F3-10-08',
     isQrPrinted: true,
     purpose: 'fabric',
-    enabled: true,
+    enabled: false,
   },
-  // --- Accessories Warehouse Data ---
-  {
+    {
     id: 'A1-R1-B1',
+    country: 'Cambodia',
+    factory: 'Factory C',
     warehouse: 'A1',
     shelf: 1, // Row
     pallet: 1, // Bin
@@ -105,6 +120,8 @@ export const locationListData: LocationItem[] = [
   },
   {
     id: 'A1-R1-B2',
+    country: 'Cambodia',
+    factory: 'Factory C',
     warehouse: 'A1',
     shelf: 1, // Row
     pallet: 2, // Bin
@@ -117,9 +134,11 @@ export const locationListData: LocationItem[] = [
     purpose: 'accessories',
     enabled: true,
   },
-  // --- Packaging Warehouse Data ---
+  // --- Thailand, Factory D ---
   {
     id: 'P1-S1-P1',
+    country: 'Thailand',
+    factory: 'Factory D',
     warehouse: 'P1',
     shelf: 1, // Section
     pallet: 1, // Position
@@ -134,6 +153,8 @@ export const locationListData: LocationItem[] = [
   },
    {
     id: 'P1-S2-P1',
+    country: 'Thailand',
+    factory: 'Factory D',
     warehouse: 'P1',
     shelf: 2, // Section
     pallet: 1, // Position
