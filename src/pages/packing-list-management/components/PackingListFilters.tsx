@@ -42,19 +42,18 @@ const PackingListFilters = () => {
         </div>
         <div>
           <label
-            htmlFor="qc-status-filter"
+            htmlFor="qc-check-filter"
             className="block text-sm font-medium text-gray-700 mb-1"
           >
-            QC Status
+            QC Check Status
           </label>
           <select
-            id="qc-status-filter"
+            id="qc-check-filter"
             className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
           >
-            <option value="">All Statuses</option>
-            <option value="Yes">Passed</option>
-            <option value="No">Failed</option>
-            <option value="Pending">Pending</option>
+            <option value="">All</option>
+            <option value="checked">Checked for QC</option>
+            <option value="not-checked">Not Checked for QC</option>
           </select>
         </div>
       </div>

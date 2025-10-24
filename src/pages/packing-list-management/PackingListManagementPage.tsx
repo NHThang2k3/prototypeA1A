@@ -34,7 +34,6 @@ const PackingListManagementPage = () => {
     setIsImportModalOpen(false);
   };
 
-
   useEffect(() => {
     // Simulate fetching data from an API
     const timer = setTimeout(() => {
@@ -87,7 +86,7 @@ const PackingListManagementPage = () => {
         qrCode: `QR_${parentRoll.itemCode}_SPLIT_${Date.now()}`, // New QR code
         printStatus: "NOT_PRINTED", // New roll is not printed
         // Reset QC status for the new roll as it needs re-evaluation
-        qcStatus: "Pending",
+        qcCheck: false, // Default new split rolls to not be checked for QC
         qcDate: "", // Clear previous QC date
         qcBy: "", // Clear previous QC person
         comment: `Split from original roll ID ${parentRoll.id}.`, // Add a comment
@@ -115,6 +114,14 @@ const PackingListManagementPage = () => {
       return newItems;
     });
     handleCloseSplitModal();
+  };
+
+  const handleQcCheckChange = (itemId: string, checked: boolean) => {
+    setItems((prevItems) =>
+      prevItems.map((item) =>
+        item.id === itemId ? { ...item, qcCheck: checked } : item
+      )
+    );
   };
 
   // --- Handler for Printing ---
@@ -152,6 +159,7 @@ const PackingListManagementPage = () => {
             items={paginatedItems}
             onPrint={handlePrintItems}
             onOpenSplitModal={handleOpenSplitModal}
+            onQcCheckChange={handleQcCheckChange}
           />
           <Pagination
             currentPage={currentPage}

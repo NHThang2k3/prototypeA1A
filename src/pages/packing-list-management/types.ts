@@ -27,7 +27,7 @@ export interface FabricRollItem {
   location: string;
   qrCode: string;
   dateInHouse: string;
-  qcStatus: QCStatus;
+  qcCheck: boolean; // Changed from qcStatus
   qcDate: string;
   qcBy: string;
   comment: string;

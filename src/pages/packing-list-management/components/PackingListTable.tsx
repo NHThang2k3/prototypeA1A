@@ -1,55 +1,12 @@
 // src/pages/packing-list-management/components/PackingListTable.tsx
 
 import React, { useState, useMemo } from "react";
-import type { FabricRollItem, QCStatus } from "../types";
+import type { FabricRollItem } from "../types";
 import StatusBadge from "./StatusBadge";
 import { Button } from "../../../components/ui/button";
 import { Checkbox } from "../../../components/ui/checkbox";
-import SimpleDropdownMenu, { DropdownCheckboxItem } from "./SimpleDropdownMenu"; // Import our new components
-import {
-  QrCode,
-  Undo2,
-  CheckCircle,
-  XCircle,
-  HelpCircle,
-  Columns,
-  Split,
-} from "lucide-react";
-
-// Co-located component for displaying QC Status
-const QCStatusBadge: React.FC<{ status: QCStatus }> = ({ status }) => {
-  const config = {
-    Passed: {
-      label: "Passed",
-      bgColor: "bg-green-100",
-      textColor: "text-green-800",
-      icon: <CheckCircle className="w-4 h-4" />,
-    },
-    Failed: {
-      label: "Failed",
-      bgColor: "bg-red-100",
-      textColor: "text-red-800",
-      icon: <XCircle className="w-4 h-4" />,
-    },
-    Pending: {
-      label: "Pending",
-      bgColor: "bg-yellow-100",
-      textColor: "text-yellow-800",
-      icon: <HelpCircle className="w-4 h-4" />,
-    },
-  }[status];
-
-  if (!config) return null;
-
-  return (
-    <span
-      className={`inline-flex items-center gap-x-1.5 py-1 px-2.5 rounded-full text-xs font-medium ${config.bgColor} ${config.textColor}`}
-    >
-      {config.icon}
-      {config.label}
-    </span>
-  );
-};
+import SimpleDropdownMenu, { DropdownCheckboxItem } from "./SimpleDropdownMenu";
+import { QrCode, Undo2, Columns } from "lucide-react";
 
 const ALL_COLUMNS = [
   { id: "poNumber", label: "PO Number" },
@@ -69,7 +26,7 @@ const ALL_COLUMNS = [
   { id: "qrCode", label: "QR Code" },
   { id: "dateInHouse", label: "Date In House" },
   { id: "description", label: "Description" },
-  { id: "qcStatus", label: "QC Status" },
+  { id: "qcCheck", label: "QC Check" },
   { id: "qcDate", label: "QC Date" },
   { id: "qcBy", label: "QC By" },
   { id: "comment", label: "Comment" },
@@ -81,12 +38,14 @@ interface PackingListTableProps {
   items: FabricRollItem[];
   onPrint: (itemIds: Set<string>) => void;
   onOpenSplitModal: (item: FabricRollItem) => void;
+  onQcCheckChange: (itemId: string, checked: boolean) => void;
 }
 
 const PackingListTable: React.FC<PackingListTableProps> = ({
   items,
   onPrint,
-  onOpenSplitModal,
+  // onOpenSplitModal,
+  onQcCheckChange,
 }) => {
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(
@@ -100,7 +59,7 @@ const PackingListTable: React.FC<PackingListTableProps> = ({
       yards: true,
       netWeightKgs: true,
       width: true,
-      qcStatus: true,
+      qcCheck: true,
       printed: true,
       action: true,
 
@@ -332,9 +291,15 @@ const PackingListTable: React.FC<PackingListTableProps> = ({
                       {item.description}
                     </td>
                   )}
-                  {visibleColumns.qcStatus && (
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <QCStatusBadge status={item.qcStatus} />
+                  {visibleColumns.qcCheck && (
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
+                      <Checkbox
+                        checked={item.qcCheck}
+                        onCheckedChange={(checked) =>
+                          onQcCheckChange(item.id, !!checked)
+                        }
+                        aria-label={`Mark ${item.itemCode} for QC`}
+                      />
                     </td>
                   )}
                   {visibleColumns.qcDate && (
@@ -360,14 +325,14 @@ const PackingListTable: React.FC<PackingListTableProps> = ({
                   {visibleColumns.action && (
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-center">
                       <div className="flex items-center justify-center gap-2">
-                        <Button
+                        {/* <Button
                           variant="outline"
                           size="sm"
                           onClick={() => onOpenSplitModal(item)}
                         >
                           <Split className="w-4 h-4 mr-2" />
                           Split
-                        </Button>
+                        </Button> */}
                         {item.printStatus === "PRINTED" ? (
                           <Button
                             variant="secondary"
