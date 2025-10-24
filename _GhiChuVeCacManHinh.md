@@ -556,9 +556,10 @@ Module (Module) Tên module hoặc phần mềm nơi hành động được th�
 User (User) Tên người dùng đã thực hiện hành động
 DateTime (DateTime) Ngày và giờ khi hành động được thực hiện
 
-Mục đích của bảng audit log là để theo dõi và ghi lại các hoạt động quan trọng trong hệ thống kho vải 
+Mục đích của bảng audit log là để theo dõi và ghi lại các hoạt động quan trọng trong hệ thống kho vải
 
 # Điều chỉnh lại trang inventory-management như sau:
+
 - Các cột hiển thị trên bảng như sau: Order No, Supplier Code, Invoice No, Roll No, Color, Batch No, Shipped length, Actual length, Gross Weight, Net Weight, QC Status, Location, Factory, Relax hour, Relax Progress (thanh tiến trình relax vãi), Date Relaxed.
 - Thay đổi bộ lọc theo các trường: Order No, Supplier Code, Invoice No, Roll No, Color, QC Status.
 - Thay đổi nút xuất excel thành xuất All bảng dữ liệu hiện tại trên bảng (không phải chỉ các dòng đã chọn).
@@ -569,7 +570,8 @@ Mục đích của bảng audit log là để theo dõi và ghi lại các hoạ
   - Delete: Xóa cuộn vải đã chọn khỏi hệ thống (yêu cầu xác nhận trước khi xóa).
 - Nút view để ẩn hiện các cột trên bảng dữ liệu được đưa xuống dưới dạng nút bấm trên header của bảng, khi ấn vào sẽ mở popup cho phép chọn các cột để hiển thị hoặc ẩn đi trên bảng dữ liệu InventoryTable.
 
-nút Action không phải nằm trên bảng, nút Action nằm bên trái của nút Export All, khi ấn vào sẽ hiện thị menu thả xuống với các tùy chọn 
+nút Action không phải nằm trên bảng, nút Action nằm bên trái của nút Export All, khi ấn vào sẽ hiện thị menu thả xuống với các tùy chọn
+
 - Print QR Code: In mã QR cho cuộn vải đã chọn.
   - View Location History: Xem lịch sử di chuyển vị trí của cuộn vải đã chọn.
   - Transfer Location: Chuyển vị trí của cuộn vải đã chọn sang vị trí khác trong kho.
@@ -581,9 +583,29 @@ cho phép Transfer Location của các cuộn vải đã tích chọn luôn, đ�
 
 thêm 1 tùy chọn Xuất excel cho các dòng đã chọn trong nút Action luôn nhé.
 Trên từng dòng của bảng có nút 3 chấm, ấn vào sẽ có các tùy chọn:
+
 - Print QR Code: In mã QR cho cuộn vải đó.
 - View Location History: Xem lịch sử di chuyển vị trí của cuộn vải đó.
 - Transfer Location: Chuyển vị trí của cuộn vải đó sang vị trí khác trong kho.
 - Delete: Xóa cuộn vải đó khỏi hệ thống (yêu cầu xác nhận trước khi xóa).
 
+khi Select a Job from Uploaded Kanban, có thể chọn nhiều JOB cùng lúc để xuất vải luôn.
+Vẫn có chức năng auto chọn vải phù hợp với các JOB đã chọn, tuy nhiên người dùng có thể tự do chọn lại các cuộn vải muốn xuất cho từng JOB nếu muốn.
+Có 1 bảng nhỏ hiển thị các cây vải trong kho, bảng này gồm các trường: DateInHouse, Roll No, Color, Batch No, Current Length.
 
+Gộp số lượng yards cần xuất của các JOB đã chọn thành 1 tổng số yards cần xuất, hệ thống sẽ tự động chọn các cuộn vải trong kho sao cho đủ tổng số yards cần xuất này.
+Chưa thấy bảng inventory hiển thị những cây vải lên
+
+CÓ 1 bảng inventory hiển thị những cây vải đã được chọn để xuất, bảng này gồm các trường: Roll No, Color, Batch No, Selected Length (số yards được chọn để xuất từ cây vải đó).
+Và 1 bảng inventory hiển thị những cây vải trong kho, bảng này gồm các trường: DateInHouse, Roll No, Color, Batch No, Current Length.
+
+Luồng nghiệp vụ là như này:
+
+- Người dùng ấn nút Upload Kanban from Excel, chọn file excel chứa danh sách các JOB cần xuất vải.
+- Hệ thống đọc file excel, hiển thị danh sách các JOB đã upload thành công
+- Người dùng chọn nhiều JOB từ danh sách đã upload.
+- Hệ thống tính tổng số yards cần xuất từ các JOB đã chọn. (ví dụ: JOB1 cần vải màu đỏ 300 yards, JOB2 cũng cần vải màu đỏ 500 yards, tổng số yards cần xuất vải màu đỏ là 800 yards)
+- Hệ thống tự động chọn các cuộn vải trong kho sao cho đủ tổng số yards cần xuất này, ưu tiên những cây vải có số yards thấp hơn để xuất trước.
+- Người dùng có thể điều chỉnh lại số yards xuất từ mỗi cuộn vải đã chọn nếu muốn.
+- Nếu số yards từ các cuộn vải đã chọn không đủ để đáp ứng tổng số yards cần xuất, hệ thống sẽ hiển thị 1 bảng Inventory để người dùng chọn thêm cuộn vải từ kho (dù cho vải không cùng màu với yêu cầu của JOB cũng được). Bảng này gồm các trường: DateInHouse, Roll No, Color, Batch No, Current Length.
+- Chia màn hình làm 2, bên phải để những cuộn vải đang có trong kho, bên trái là những cuộn vải đã được chọn cho job

@@ -91,12 +91,6 @@ const sidebarNavItems: NavItem[] = [
         key: "productivity-inventory",
         children: [
           {
-            title: "Location Management",
-            path: "/fabric-warehouse/locations",
-            icon: Network,
-            key: "locations",
-          },
-          {
             title: "Scan QR",
             path: "/fabric-warehouse/qr-scan",
             icon: QrCode,
