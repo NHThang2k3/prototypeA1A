@@ -29,7 +29,6 @@ import {
   ArrowLeft,
   Globe,
   type LucideIcon,
-  ShieldAlert,
 } from "lucide-react";
 
 type NavItem = {
@@ -143,12 +142,6 @@ const sidebarNavItems: NavItem[] = [
         key: "material-issue",
       },
       { title: "Action Plan", path: "#", icon: Settings, key: "action-plan" },
-      {
-        title: "Audit Log",
-        path: "/fabric-warehouse/audit-log",
-        icon: ShieldAlert,
-        key: "audit-log",
-      },
     ],
   },
   {

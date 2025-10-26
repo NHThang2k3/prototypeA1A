@@ -1,32 +1,37 @@
-// Path: src/layouts/CuttingLayout.tsx
 import { useState, createContext, useContext, useEffect, useRef } from "react";
 import { NavLink, Outlet, useLocation, Link } from "react-router-dom";
 import {
   Menu,
   X,
-  Bell,
-  User,
-  FileOutput,
-  Boxes,
-  ScrollText,
-  Upload,
+  Bell, // FIX: Giữ lại vì sẽ được dùng trong Header
+  User, // FIX: Giữ lại vì sẽ được dùng trong Header
   ChevronDown,
   ChevronLeft,
   Zap,
   ShieldCheck,
   CalendarCheck,
   Wrench,
-  Settings,
   MoreHorizontal,
   ArrowLeft,
-  Globe,
-  Scissors,
-  CalendarDays,
-  BookMarked,
-  Monitor,
+  Globe, // FIX: Giữ lại vì sẽ được dùng trong Header
   Gauge,
-  Tv,
+  ScanLine,
+  KanbanSquare,
+  CalendarDays,
+  LogIn,
+  FileOutput,
+  Truck,
+  ClipboardCheck,
+  TrafficCone,
+  FileCog,
+  Cog,
+  Server,
   Hammer,
+  Factory,
+  ClipboardList, // FIX: Thay thế 'Checklist' bằng 'ClipboardList'
+  DollarSign,
+  BrainCircuit,
+  Users,
   type LucideIcon,
 } from "lucide-react";
 
@@ -38,7 +43,7 @@ type NavItem = {
   children?: NavItem[];
 };
 
-// --- Dữ liệu Sidebar cho module Cutting ---
+// --- Dữ liệu Sidebar cho module Sewing Line ---
 const sidebarNavItems: NavItem[] = [
   {
     title: "Productivity",
@@ -46,73 +51,65 @@ const sidebarNavItems: NavItem[] = [
     key: "productivity",
     children: [
       {
-        title: "Planning",
-        icon: CalendarCheck,
+        title: "Planning Management",
+        icon: CalendarDays,
         key: "productivity-planning",
         children: [
           {
-            title: "Master Plan",
-            path: "/cutting/planning/master-plan",
-            icon: BookMarked,
-            key: "master-plan",
-          },
-          {
-            title: "Plan Cutting Weekly & Daily",
-            path: "/cutting/planning/cutting-daily-weekly",
+            title: "Production Plan",
+            path: "/sewing-line/productivity/production-plan",
             icon: CalendarDays,
-            key: "plan-cutting",
+            key: "production-plan",
           },
         ],
       },
       {
-        title: "Bundle Data",
-        icon: Boxes,
-        key: "productivity-bundle-data",
-        children: [
-          {
-            title: "Bundle Management",
-            path: "/cutting/bundle-data/bundle-management",
-            icon: Upload,
-            key: "bundle-management",
-          },
-        ],
+        title: "Sewing Line Kanban Monitoring",
+        icon: KanbanSquare,
+        key: "productivity-kanban",
+        path: "/sewing-line/productivity/kanban-monitoring",
       },
       {
-        title: "Generate Docket file (Reuse)",
-        icon: FileOutput,
-        key: "productivity-docket",
-        children: [],
-      },
-      {
-        title: "Cut Process (Reuse)",
-        icon: Scissors,
-        key: "productivity-cut-process",
-        children: [],
-      },
-      {
-        title: "Roll Cutting Monitoring (Reuse)",
-        icon: Monitor,
-        key: "productivity-roll-monitoring",
-        children: [],
-      },
-      {
-        title: "Cutting Performance Dashboard",
+        title: "Planned vs Actual (EFF Dashboard)",
         icon: Gauge,
-        key: "productivity-dashboard",
-        children: [
-          {
-            title: "Cutting Performance (TV)",
-            path: "/cutting/dashboard/cutting-dashboard-performance",
-            icon: Tv,
-            key: "cutting-dashboard-performance",
-          },
-        ],
+        key: "productivity-eff-dashboard",
+        path: "/sewing-line/productivity/eff-dashboard",
       },
       {
-        title: "Cutting Reports (Reuse)",
-        icon: ScrollText,
-        key: "productivity-reports",
-        children: [],
+        title: "PO Manufacturing Monitoring (Reuse)",
+        icon: LogIn,
+        key: "productivity-po-monitoring",
+        path: "/sewing-line/productivity/po-monitoring",
+      },
+      {
+        title: "Sewing Output Scanning (Reuse)",
+        icon: ScanLine,
+        key: "productivity-output-scanning",
+        path: "/sewing-line/productivity/output-scanning",
+      },
+      {
+        title: "Performance Monitoring (Scan & Pack)",
+        icon: FileOutput,
+        key: "productivity-performance-monitoring",
+        path: "/sewing-line/productivity/performance-monitoring",
+      },
+      {
+        title: "Line Performance Dashboard",
+        icon: Gauge,
+        key: "productivity-line-dashboard",
+        path: "/sewing-line/productivity/line-dashboard",
+      },
+      {
+        title: "F2S Delivery (Reuse)",
+        icon: Truck,
+        key: "productivity-f2s-delivery",
+        path: "/sewing-line/productivity/f2s-delivery",
+      },
+      {
+        title: "WIP Dashboard",
+        icon: Factory,
+        key: "productivity-wip-dashboard",
+        path: "/sewing-line/productivity/wip-dashboard",
       },
     ],
   },
@@ -122,10 +119,47 @@ const sidebarNavItems: NavItem[] = [
     key: "quality",
     children: [
       {
+        title: "QC Management (Reuse)",
+        icon: ClipboardCheck,
+        key: "quality-qc",
+        children: [
+          {
+            title: "QC Inline",
+            path: "/sewing-line/quality/qc-inline",
+            icon: ClipboardCheck,
+            key: "qc-inline",
+          },
+          {
+            title: "QC Endline",
+            path: "/sewing-line/quality/qc-endline",
+            icon: ClipboardCheck,
+            key: "qc-endline",
+          },
+        ],
+      },
+      {
+        title: "Traffic light (Reuse)",
+        icon: TrafficCone,
+        key: "quality-traffic-light",
+        path: "/sewing-line/quality/traffic-light",
+      },
+      {
+        title: "Quality Dashboard",
+        icon: Gauge,
+        key: "quality-dashboard",
+        path: "/sewing-line/quality/dashboard",
+      },
+      {
+        title: "Scrap Report Dashboard (Reuse)",
+        icon: FileCog,
+        key: "quality-scrap-report",
+        path: "/sewing-line/quality/scrap-report",
+      },
+      {
         title: "Action Plan",
-        path: "/cutting/quality/action-plan",
-        icon: Settings,
-        key: "action-plan",
+        icon: ClipboardList, // FIX: Thay thế 'Checklist' bằng 'ClipboardList'
+        key: "quality-action-plan",
+        path: "/sewing-line/quality/action-plan",
       },
     ],
   },
@@ -135,18 +169,77 @@ const sidebarNavItems: NavItem[] = [
     key: "availability",
     children: [
       {
-        title: "Tool Management",
-        path: "/cutting/availability/tool-management",
+        title: "Machine Location Perf. (Reuse)",
+        icon: Cog,
+        key: "availability-machine-location",
+        path: "/sewing-line/availability/machine-performance",
+      },
+      {
+        title: "TPM Checklist (Reuse)",
+        icon: ClipboardList, // FIX: Thay thế 'Checklist' bằng 'ClipboardList'
+        key: "availability-tpm-checklist",
+        path: "/sewing-line/availability/tpm-checklist",
+      },
+      {
+        title: "Tool & Equipment Status Dashboard",
         icon: Hammer,
-        key: "tool-management",
+        key: "availability-tool-status",
+        path: "/sewing-line/availability/tool-status",
+      },
+      {
+        title: "Engineering Management (EMS)",
+        icon: Server,
+        key: "availability-ems",
+        path: "/sewing-line/availability/ems",
+      },
+      {
+        title: "TPM Dashboard",
+        icon: Gauge,
+        key: "availability-tpm-dashboard",
+        path: "/sewing-line/availability/tpm-dashboard",
+      },
+      {
+        title: "Change Over, Layout Gen. (Reuse)",
+        icon: Factory,
+        key: "availability-change-over",
+        path: "/sewing-line/availability/change-over",
       },
     ],
   },
-  { title: "Ability (Other Phase)", icon: Wrench, key: "ability", path: "#" },
+  {
+    title: "Ability",
+    icon: Wrench,
+    key: "ability",
+    children: [
+      {
+        title: "Incentive and OT",
+        icon: DollarSign,
+        key: "ability-incentive",
+        path: "/sewing-line/ability/incentive",
+      },
+      {
+        title: "STW Checklist (Reuse)",
+        icon: ClipboardList, // FIX: Thay thế 'Checklist' bằng 'ClipboardList'
+        key: "ability-stw-checklist",
+        path: "/sewing-line/ability/stw-checklist",
+      },
+      {
+        title: "MAN Power",
+        icon: Users,
+        key: "ability-man-power",
+        path: "/sewing-line/ability/man-power",
+      },
+      {
+        title: "Skill Measurement",
+        icon: BrainCircuit,
+        key: "ability-skill",
+        path: "/sewing-line/ability/skill-measurement",
+      },
+    ],
+  },
 ];
 
 // --- TOÀN BỘ LOGIC BÊN DƯỚI ĐƯỢC GIỮ NGUYÊN ---
-// --- CHỈ THAY ĐỔI TÊN COMPONENT VÀ TIÊU ĐỀ TRONG SIDEBAR ---
 
 type SidebarContextType = {
   isCollapsed: boolean;
@@ -166,6 +259,7 @@ const MenuItem = ({ item }: { item: NavItem }) => {
   const { isCollapsed, openKeys, toggleMenu, isLinkActive } = useSidebar();
   const location = useLocation();
   const hasChildren = item.children && item.children.length > 0;
+  // FIX: Xóa biến 'isActuallySimplePath' không được sử dụng
   const isOpen = openKeys.includes(item.key);
   const isActive = isLinkActive(item.path, item.children);
 
@@ -227,6 +321,7 @@ const MenuItem = ({ item }: { item: NavItem }) => {
   );
 };
 
+// ... logic còn lại của Sidebar (getAllDescendantKeys, Sidebar) giữ nguyên ...
 const getAllDescendantKeys = (
   items: NavItem[],
   targetKey: string
@@ -271,13 +366,13 @@ const Sidebar = ({ isForMobile = false }: { isForMobile?: boolean }) => {
             const nestedKeys = findParentKeys(item.children, path);
             return [item.key, ...nestedKeys];
           }
-        } else if (item.path === path) {
-          return [item.key];
         }
       }
       return [];
     };
+
     const activeParentKeys = findParentKeys(sidebarNavItems, location.pathname);
+
     setOpenKeys((prevOpenKeys) => {
       const newKeys = new Set([...prevOpenKeys, ...activeParentKeys]);
       return Array.from(newKeys);
@@ -330,7 +425,7 @@ const Sidebar = ({ isForMobile = false }: { isForMobile?: boolean }) => {
               effectiveIsCollapsed ? "hidden" : ""
             }`}
           >
-            Cutting
+            Sewing Line
           </span>
           {effectiveIsCollapsed && <MoreHorizontal className="w-8 h-8" />}
         </div>
@@ -365,6 +460,7 @@ const Sidebar = ({ isForMobile = false }: { isForMobile?: boolean }) => {
   );
 };
 
+// FIX: Khôi phục component Header đầy đủ để sửa lỗi unused variables/imports
 const Header = ({ onMenuClick }: { onMenuClick: () => void }) => {
   const [selectedLang, setSelectedLang] = useState<"en" | "vi">("en");
   const [isDropdownOpen, setDropdownOpen] = useState(false);
@@ -460,7 +556,7 @@ const Header = ({ onMenuClick }: { onMenuClick: () => void }) => {
   );
 };
 
-const CuttingLayout = () => {
+const SewingLineLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
 
@@ -509,4 +605,4 @@ const CuttingLayout = () => {
   );
 };
 
-export default CuttingLayout;
+export default SewingLineLayout;

@@ -1,4 +1,3 @@
-// Path: src/layouts/CuttingLayout.tsx
 import { useState, createContext, useContext, useEffect, useRef } from "react";
 import { NavLink, Outlet, useLocation, Link } from "react-router-dom";
 import {
@@ -6,27 +5,33 @@ import {
   X,
   Bell,
   User,
-  FileOutput,
-  Boxes,
-  ScrollText,
-  Upload,
   ChevronDown,
   ChevronLeft,
   Zap,
   ShieldCheck,
   CalendarCheck,
   Wrench,
-  Settings,
   MoreHorizontal,
   ArrowLeft,
   Globe,
-  Scissors,
   CalendarDays,
   BookMarked,
-  Monitor,
+  CalendarRange,
+  ClipboardList,
+  FileStack,
+  Boxes,
+  LogIn,
+  LogOut,
+  BarChart3,
+  FileOutput,
+  Sun,
+  Printer,
+  DraftingCompass, // Icon for Embroidery
+  TrendingUp,
   Gauge,
-  Tv,
-  Hammer,
+  ClipboardCheck,
+  TimerOff,
+  MapPin,
   type LucideIcon,
 } from "lucide-react";
 
@@ -38,7 +43,7 @@ type NavItem = {
   children?: NavItem[];
 };
 
-// --- Dữ liệu Sidebar cho module Cutting ---
+// --- Dữ liệu Sidebar cho module Decoration ---
 const sidebarNavItems: NavItem[] = [
   {
     title: "Productivity",
@@ -46,73 +51,103 @@ const sidebarNavItems: NavItem[] = [
     key: "productivity",
     children: [
       {
-        title: "Planning",
-        icon: CalendarCheck,
-        key: "productivity-planning",
+        title: "Plan Management",
+        icon: CalendarDays,
+        key: "productivity-plan",
         children: [
           {
             title: "Master Plan",
-            path: "/cutting/planning/master-plan",
+            path: "/decoration/productivity/master-plan",
             icon: BookMarked,
             key: "master-plan",
           },
           {
-            title: "Plan Cutting Weekly & Daily",
-            path: "/cutting/planning/cutting-daily-weekly",
-            icon: CalendarDays,
-            key: "plan-cutting",
+            title: "Weekly & Daily Plan",
+            path: "/decoration/productivity/weekly-daily-plan",
+            icon: CalendarRange,
+            key: "weekly-daily-plan",
+          },
+          {
+            title: "Work plan for each process",
+            path: "/decoration/productivity/work-plan",
+            icon: ClipboardList,
+            key: "work-plan",
           },
         ],
       },
       {
-        title: "Bundle Data",
+        title: "Bonding OPL & Plan (Reuse)",
+        icon: FileStack,
+        key: "productivity-bonding-opl",
+        path: "/decoration/productivity/bonding-opl",
+      },
+      {
+        title: "Buffer Management",
         icon: Boxes,
-        key: "productivity-bundle-data",
+        key: "productivity-buffer",
         children: [
           {
-            title: "Bundle Management",
-            path: "/cutting/bundle-data/bundle-management",
-            icon: Upload,
-            key: "bundle-management",
+            title: "Scan In (Barcode)",
+            path: "/decoration/productivity/buffer-scan-in",
+            icon: LogIn,
+            key: "buffer-scan-in",
+          },
+          {
+            title: "Scan Out (Barcode)",
+            path: "/decoration/productivity/buffer-scan-out",
+            icon: LogOut,
+            key: "buffer-scan-out",
           },
         ],
       },
       {
-        title: "Generate Docket file (Reuse)",
-        icon: FileOutput,
-        key: "productivity-docket",
-        children: [],
+        title: "Performance Daily (Reuse)",
+        icon: BarChart3,
+        key: "productivity-performance",
+        children: [
+          {
+            title: "Record output",
+            path: "/decoration/productivity/record-output",
+            icon: FileOutput,
+            key: "record-output",
+          },
+          {
+            title: "Daily stats Heat",
+            path: "/decoration/productivity/stats-heat",
+            icon: Sun,
+            key: "stats-heat",
+          },
+          {
+            title: "Daily stats EMB",
+            path: "/decoration/productivity/stats-emb",
+            icon: DraftingCompass,
+            key: "stats-emb",
+          },
+          {
+            title: "Daily stats Pad Print",
+            path: "/decoration/productivity/stats-pad-print",
+            icon: Printer,
+            key: "stats-pad-print",
+          },
+        ],
       },
       {
-        title: "Cut Process (Reuse)",
-        icon: Scissors,
-        key: "productivity-cut-process",
-        children: [],
+        title: "Bonding Output",
+        icon: TrendingUp,
+        key: "productivity-bonding-output",
+        path: "/decoration/productivity/bonding-output",
       },
       {
-        title: "Roll Cutting Monitoring (Reuse)",
-        icon: Monitor,
-        key: "productivity-roll-monitoring",
-        children: [],
-      },
-      {
-        title: "Cutting Performance Dashboard",
+        title: "Dashboard (Decoration)",
         icon: Gauge,
-        key: "productivity-dashboard",
-        children: [
-          {
-            title: "Cutting Performance (TV)",
-            path: "/cutting/dashboard/cutting-dashboard-performance",
-            icon: Tv,
-            key: "cutting-dashboard-performance",
-          },
-        ],
+        key: "productivity-decoration-dashboard",
+        path: "/decoration/productivity/decoration-dashboard",
       },
       {
-        title: "Cutting Reports (Reuse)",
-        icon: ScrollText,
-        key: "productivity-reports",
-        children: [],
+        title: "Bonding Dashboard",
+        icon: Gauge,
+        key: "productivity-bonding-dashboard",
+        path: "/decoration/productivity/bonding-dashboard",
       },
     ],
   },
@@ -122,10 +157,29 @@ const sidebarNavItems: NavItem[] = [
     key: "quality",
     children: [
       {
+        title: "QC Management (Reuse)",
+        icon: ClipboardCheck,
+        key: "quality-qc",
+        children: [
+          {
+            title: "EMB QC Inline",
+            path: "/decoration/quality/qc-inline",
+            icon: ClipboardCheck,
+            key: "qc-inline",
+          },
+          {
+            title: "EMB QC Endline",
+            path: "/decoration/quality/qc-endline",
+            icon: ClipboardCheck,
+            key: "qc-endline",
+          },
+        ],
+      },
+      {
         title: "Action Plan",
-        path: "/cutting/quality/action-plan",
-        icon: Settings,
-        key: "action-plan",
+        icon: ClipboardList,
+        key: "quality-action-plan",
+        path: "/decoration/quality/action-plan",
       },
     ],
   },
@@ -135,18 +189,23 @@ const sidebarNavItems: NavItem[] = [
     key: "availability",
     children: [
       {
-        title: "Tool Management",
-        path: "/cutting/availability/tool-management",
-        icon: Hammer,
-        key: "tool-management",
+        title: "Machine Downtime (Reuse)",
+        icon: TimerOff,
+        key: "availability-downtime",
+        path: "/decoration/availability/machine-downtime",
+      },
+      {
+        title: "Machine Location",
+        icon: MapPin,
+        key: "availability-location",
+        path: "/decoration/availability/machine-location",
       },
     ],
   },
   { title: "Ability (Other Phase)", icon: Wrench, key: "ability", path: "#" },
 ];
 
-// --- TOÀN BỘ LOGIC BÊN DƯỚI ĐƯỢC GIỮ NGUYÊN ---
-// --- CHỈ THAY ĐỔI TÊN COMPONENT VÀ TIÊU ĐỀ TRONG SIDEBAR ---
+// --- TOÀN BỘ LOGIC BÊN DƯỚI ĐƯỢỢC GIỮ NGUYÊN ---
 
 type SidebarContextType = {
   isCollapsed: boolean;
@@ -271,13 +330,13 @@ const Sidebar = ({ isForMobile = false }: { isForMobile?: boolean }) => {
             const nestedKeys = findParentKeys(item.children, path);
             return [item.key, ...nestedKeys];
           }
-        } else if (item.path === path) {
-          return [item.key];
         }
       }
       return [];
     };
+
     const activeParentKeys = findParentKeys(sidebarNavItems, location.pathname);
+
     setOpenKeys((prevOpenKeys) => {
       const newKeys = new Set([...prevOpenKeys, ...activeParentKeys]);
       return Array.from(newKeys);
@@ -330,7 +389,7 @@ const Sidebar = ({ isForMobile = false }: { isForMobile?: boolean }) => {
               effectiveIsCollapsed ? "hidden" : ""
             }`}
           >
-            Cutting
+            Decoration
           </span>
           {effectiveIsCollapsed && <MoreHorizontal className="w-8 h-8" />}
         </div>
@@ -460,7 +519,7 @@ const Header = ({ onMenuClick }: { onMenuClick: () => void }) => {
   );
 };
 
-const CuttingLayout = () => {
+const DecorationLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
 
@@ -509,4 +568,4 @@ const CuttingLayout = () => {
   );
 };
 
-export default CuttingLayout;
+export default DecorationLayout;

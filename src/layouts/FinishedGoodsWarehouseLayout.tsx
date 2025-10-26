@@ -1,4 +1,3 @@
-// Path: src/layouts/CuttingLayout.tsx
 import { useState, createContext, useContext, useEffect, useRef } from "react";
 import { NavLink, Outlet, useLocation, Link } from "react-router-dom";
 import {
@@ -6,27 +5,28 @@ import {
   X,
   Bell,
   User,
-  FileOutput,
-  Boxes,
-  ScrollText,
-  Upload,
   ChevronDown,
   ChevronLeft,
   Zap,
   ShieldCheck,
   CalendarCheck,
   Wrench,
-  Settings,
   MoreHorizontal,
   ArrowLeft,
   Globe,
-  Scissors,
-  CalendarDays,
-  BookMarked,
+  Upload,
+  ScrollText,
+  PackageCheck,
+  ScanSearch,
+  Scale,
+  Warehouse,
   Monitor,
-  Gauge,
-  Tv,
-  Hammer,
+  LogIn,
+  LogOut,
+  CheckCircle2,
+  ClipboardCheck,
+  Shirt,
+  ClipboardList,
   type LucideIcon,
 } from "lucide-react";
 
@@ -38,7 +38,7 @@ type NavItem = {
   children?: NavItem[];
 };
 
-// --- Dữ liệu Sidebar cho module Cutting ---
+// --- Dữ liệu Sidebar cho module Finished Goods Warehouse ---
 const sidebarNavItems: NavItem[] = [
   {
     title: "Productivity",
@@ -46,73 +46,73 @@ const sidebarNavItems: NavItem[] = [
     key: "productivity",
     children: [
       {
-        title: "Planning",
-        icon: CalendarCheck,
-        key: "productivity-planning",
-        children: [
-          {
-            title: "Master Plan",
-            path: "/cutting/planning/master-plan",
-            icon: BookMarked,
-            key: "master-plan",
-          },
-          {
-            title: "Plan Cutting Weekly & Daily",
-            path: "/cutting/planning/cutting-daily-weekly",
-            icon: CalendarDays,
-            key: "plan-cutting",
-          },
-        ],
-      },
-      {
-        title: "Bundle Data",
-        icon: Boxes,
-        key: "productivity-bundle-data",
-        children: [
-          {
-            title: "Bundle Management",
-            path: "/cutting/bundle-data/bundle-management",
-            icon: Upload,
-            key: "bundle-management",
-          },
-        ],
-      },
-      {
-        title: "Generate Docket file (Reuse)",
-        icon: FileOutput,
-        key: "productivity-docket",
-        children: [],
-      },
-      {
-        title: "Cut Process (Reuse)",
-        icon: Scissors,
-        key: "productivity-cut-process",
-        children: [],
-      },
-      {
-        title: "Roll Cutting Monitoring (Reuse)",
-        icon: Monitor,
-        key: "productivity-roll-monitoring",
-        children: [],
-      },
-      {
-        title: "Cutting Performance Dashboard",
-        icon: Gauge,
-        key: "productivity-dashboard",
-        children: [
-          {
-            title: "Cutting Performance (TV)",
-            path: "/cutting/dashboard/cutting-dashboard-performance",
-            icon: Tv,
-            key: "cutting-dashboard-performance",
-          },
-        ],
-      },
-      {
-        title: "Cutting Reports (Reuse)",
+        title: "Packing Plan",
         icon: ScrollText,
-        key: "productivity-reports",
-        children: [],
+        key: "productivity-packing-plan",
+        children: [
+          {
+            title: "Upload Packing Plan",
+            path: "/finishedgoods-warehouse/productivity/upload-packing-plan",
+            icon: Upload,
+            key: "upload-packing-plan",
+          },
+          {
+            title: "Packing Plan report",
+            path: "/finishedgoods-warehouse/productivity/packing-plan-report",
+            icon: ScrollText,
+            key: "packing-plan-report",
+          },
+        ],
+      },
+      {
+        title: "FG Packing (Reuse)",
+        icon: PackageCheck,
+        key: "productivity-fg-packing",
+        children: [
+          {
+            title: "Metal scan",
+            path: "/finishedgoods-warehouse/productivity/metal-scan",
+            icon: ScanSearch,
+            key: "metal-scan",
+          },
+          {
+            title: "Auto weight",
+            path: "/finishedgoods-warehouse/productivity/auto-weight",
+            icon: Scale,
+            key: "auto-weight",
+          },
+        ],
+      },
+      {
+        title: "FG Inventory Management",
+        icon: Warehouse,
+        key: "productivity-fg-inventory",
+        children: [
+          {
+            title: "Upload Plan load",
+            path: "/finishedgoods-warehouse/productivity/upload-plan-load",
+            icon: Upload,
+            key: "upload-plan-load",
+          },
+          {
+            title: "FGs WH Monitoring report",
+            path: "/finishedgoods-warehouse/productivity/monitoring-report",
+            icon: Monitor,
+            key: "monitoring-report",
+          },
+          {
+            title: "FGs Scan in (Reuse)",
+            path: "/finishedgoods-warehouse/productivity/scan-in",
+            icon: LogIn,
+            key: "scan-in",
+          },
+          {
+            title: "FGs Scan out to clients (Reuse)",
+            path: "/finishedgoods-warehouse/productivity/scan-out",
+            icon: LogOut,
+            key: "scan-out",
+          },
+        ],
       },
     ],
   },
@@ -122,31 +122,42 @@ const sidebarNavItems: NavItem[] = [
     key: "quality",
     children: [
       {
+        title: "QA & CFA",
+        icon: CheckCircle2,
+        key: "quality-qa-cfa",
+        children: [
+          {
+            title: "Sample Inspection",
+            path: "/finishedgoods-warehouse/quality/sample-inspection",
+            icon: ClipboardCheck,
+            key: "sample-inspection",
+          },
+          {
+            title: "Garment Inspection",
+            path: "/finishedgoods-warehouse/quality/garment-inspection",
+            icon: Shirt,
+            key: "garment-inspection",
+          },
+        ],
+      },
+      {
         title: "Action Plan",
-        path: "/cutting/quality/action-plan",
-        icon: Settings,
-        key: "action-plan",
+        icon: ClipboardList,
+        key: "quality-action-plan",
+        path: "/finishedgoods-warehouse/quality/action-plan",
       },
     ],
   },
   {
-    title: "Availability",
+    title: "Availability (Other Phase)",
     icon: CalendarCheck,
     key: "availability",
-    children: [
-      {
-        title: "Tool Management",
-        path: "/cutting/availability/tool-management",
-        icon: Hammer,
-        key: "tool-management",
-      },
-    ],
+    path: "#",
   },
   { title: "Ability (Other Phase)", icon: Wrench, key: "ability", path: "#" },
 ];
 
 // --- TOÀN BỘ LOGIC BÊN DƯỚI ĐƯỢC GIỮ NGUYÊN ---
-// --- CHỈ THAY ĐỔI TÊN COMPONENT VÀ TIÊU ĐỀ TRONG SIDEBAR ---
 
 type SidebarContextType = {
   isCollapsed: boolean;
@@ -271,13 +282,13 @@ const Sidebar = ({ isForMobile = false }: { isForMobile?: boolean }) => {
             const nestedKeys = findParentKeys(item.children, path);
             return [item.key, ...nestedKeys];
           }
-        } else if (item.path === path) {
-          return [item.key];
         }
       }
       return [];
     };
+
     const activeParentKeys = findParentKeys(sidebarNavItems, location.pathname);
+
     setOpenKeys((prevOpenKeys) => {
       const newKeys = new Set([...prevOpenKeys, ...activeParentKeys]);
       return Array.from(newKeys);
@@ -330,7 +341,7 @@ const Sidebar = ({ isForMobile = false }: { isForMobile?: boolean }) => {
               effectiveIsCollapsed ? "hidden" : ""
             }`}
           >
-            Cutting
+            Finished Goods WH
           </span>
           {effectiveIsCollapsed && <MoreHorizontal className="w-8 h-8" />}
         </div>
@@ -460,7 +471,7 @@ const Header = ({ onMenuClick }: { onMenuClick: () => void }) => {
   );
 };
 
-const CuttingLayout = () => {
+const FinishedGoodsWarehouseLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
 
@@ -509,4 +520,4 @@ const CuttingLayout = () => {
   );
 };
 
-export default CuttingLayout;
+export default FinishedGoodsWarehouseLayout;

@@ -609,3 +609,51 @@ Luồng nghiệp vụ là như này:
 - Người dùng có thể điều chỉnh lại số yards xuất từ mỗi cuộn vải đã chọn nếu muốn.
 - Nếu số yards từ các cuộn vải đã chọn không đủ để đáp ứng tổng số yards cần xuất, hệ thống sẽ hiển thị 1 bảng Inventory để người dùng chọn thêm cuộn vải từ kho (dù cho vải không cùng màu với yêu cầu của JOB cũng được). Bảng này gồm các trường: DateInHouse, Roll No, Color, Batch No, Current Length.
 - Chia màn hình làm 2, bên phải để những cuộn vải đang có trong kho, bên trái là những cuộn vải đã được chọn cho job
+
+Decoration
+Master Plan
+Weekly Plan & Daily Plan from Cutting
+Work plan for each decoration process
+Record scan-in data
+Record scan-out data
+Worker production statistics, generate heat press temperature report
+Dashboard for Heat Transfer & Pad Print
+Dashboard for Bonding & Embroidery
+Action plan
+Machine Location
+
+BufferAndSupermarket
+
+- Scan in/out the buffer to input data of progress and status
+- Buffer progress and status report
+- Kanban report from sewing lines
+- Scan out to update status of supermarket
+- Supermarket progress and status report
+- Dashboard to display job state from sewing lines to supermarket
+
+SewingLineLayout
+Display Production Plan
+Sewing Line Kanban Monitoring
+EFF Dashboard
+Consolidated sewing line data
+Display data from Scan & Pack
+WIP
+Action Plan
+Scrap Report Dashboard
+Quality statistics dashboard
+Manage metal tools
+EMS( Common)
+TPM dashboard(Common)
+Incentive calculation
+Manage workforce
+Skill Measurement
+
+FinishedGoodsWarehouseLayout
+
+- Upload Packing Plan
+- Packing Plan report
+- Upload Planload
+- FG WH monitoring reports
+- Sample Inspection
+- Garment Inspection
+- Action Plan

@@ -1,4 +1,3 @@
-// Path: src/layouts/CuttingLayout.tsx
 import { useState, createContext, useContext, useEffect, useRef } from "react";
 import { NavLink, Outlet, useLocation, Link } from "react-router-dom";
 import {
@@ -6,27 +5,22 @@ import {
   X,
   Bell,
   User,
-  FileOutput,
   Boxes,
   ScrollText,
-  Upload,
   ChevronDown,
   ChevronLeft,
   Zap,
   ShieldCheck,
   CalendarCheck,
   Wrench,
-  Settings,
   MoreHorizontal,
   ArrowLeft,
   Globe,
-  Scissors,
-  CalendarDays,
-  BookMarked,
   Monitor,
   Gauge,
-  Tv,
-  Hammer,
+  ScanLine,
+  Server,
+  KanbanSquare,
   type LucideIcon,
 } from "lucide-react";
 
@@ -38,7 +32,7 @@ type NavItem = {
   children?: NavItem[];
 };
 
-// --- Dữ liệu Sidebar cho module Cutting ---
+// --- Dữ liệu Sidebar cho module Buffer & Supermarket ---
 const sidebarNavItems: NavItem[] = [
   {
     title: "Productivity",
@@ -46,107 +40,93 @@ const sidebarNavItems: NavItem[] = [
     key: "productivity",
     children: [
       {
-        title: "Planning",
-        icon: CalendarCheck,
-        key: "productivity-planning",
+        title: "Sewing Line Kanban Monitoring",
+        icon: KanbanSquare,
+        key: "productivity-sewing-kanban",
         children: [
           {
-            title: "Master Plan",
-            path: "/cutting/planning/master-plan",
-            icon: BookMarked,
-            key: "master-plan",
-          },
-          {
-            title: "Plan Cutting Weekly & Daily",
-            path: "/cutting/planning/cutting-daily-weekly",
-            icon: CalendarDays,
-            key: "plan-cutting",
+            title: "Kanban report",
+            path: "/buffer-supermarket/productivity/kanban-report",
+            icon: ScrollText,
+            key: "kanban-report",
           },
         ],
       },
       {
-        title: "Bundle Data",
+        title: "Kardex Integration (Reuse)",
+        icon: Server,
+        key: "productivity-kardex",
+        path: "#", // Placeholder
+      },
+      {
+        title: "Buffer Monitoring",
         icon: Boxes,
-        key: "productivity-bundle-data",
+        key: "productivity-buffer-monitoring",
         children: [
           {
-            title: "Bundle Management",
-            path: "/cutting/bundle-data/bundle-management",
-            icon: Upload,
-            key: "bundle-management",
+            title: "Scan In/Out",
+            path: "/buffer-supermarket/productivity/buffer-scan",
+            icon: ScanLine,
+            key: "buffer-scan",
+          },
+          {
+            title: "Buffer progress + status report",
+            path: "/buffer-supermarket/productivity/buffer-report",
+            icon: ScrollText,
+            key: "buffer-report",
           },
         ],
       },
       {
-        title: "Generate Docket file (Reuse)",
-        icon: FileOutput,
-        key: "productivity-docket",
-        children: [],
-      },
-      {
-        title: "Cut Process (Reuse)",
-        icon: Scissors,
-        key: "productivity-cut-process",
-        children: [],
-      },
-      {
-        title: "Roll Cutting Monitoring (Reuse)",
+        title: "Supermarket Monitoring",
         icon: Monitor,
-        key: "productivity-roll-monitoring",
-        children: [],
-      },
-      {
-        title: "Cutting Performance Dashboard",
-        icon: Gauge,
-        key: "productivity-dashboard",
+        key: "productivity-supermarket-monitoring",
         children: [
           {
-            title: "Cutting Performance (TV)",
-            path: "/cutting/dashboard/cutting-dashboard-performance",
-            icon: Tv,
-            key: "cutting-dashboard-performance",
+            title: "Scan In/Out",
+            path: "/buffer-supermarket/productivity/supermarket-scan",
+            icon: ScanLine,
+            key: "supermarket-scan",
+          },
+          {
+            title: "Supermarket progress + status report",
+            path: "/buffer-supermarket/productivity/supermarket-report",
+            icon: ScrollText,
+            key: "supermarket-report",
           },
         ],
       },
       {
-        title: "Cutting Reports (Reuse)",
-        icon: ScrollText,
-        key: "productivity-reports",
-        children: [],
+        title: "WIP Dashboard",
+        icon: Gauge,
+        key: "productivity-wip-dashboard",
+        children: [
+          {
+            title: "WIP Dashboard",
+            path: "/buffer-supermarket/productivity/wip-dashboard",
+            icon: Gauge,
+            key: "wip-dashboard-view",
+          },
+        ],
       },
     ],
   },
   {
-    title: "Quality",
+    title: "Quality (Other Phase)",
     icon: ShieldCheck,
     key: "quality",
-    children: [
-      {
-        title: "Action Plan",
-        path: "/cutting/quality/action-plan",
-        icon: Settings,
-        key: "action-plan",
-      },
-    ],
+    path: "#",
   },
   {
-    title: "Availability",
+    title: "Availability (Other Phase)",
     icon: CalendarCheck,
     key: "availability",
-    children: [
-      {
-        title: "Tool Management",
-        path: "/cutting/availability/tool-management",
-        icon: Hammer,
-        key: "tool-management",
-      },
-    ],
+    path: "#",
   },
   { title: "Ability (Other Phase)", icon: Wrench, key: "ability", path: "#" },
 ];
 
-// --- TOÀN BỘ LOGIC BÊN DƯỚI ĐƯỢC GIỮ NGUYÊN ---
-// --- CHỈ THAY ĐỔI TÊN COMPONENT VÀ TIÊU ĐỀ TRONG SIDEBAR ---
+// --- TOÀN BỘ LOGIC BÊN DƯỚI ĐƯỢC GIỮ NGUYÊN TỪ CUTTINGLAYOUT ---
 
 type SidebarContextType = {
   isCollapsed: boolean;
@@ -330,7 +310,7 @@ const Sidebar = ({ isForMobile = false }: { isForMobile?: boolean }) => {
               effectiveIsCollapsed ? "hidden" : ""
             }`}
           >
-            Cutting
+            Buffer & Supermarket
           </span>
           {effectiveIsCollapsed && <MoreHorizontal className="w-8 h-8" />}
         </div>
@@ -460,7 +440,7 @@ const Header = ({ onMenuClick }: { onMenuClick: () => void }) => {
   );
 };
 
-const CuttingLayout = () => {
+const BufferAndSupermarketLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
 
@@ -509,4 +489,4 @@ const CuttingLayout = () => {
   );
 };
 
-export default CuttingLayout;
+export default BufferAndSupermarketLayout;
