@@ -67,6 +67,7 @@ import BondingOutputPage from "./pages/BondingOutputPage/BondingOutputPage";
 import ToolStatusDashboardPage from "./pages/ToolStatusDashboardPage/ToolStatusDashboardPage";
 import EMSPage from "./pages/EMSPage/EMSPage";
 import CuttingWeeklyDailyPlanPage from "./pages/CuttingWeeklyDailyPlanPage/CuttingWeeklyDailyPlanPage";
+import OverallDashboardPage from "./pages/overall-dashboard/OverallDashboardPage";
 
 function App() {
   return (
@@ -432,6 +433,9 @@ function App() {
           />
           <Route path="audit-log" element={<AuditLogPage />} />
         </Route>
+
+        {/* === MODULE DASHBOARD TỔNG (MỚI) === */}
+        <Route path="/dashboard" element={<OverallDashboardPage />} />
 
         {/* Redirect về trang chủ nếu không khớp route nào */}
         <Route path="*" element={<Navigate to="/" replace />} />
