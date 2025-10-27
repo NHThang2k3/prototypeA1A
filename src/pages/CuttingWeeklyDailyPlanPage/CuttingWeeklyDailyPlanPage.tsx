@@ -1,3 +1,5 @@
+// src/pages/CuttingWeeklyDailyPlanPage/CuttingWeeklyDailyPlanPage.tsx
+
 import React, { useState } from "react";
 import { format, startOfWeek, addDays, isSameDay, parseISO } from "date-fns";
 import { enUS } from "date-fns/locale"; // Changed from 'vi' to 'enUS'

@@ -12,7 +12,8 @@ import {
   Warehouse,
   Palette,
   ArrowLeft,
-  LayoutDashboard, // 1. Import icon mới
+  LayoutDashboard,
+  AppWindow,
   type LucideIcon,
 } from "lucide-react";
 
@@ -74,6 +75,13 @@ const mainModules: Module[] = [
     path: "/dashboard",
     icon: LayoutDashboard,
     description: "A comprehensive dashboard for all departments.",
+  },
+  {
+    name: "All Screens",
+    path: "/all-screens",
+    icon: AppWindow,
+    description:
+      "A complete library of all application screens for development and review.",
   },
 ];
 

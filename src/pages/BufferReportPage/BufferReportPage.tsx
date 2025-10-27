@@ -1,3 +1,5 @@
+// src/pages/BufferReportPage/BufferReportPage.tsx
+
 import React, { useState, useMemo } from "react";
 import { Search, Filter, Clock } from "lucide-react";
 

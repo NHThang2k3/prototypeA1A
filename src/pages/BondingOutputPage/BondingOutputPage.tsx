@@ -1,4 +1,5 @@
-// 1. Xóa bỏ import React không cần thiết
+// src/pages/BondingOutputPage/BondingOutputPage.tsx
+
 import { Download, Calendar, Search, TrendingUp } from "lucide-react";
 
 // Mock Data for Bonding Output

@@ -1,3 +1,5 @@
+// src/pages/WipDashboardPage/WipDashboardPage.tsx
+
 import React from "react";
 import {
   Clock,

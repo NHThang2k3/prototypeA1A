@@ -68,6 +68,11 @@ import ToolStatusDashboardPage from "./pages/ToolStatusDashboardPage/ToolStatusD
 import EMSPage from "./pages/EMSPage/EMSPage";
 import CuttingWeeklyDailyPlanPage from "./pages/CuttingWeeklyDailyPlanPage/CuttingWeeklyDailyPlanPage";
 import OverallDashboardPage from "./pages/overall-dashboard/OverallDashboardPage";
+import RepairRequestListPage from "./pages/damaged-goods-repair/RepairRequestListPage";
+import CreateRepairRequestPage from "./pages/damaged-goods-repair/CreateRepairRequestPage";
+import ApproveRepairRequestPage from "./pages/damaged-goods-repair/ApproveRepairRequestPage";
+import RecordReworkResultPage from "./pages/damaged-goods-repair/RecordReworkResultPage";
+import AllScreens from "./pages/all-screen/AllScreen";
 
 function App() {
   return (
@@ -207,6 +212,22 @@ function App() {
           <Route
             path="productivity/bonding-dashboard"
             element={<DecorationDashboardPage />} // Có thể tái sử dụng
+          />
+          <Route
+            path="productivity/display-data-list"
+            element={<RepairRequestListPage />}
+          />
+          <Route
+            path="productivity/create-data-entry"
+            element={<CreateRepairRequestPage />}
+          />
+          <Route
+            path="productivity/approve-data/:requestId" // Thêm :requestId để lấy param
+            element={<ApproveRepairRequestPage />}
+          />
+          <Route
+            path="productivity/record-result-information/:requestId" // Thêm :requestId
+            element={<RecordReworkResultPage />}
           />
 
           {/* Quality Routes */}
@@ -436,6 +457,8 @@ function App() {
 
         {/* === MODULE DASHBOARD TỔNG (MỚI) === */}
         <Route path="/dashboard" element={<OverallDashboardPage />} />
+
+        <Route path="/all-screens" element={<AllScreens />} />
 
         {/* Redirect về trang chủ nếu không khớp route nào */}
         <Route path="*" element={<Navigate to="/" replace />} />

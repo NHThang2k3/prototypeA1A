@@ -149,6 +149,37 @@ const sidebarNavItems: NavItem[] = [
         key: "productivity-bonding-dashboard",
         path: "/decoration/productivity/bonding-dashboard",
       },
+      {
+        title: "Damaged goods repair",
+        icon: BarChart3,
+        key: "productivity-damaged-goods-repair",
+        children: [
+          {
+            title: "Display data list",
+            path: "/decoration/productivity/display-data-list",
+            icon: FileOutput,
+            key: "display-data-list",
+          },
+          {
+            title: "Create data entry",
+            path: "/decoration/productivity/create-data-entry",
+            icon: Sun,
+            key: "create-data-entry",
+          },
+          {
+            title: "Approve data",
+            path: "/decoration/productivity/approve-data",
+            icon: DraftingCompass,
+            key: "approve-data",
+          },
+          {
+            title: "Record result information",
+            path: "/decoration/productivity/record-result-information",
+            icon: Printer,
+            key: "record-result-information",
+          },
+        ],
+      },
     ],
   },
   {

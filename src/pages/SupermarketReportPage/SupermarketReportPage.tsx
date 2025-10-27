@@ -1,3 +1,5 @@
+// src/pages/SupermarketReportPage/SupermarketReportPage.tsx
+
 import React, { useState, useMemo } from "react";
 import { Search, PackageCheck, PackageX } from "lucide-react";
 

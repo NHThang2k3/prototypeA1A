@@ -1,3 +1,5 @@
+// src/pages/BufferScanPage/BufferScanPage.tsx
+
 import React, { useState, useRef, useEffect } from "react";
 import {
   ScanLine,
