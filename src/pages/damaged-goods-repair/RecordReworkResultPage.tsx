@@ -48,9 +48,18 @@ const InfoField = ({
   </div>
 );
 
-const RecordReworkResultPage = () => {
-  const { requestId } = useParams<{ requestId: string }>();
+// --- THAY ĐỔI 1: Thêm prop `requestIdForShowcase` vào component ---
+const RecordReworkResultPage = ({
+  requestIdForShowcase,
+}: {
+  requestIdForShowcase?: string;
+}) => {
+  const params = useParams<{ requestId: string }>();
   const navigate = useNavigate();
+
+  // --- THAY ĐỔI 2: Ưu tiên dùng prop, nếu không có thì mới lấy từ URL ---
+  const requestId = requestIdForShowcase || params.requestId;
+
   const [request, setRequest] = useState<RepairRequest | null>(null);
   const [repairedQty, setRepairedQty] = useState(0);
   const [unrepairableQty, setUnrepairableQty] = useState(0);

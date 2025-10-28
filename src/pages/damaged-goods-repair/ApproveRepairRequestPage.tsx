@@ -51,13 +51,25 @@ const InfoField = ({
   </div>
 );
 
-const ApproveRepairRequestPage = () => {
-  const { requestId } = useParams<{ requestId: string }>();
+// --- THAY ĐỔI 1: Thêm prop `requestIdForShowcase` vào component ---
+const ApproveRepairRequestPage = ({
+  requestIdForShowcase,
+}: {
+  requestIdForShowcase?: string;
+}) => {
+  const params = useParams<{ requestId: string }>();
   const navigate = useNavigate();
+
+  // --- THAY ĐỔI 2: Ưu tiên dùng prop, nếu không có thì mới lấy từ URL ---
+  // Điều này giúp component linh hoạt hơn, có thể dùng trong trang AllScreens
+  // mà không cần đến router thật.
+  const requestId = requestIdForShowcase || params.requestId;
+
   const [request, setRequest] = useState<RepairRequest | null>(null);
   const [decision, setDecision] = useState<"Approve" | "Reject" | null>(null);
 
   useEffect(() => {
+    // Logic bên trong không cần thay đổi
     setRequest(mockRequests.find((r) => r.id === requestId) || null);
   }, [requestId]);
 
