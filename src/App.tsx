@@ -14,65 +14,69 @@ import DecorationLayout from "./layouts/DecorationLayout";
 // Import Pages
 import HomePage from "./pages/home/HomePage";
 import InboundDashboardPage from "./pages/inbound-dashboard/InboundDashboardPage";
-import InventoryListPage from "./pages/inventory-list/InventoryListPage";
-import KanbanBoardPage from "./pages/kanban-board/KanbanBoardPage";
-import LocationManagementPage from "./pages/location-management/LocationManagementPage";
-import QRScanInterfacePage from "./pages/qr-scan/QRScanInterfacePage";
-import IssueFabricFormPage from "./pages/issue-fabric-form/IssueFabricFromJobPage";
-import IssueAccessoryFormPage from "./pages/issue-accessory-form/IssueAccessoryFormPage";
-import IssuePackagingFormPage from "./pages/issue-packaging-form/IssuePackagingFormPage";
-import IssueTransactionReportsPage from "./pages/issue-transaction-reports/IssueTransactionReportsPage";
-import PackingListManagementPage from "./pages/packing-list-management/PackingListManagementPage";
-import AccessoryInventoryListPage from "./pages/accessory-inventory-list/AccessoryInventoryListPage";
-import SewingTrimsKanbanPage from "./pages/sewing-trims-kanban/SewingTrimsKanbanPage";
-import PackagingInventoryListPage from "./pages/packaging-inventory-list/PackagingInventoryListPage";
-import AccessoryIssueTransactionReportsPage from "./pages/accessory-issue-transaction-reports/AccessoryIssueTransactionReportsPage";
-import PackagingIssueTransactionReportsPage from "./pages/packaging-issue-transaction-reports/PackagingIssueTransactionReportsPage";
+import InventoryListPage from "./pages/Warehouse/InventoryListPage";
+import KanbanBoardPage from "./pages/Warehouse/KanbanBoardPage";
+import LocationManagementPage from "./pages/FactorySetting/LocationManagementPage";
+import IssueFabricFormPage from "./pages/Warehouse/IssueFabricFromJobPage";
+import IssueAccessoryFormPage from "./pages/Warehouse/IssueAccessoryFormPage";
+import IssuePackagingFormPage from "./pages/Warehouse/IssuePackagingFormPage";
+import IssueTransactionReportsPage from "./pages/Warehouse/IssueTransactionReportsPage";
+import PackingListManagementPage from "./pages/Warehouse/PackingListManagementPage";
+import AccessoryInventoryListPage from "./pages/Warehouse/AccessoryInventoryListPage";
+import SewingTrimsKanbanPage from "./pages/Warehouse/SewingTrimsKanbanPage";
+import PackagingInventoryListPage from "./pages/Warehouse/PackagingInventoryListPage";
+import AccessoryIssueTransactionReportsPage from "./pages/Warehouse/AccessoryIssueTransactionReportsPage";
+import PackagingIssueTransactionReportsPage from "./pages/Warehouse/PackagingIssueTransactionReportsPage";
 import CuttingLayout from "./layouts/CuttingLayout";
-import MasterPlanPage from "./pages/master-plan/MasterPlanPage";
-import BundleManagementPage from "./pages/bundle-management/BundleManagementPage";
-import CuttingDashboardPerformance from "./pages/cutting-dashboard-performance/CuttingDashboardPerformance";
-import AuditLogPage from "./pages/audit-log/AuditLogPage";
+import MasterPlanPage from "./pages/Cutting/MasterPlanPage";
+import BundleManagementPage from "./pages/Cutting/BundleManagementPage";
+import CuttingDashboardPerformance from "./pages/Cutting/CuttingDashboardPerformance";
+import AuditLogPage from "./pages/FactorySetting/AuditLogPage";
 import FactoryLayout from "./layouts/FactoryLayout";
-import WeeklyDailyPlanPage from "./pages/WeeklyDailyPlanPage/WeeklyDailyPlanPage";
-import WorkPlanPage from "./pages/WorkPlanPage/WorkPlanPage";
-import BufferScanInPage from "./pages/BufferScanInPage/BufferScanInPage";
-import BufferScanOutPage from "./pages/BufferScanOutPage/BufferScanOutPage";
-import DecorationDashboardPage from "./pages/DecorationDashboardPage/DecorationDashboardPage";
-import ActionPlanPage from "./pages/ActionPlanPage/ActionPlanPage";
-import MachineLocationPage from "./pages/MachineLocationPage/MachineLocationPage";
-import KanbanReportPage from "./pages/KanbanReportPage/KanbanReportPage";
-import BufferScanPage from "./pages/BufferScanPage/BufferScanPage";
-import BufferReportPage from "./pages/BufferReportPage/BufferReportPage";
-import SupermarketScanPage from "./pages/SupermarketScanPage/SupermarketScanPage";
-import SupermarketReportPage from "./pages/SupermarketReportPage/SupermarketReportPage";
-import WipDashboardPage from "./pages/WipDashboardPage/WipDashboardPage";
-import ProductionPlanPage from "./pages/ProductionPlanPage/ProductionPlanPage";
-import KanbanMonitoringPage from "./pages/KanbanMonitoringPage/KanbanMonitoringPage";
-import EFFDashboardPage from "./pages/EFFDashboardPage/EFFDashboardPage";
-import ManageWorkforcePage from "./pages/ManageWorkforcePage/ManageWorkforcePage";
-import QualityDashboardPage from "./pages/QualityDashboardPage/QualityDashboardPage";
-import UploadPackingPlanPage from "./pages/UploadPackingPlanPage/UploadPackingPlanPage";
-import PackingPlanReportPage from "./pages/PackingPlanReportPage/PackingPlanReportPage";
-import UploadPlanloadPage from "./pages/UploadPlanloadPage/UploadPlanloadPage";
-import FgWhMonitoringReportPage from "./pages/FgWhMonitoringReportPage/FgWhMonitoringReportPage";
-import SampleInspectionPage from "./pages/SampleInspectionPage/SampleInspectionPage";
-import GarmentInspectionPage from "./pages/GarmentInspectionPage/GarmentInspectionPage";
-import IncentiveCalculationPage from "./pages/IncentiveCalculationPage/IncentiveCalculationPage";
-import SkillMatrixPage from "./pages/SkillMatrixPage/SkillMatrixPage";
-import TPMDashboardPage from "./pages/TPMDashboardPage/TPMDashboardPage";
-import ConsolidatedReportPage from "./pages/ConsolidatedReportPage/ConsolidatedReportPage";
-import ToolManagementPage from "./pages/ToolManagementPage/ToolManagementPage";
-import BondingOutputPage from "./pages/BondingOutputPage/BondingOutputPage";
-import ToolStatusDashboardPage from "./pages/ToolStatusDashboardPage/ToolStatusDashboardPage";
-import EMSPage from "./pages/EMSPage/EMSPage";
-import CuttingWeeklyDailyPlanPage from "./pages/CuttingWeeklyDailyPlanPage/CuttingWeeklyDailyPlanPage";
+import WeeklyDailyPlanPage from "./pages/Decoration/WeeklyDailyPlanPage";
+import WorkPlanPage from "./pages/Decoration/WorkPlanPage";
+import BufferScanInPage from "./pages/Decoration/BufferScanInPage";
+import BufferScanOutPage from "./pages/Decoration/BufferScanOutPage";
+import DecorationDashboardPage from "./pages/Decoration/DecorationDashboardPage";
+import ActionPlanPage from "./pages/Warehouse/ActionPlanPage";
+import MachineLocationPage from "./pages/Decoration/MachineLocationPage";
+import KanbanReportPage from "./pages/Buffer/KanbanReportPage";
+import BufferScanPage from "./pages/Buffer/BufferScanPage";
+import BufferReportPage from "./pages/Buffer/BufferReportPage";
+import SupermarketScanPage from "./pages/Buffer/SupermarketScanPage";
+import SupermarketReportPage from "./pages/Buffer/SupermarketReportPage";
+import WipDashboardPage from "./pages/SewwingLine/WipDashboardPage";
+import ProductionPlanPage from "./pages/SewwingLine/ProductionPlanPage";
+import KanbanMonitoringPage from "./pages/SewwingLine/KanbanMonitoringPage";
+import EFFDashboardPage from "./pages/SewwingLine/EFFDashboardPage";
+import ManageWorkforcePage from "./pages/SewwingLine/ManageWorkforcePage";
+import QualityDashboardPage from "./pages/SewwingLine/QualityDashboardPage";
+import UploadPackingPlanPage from "./pages/FGsWH/UploadPackingPlanPage";
+import PackingPlanReportPage from "./pages/FGsWH/PackingPlanReportPage";
+import UploadPlanloadPage from "./pages/FGsWH/UploadPlanloadPage";
+import FgWhMonitoringReportPage from "./pages/FGsWH/FgWhMonitoringReportPage";
+import SampleInspectionPage from "./pages/FGsWH/SampleInspectionPage";
+import GarmentInspectionPage from "./pages/FGsWH/GarmentInspectionPage";
+import IncentiveCalculationPage from "./pages/SewwingLine/IncentiveCalculationPage";
+import SkillMatrixPage from "./pages/SewwingLine/SkillMatrixPage";
+import TPMDashboardPage from "./pages/SewwingLine/TPMDashboardPage";
+import ConsolidatedReportPage from "./pages/SewwingLine/ConsolidatedReportPage";
+import ToolManagementPage from "./pages/Cutting/ToolManagementPage";
+import BondingOutputPage from "./pages/Decoration/BondingOutputPage";
+import ToolStatusDashboardPage from "./pages/SewwingLine/ToolStatusDashboardPage";
+import EMSPage from "./pages/SewwingLine/EMSPage";
+import CuttingWeeklyDailyPlanPage from "./pages/Cutting/CuttingWeeklyDailyPlanPage";
 import OverallDashboardPage from "./pages/overall-dashboard/OverallDashboardPage";
-import RepairRequestListPage from "./pages/damaged-goods-repair/RepairRequestListPage";
-import CreateRepairRequestPage from "./pages/damaged-goods-repair/CreateRepairRequestPage";
-import ApproveRepairRequestPage from "./pages/damaged-goods-repair/ApproveRepairRequestPage";
-import RecordReworkResultPage from "./pages/damaged-goods-repair/RecordReworkResultPage";
+import RepairRequestListPage from "./pages/Decoration/RepairRequestListPage";
+import CreateRepairRequestPage from "./pages/Decoration/CreateRepairRequestPage";
+import ApproveRepairRequestPage from "./pages/Decoration/ApproveRepairRequestPage";
+import RecordReworkResultPage from "./pages/Decoration/RecordReworkResultPage";
 import AllScreens from "./pages/all-screen/AllScreen";
+import ImportPackingListFormPage from "./pages/Warehouse/ImportPackingListFormPage";
+import FabricRelaxScreen from "./pages/Warehouse/FabricRelaxScreen";
+import ScanQRWarehouseLocation from "./pages/Warehouse/ScanQRWarehouseLocation";
+import ScanQRFabric from "./pages/Warehouse/ScanQRFabric";
+import ScanQRIssueRequest from "./pages/Warehouse/ScanQRIssueRequest";
 
 function App() {
   return (
@@ -88,13 +92,23 @@ function App() {
           <Route path="inventory" element={<InventoryListPage />} />
           <Route path="kanban" element={<KanbanBoardPage />} />
           <Route path="locations" element={<LocationManagementPage />} />
-          <Route path="qr-scan" element={<QRScanInterfacePage />} />
+          <Route
+            path="qr-scan-location"
+            element={<ScanQRWarehouseLocation />}
+          />
+          <Route path="qr-scan-fabric" element={<ScanQRFabric />} />
+          <Route path="qr-scan-request" element={<ScanQRIssueRequest />} />
           <Route path="issue/fabric" element={<IssueFabricFormPage />} />
+          <Route path="relax/fabric" element={<FabricRelaxScreen />} />
           <Route
             path="reports/issues"
             element={<IssueTransactionReportsPage />}
           />
           <Route path="packing-list" element={<PackingListManagementPage />} />
+          <Route
+            path="packing-list-form"
+            element={<ImportPackingListFormPage />}
+          />
           <Route path="audit-log" element={<AuditLogPage />} />
         </Route>
 
@@ -108,7 +122,7 @@ function App() {
           <Route path="inventory" element={<AccessoryInventoryListPage />} />
           <Route path="kanban" element={<SewingTrimsKanbanPage />} />
           <Route path="locations" element={<LocationManagementPage />} />
-          <Route path="qr-scan" element={<QRScanInterfacePage />} />
+          {/* <Route path="qr-scan" element={<QRScanInterfacePage />} /> */}
           <Route path="issue/accessory" element={<IssueAccessoryFormPage />} />
           <Route
             path="reports/issues"
@@ -124,9 +138,9 @@ function App() {
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<InboundDashboardPage />} />
           <Route path="inventory" element={<PackagingInventoryListPage />} />
-          <Route path="kanban" element={<KanbanBoardPage />} />
+          <Route path="kanban" element={<SewingTrimsKanbanPage />} />
           <Route path="locations" element={<LocationManagementPage />} />
-          <Route path="qr-scan" element={<QRScanInterfacePage />} />
+          {/* <Route path="qr-scan" element={<QRScanInterfacePage />} /> */}
           <Route path="issue/packaging" element={<IssuePackagingFormPage />} />
           <Route
             path="reports/issues"

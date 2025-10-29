@@ -1,5 +1,5 @@
 import React from "react";
-import BufferScanOutPage from "../../BufferScanOutPage/BufferScanOutPage";
+import BufferScanOutPage from "../../Decoration/BufferScanOutPage";
 
 // Re-defining Bundle type and mockBundleData as they are not exported from the original file
 

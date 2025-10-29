@@ -1,5 +1,5 @@
 import React from "react";
-import IssueTransactionReportsPage from "../../issue-transaction-reports/IssueTransactionReportsPage";
+import IssueTransactionReportsPage from "../../Warehouse/IssueTransactionReportsPage";
 
 const IssueTransactionReportsPageWrapper: React.FC = () => {
   return (

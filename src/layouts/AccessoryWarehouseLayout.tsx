@@ -9,7 +9,6 @@ import {
   User,
   KanbanSquare,
   Network,
-  QrCode,
   FileOutput,
   Boxes,
   ScrollText,
@@ -76,13 +75,7 @@ const sidebarNavItems: NavItem[] = [
         key: "productivity-inventory",
         children: [
           {
-            title: "Scan QR",
-            path: "/accessory-warehouse/qr-scan",
-            icon: QrCode,
-            key: "qr-scan",
-          },
-          {
-            title: "Accessory WH Report",
+            title: "Daily Issue Accessory Report",
             path: "/accessory-warehouse/reports/issues",
             icon: ScrollText,
             key: "reports-issues",

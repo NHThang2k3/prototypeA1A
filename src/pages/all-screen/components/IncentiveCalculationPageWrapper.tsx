@@ -1,5 +1,5 @@
 import React from "react";
-import IncentiveCalculationPage from "../../IncentiveCalculationPage/IncentiveCalculationPage";
+import IncentiveCalculationPage from "../../SewwingLine/IncentiveCalculationPage";
 
 const IncentiveCalculationPageWrapper: React.FC = () => {
   return (

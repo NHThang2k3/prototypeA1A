@@ -1,5 +1,5 @@
 import React from "react";
-import CuttingDashboardPerformance from "../../cutting-dashboard-performance/CuttingDashboardPerformance";
+import CuttingDashboardPerformance from "../../Cutting/CuttingDashboardPerformance";
 
 const CuttingDashboardPerformanceWrapper: React.FC = () => {
   return (

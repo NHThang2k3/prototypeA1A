@@ -1,5 +1,5 @@
 import React from "react";
-import ActionPlanPage from "../../ActionPlanPage/ActionPlanPage";
+import ActionPlanPage from "../../Warehouse/ActionPlanPage";
 
 const ActionPlanPageWrapper: React.FC = () => {
   return (

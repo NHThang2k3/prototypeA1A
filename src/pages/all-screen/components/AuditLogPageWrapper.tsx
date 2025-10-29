@@ -1,5 +1,5 @@
 import React from "react";
-import AuditLogPage from "../../audit-log/AuditLogPage";
+import AuditLogPage from "../../FactorySetting/AuditLogPage";
 
 const AuditLogPageWrapper: React.FC = () => {
   return (

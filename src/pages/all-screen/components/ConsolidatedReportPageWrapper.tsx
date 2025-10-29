@@ -1,5 +1,5 @@
 import React from "react";
-import ConsolidatedReportPage from "../../ConsolidatedReportPage/ConsolidatedReportPage";
+import ConsolidatedReportPage from "../../SewwingLine/ConsolidatedReportPage";
 
 const ConsolidatedReportPageWrapper: React.FC = () => {
   return (

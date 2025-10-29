@@ -14,7 +14,7 @@ import {
   Boxes,
   ScrollText,
   ListPlus,
-  // Upload,
+  Upload,
   ChevronDown,
   ChevronLeft,
   Zap,
@@ -29,6 +29,7 @@ import {
   ArrowLeft,
   Globe,
   type LucideIcon,
+  Clock,
 } from "lucide-react";
 
 type NavItem = {
@@ -82,6 +83,12 @@ const sidebarNavItems: NavItem[] = [
             icon: ListPlus,
             key: "packing-list",
           },
+          {
+            title: "Packing List Form",
+            path: "/fabric-warehouse/packing-list-form",
+            icon: Upload,
+            key: "packing-list-form",
+          },
         ],
       },
       {
@@ -90,13 +97,25 @@ const sidebarNavItems: NavItem[] = [
         key: "productivity-inventory",
         children: [
           {
-            title: "Scan QR",
-            path: "/fabric-warehouse/qr-scan",
+            title: "Scan QR Location",
+            path: "/fabric-warehouse/qr-scan-location",
             icon: QrCode,
-            key: "qr-scan",
+            key: "qr-scan-location",
           },
           {
-            title: "Fabric WH Report",
+            title: "Scan QR Fabric",
+            path: "/fabric-warehouse/qr-scan-fabric",
+            icon: QrCode,
+            key: "qr-scan-fabric",
+          },
+          {
+            title: "Scan QR Issue Request",
+            path: "/fabric-warehouse/qr-scan-request",
+            icon: QrCode,
+            key: "qr-scan-request",
+          },
+          {
+            title: "Daily Issue Fabric Report",
             path: "/fabric-warehouse/reports/issues",
             icon: ScrollText,
             key: "reports-issues",
@@ -113,6 +132,12 @@ const sidebarNavItems: NavItem[] = [
             path: "/fabric-warehouse/issue/fabric",
             icon: FileOutput,
             key: "issue-fabric",
+          },
+          {
+            title: "Relax Fabric Screen",
+            path: "/fabric-warehouse/relax/fabric",
+            icon: Clock,
+            key: "relax-fabric",
           },
         ],
       },

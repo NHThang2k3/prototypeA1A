@@ -1,5 +1,5 @@
 import React from "react";
-import FgWhMonitoringReportPage from "../../FgWhMonitoringReportPage/FgWhMonitoringReportPage";
+import FgWhMonitoringReportPage from "../../FGsWH/FgWhMonitoringReportPage";
 
 const FgWhMonitoringReportPageWrapper: React.FC = () => {
   return (

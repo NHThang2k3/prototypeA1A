@@ -1,5 +1,5 @@
 import React from "react";
-import BufferScanInPage from "../../BufferScanInPage/BufferScanInPage";
+import BufferScanInPage from "../../Decoration/BufferScanInPage";
 
 const BufferScanInPageWrapper: React.FC = () => {
   return (

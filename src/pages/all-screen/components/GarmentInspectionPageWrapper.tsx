@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import GarmentInspectionPage from "../../GarmentInspectionPage/GarmentInspectionPage";
+import GarmentInspectionPage from "../../FGsWH/GarmentInspectionPage";
 import { AlertTriangle } from "lucide-react";
 
 const GarmentInspectionPageWrapper: React.FC = () => {

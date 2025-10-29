@@ -1,5 +1,5 @@
 import React from "react";
-import AccessoryIssueTransactionReportsPage from "../../accessory-issue-transaction-reports/AccessoryIssueTransactionReportsPage";
+import AccessoryIssueTransactionReportsPage from "../../Warehouse/AccessoryIssueTransactionReportsPage";
 
 const AccessoryIssueTransactionReportsPageWrapper: React.FC = () => {
   return (

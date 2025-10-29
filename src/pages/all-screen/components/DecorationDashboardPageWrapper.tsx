@@ -1,5 +1,5 @@
 import React from "react";
-import DecorationDashboardPage from "../../DecorationDashboardPage/DecorationDashboardPage";
+import DecorationDashboardPage from "../../Decoration/DecorationDashboardPage";
 
 const DecorationDashboardPageWrapper: React.FC = () => {
   return (

@@ -1,5 +1,5 @@
 import React from "react";
-import KanbanMonitoringPage from "../../KanbanMonitoringPage/KanbanMonitoringPage";
+import KanbanMonitoringPage from "../../SewwingLine/KanbanMonitoringPage";
 
 const KanbanMonitoringPageWrapper: React.FC = () => {
   return (

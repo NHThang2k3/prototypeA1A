@@ -1,5 +1,5 @@
 import React from "react";
-import EFFDashboardPage from "../../EFFDashboardPage/EFFDashboardPage";
+import EFFDashboardPage from "../../SewwingLine/EFFDashboardPage";
 
 const EFFDashboardPageWrapper: React.FC = () => {
   return (

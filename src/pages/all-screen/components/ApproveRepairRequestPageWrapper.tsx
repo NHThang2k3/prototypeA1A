@@ -1,5 +1,5 @@
 import React from "react";
-import ApproveRepairRequestPage from "../../damaged-goods-repair/ApproveRepairRequestPage";
+import ApproveRepairRequestPage from "../../Decoration/ApproveRepairRequestPage";
 
 const ApproveRepairRequestPageWrapper: React.FC = () => {
   // Lấy một ID hợp lệ từ mock data của component gốc để hiển thị
