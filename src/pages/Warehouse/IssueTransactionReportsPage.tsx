@@ -432,10 +432,6 @@ const mockFabricRolls: FabricRoll[] = [
   },
 ];
 
-// =================================================================================
-// --- COMPONENT: StatusBadge (from components/StatusBadge.tsx) ---
-// =================================================================================
-
 interface StatusBadgeProps {
   status: QcStatus;
 }
@@ -455,10 +451,6 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
     </span>
   );
 };
-
-// =================================================================================
-// --- COMPONENT: ColumnToggler (from components/ColumnToggler.tsx) ---
-// =================================================================================
 
 interface ColumnTogglerProps {
   allColumns: ColumnDefinition[];
@@ -523,10 +515,6 @@ const ColumnToggler: React.FC<ColumnTogglerProps> = ({
   );
 };
 
-// =================================================================================
-// --- COMPONENT: PageHeader (from components/PageHeader.tsx) ---
-// =================================================================================
-
 interface PageHeaderProps {
   selectedCount: number;
   onExport: () => void;
@@ -540,7 +528,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({ selectedCount, onExport }) => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">
-            Fabric Roll Inventory Report
+            Issue Fabric Report
           </h1>
           <p className="text-sm text-gray-500">
             View, filter, and export fabric roll transaction history.
@@ -562,10 +550,6 @@ const PageHeader: React.FC<PageHeaderProps> = ({ selectedCount, onExport }) => {
     </div>
   );
 };
-
-// =================================================================================
-// --- COMPONENT: ReportFilters (from components/ReportFilters.tsx) ---
-// =================================================================================
 
 interface ReportFiltersProps {
   onFilterChange: (filters: FabricRollFilters) => void;
@@ -637,7 +621,7 @@ const ReportFilters: React.FC<ReportFiltersProps> = ({
         {/* Date Range Picker */}
         <div className="md:col-span-12 lg:col-span-4">
           <label className="text-sm font-medium text-gray-600 block mb-1">
-            Date In House
+            Issued Date (From - To)
           </label>
           <div className="flex items-center space-x-2">
             <input
@@ -670,10 +654,6 @@ const ReportFilters: React.FC<ReportFiltersProps> = ({
     </div>
   );
 };
-
-// =================================================================================
-// --- COMPONENT: Pagination (from components/Pagination.tsx) ---
-// =================================================================================
 
 interface PaginationProps {
   currentPage: number;
@@ -741,10 +721,6 @@ const Pagination: React.FC<PaginationProps> = ({
     </div>
   );
 };
-
-// =================================================================================
-// --- COMPONENT: TransactionsTable (from components/TransactionsTable.tsx) ---
-// =================================================================================
 
 const renderCell = (roll: FabricRoll, columnKey: string) => {
   const value = roll[columnKey as keyof FabricRoll];
@@ -908,10 +884,6 @@ const TransactionsTable: React.FC<TransactionsTableProps> = ({
     </div>
   );
 };
-
-// =================================================================================
-// --- MAIN PAGE COMPONENT: IssueTransactionReportsPage ---
-// =================================================================================
 
 const IssueTransactionReportsPage = () => {
   const isLoading = false;

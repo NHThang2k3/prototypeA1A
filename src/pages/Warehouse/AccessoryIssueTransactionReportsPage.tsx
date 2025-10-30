@@ -396,7 +396,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({ selectedCount, onExport }) => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">
-            Accessory Issue Transaction Report
+            Accessory Issue Report
           </h1>
           <p className="text-sm text-gray-500">
             View, filter, and export accessory transaction history.
@@ -484,7 +484,7 @@ const ReportFilters: React.FC<ReportFiltersProps> = ({
         </div>
         <div className="md:col-span-12 lg:col-span-4">
           <label className="text-sm font-medium text-gray-600 block mb-1">
-            Date Received
+            Issued Date (From - To)
           </label>
           <div className="flex items-center space-x-2">
             <input

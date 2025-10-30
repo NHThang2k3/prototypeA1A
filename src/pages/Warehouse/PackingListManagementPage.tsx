@@ -15,7 +15,6 @@ import { v4 as uuidv4 } from "uuid";
 import {
   Plus,
   Search,
-  Filter,
   QrCode,
   Undo2,
   Columns,
@@ -445,22 +444,22 @@ const PackingListFilters: FC = () => {
             htmlFor="qc-check-filter"
             className="block text-sm font-medium text-gray-700 mb-1"
           >
-            QC Check Status
+            QC Check
           </label>
           <select
             id="qc-check-filter"
             className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
           >
             <option value="">All</option>
-            <option value="checked">Checked for QC</option>
-            <option value="not-checked">Not Checked for QC</option>
+            <option value="checked">Yes</option>
+            <option value="not-checked">No</option>
           </select>
         </div>
       </div>
       <div className="mt-4 flex justify-end">
         <Button variant="primary">
-          <Filter className="w-4 h-4 mr-2" />
-          Apply Filters
+          <Search className="w-4 h-4 mr-2" />
+          Search
         </Button>
       </div>
     </div>

@@ -44,10 +44,6 @@ const formatTime = (totalSeconds: number): string => {
   return `${paddedHours}:${paddedMinutes}:${paddedSeconds}`;
 };
 
-//================================================================================
-// 3. NEW COMPONENT: ScanScreen
-//================================================================================
-
 interface ScanScreenProps {
   stations: RelaxStation[];
   onScanComplete: (machineId: number, fabricId: string) => void;
@@ -155,10 +151,6 @@ const ScanScreen: React.FC<ScanScreenProps> = ({
     </div>
   );
 };
-
-//================================================================================
-// 4. CHILD COMPONENT: RelaxStationCard
-//================================================================================
 
 interface RelaxStationCardProps {
   station: RelaxStation;
@@ -274,11 +266,7 @@ const RelaxStationCard: React.FC<RelaxStationCardProps> = ({
   );
 };
 
-//================================================================================
-// 5. MAIN COMPONENT: FabricRelaxScreen
-//================================================================================
-
-const TOTAL_RELAX_SECONDS = 10; // 24 hours
+const TOTAL_RELAX_SECONDS = 7; // 7 seconds for demo purposes
 // const TOTAL_RELAX_SECONDS = 120; // 2 minutes for testing
 
 const initialStations: RelaxStation[] = Array.from({ length: 8 }, (_, i) => ({

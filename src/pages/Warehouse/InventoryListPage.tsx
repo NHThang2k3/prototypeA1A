@@ -465,7 +465,7 @@ export const InventoryFilters = () => {
       >
         <span className="flex items-center">
           <SlidersHorizontal className="w-5 h-5 mr-3 text-gray-500" />
-          Filters
+          Search
         </span>
         <ChevronDown
           className={`w-5 h-5 text-gray-500 transition-transform duration-200 ${
@@ -583,7 +583,7 @@ export const InventoryFilters = () => {
               type="button"
               className="bg-gray-100 text-gray-700 font-medium py-2 px-4 rounded-md hover:bg-gray-200"
             >
-              Reset
+              Clear
             </button>
             <button
               type="submit"
@@ -591,7 +591,7 @@ export const InventoryFilters = () => {
               className="flex items-center justify-center px-4 py-2 bg-blue-600 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-blue-700"
             >
               <Search className="w-5 h-5 mr-2 -ml-1" />
-              Apply Filters
+              Search
             </button>
           </div>
         </form>
@@ -920,7 +920,7 @@ export const InventoryTable: React.FC<InventoryTableProps> = ({
                           }
                           className="w-full text-left flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         >
-                          <Printer className="w-4 h-4 mr-3" /> Print QR Code
+                          <Printer className="w-4 h-4 mr-3" /> Reprint QR Code
                         </button>
                         <button
                           onClick={() =>
