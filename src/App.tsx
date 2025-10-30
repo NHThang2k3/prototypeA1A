@@ -77,6 +77,16 @@ import FabricRelaxScreen from "./pages/Warehouse/FabricRelaxScreen";
 import ScanQRWarehouseLocation from "./pages/Warehouse/ScanQRWarehouseLocation";
 import ScanQRFabric from "./pages/Warehouse/ScanQRFabric";
 import ScanQRIssueRequest from "./pages/Warehouse/ScanQRIssueRequest";
+import ScanQRAccessory from "./pages/Warehouse/ScanQRAccessory";
+import ScanQRWarehouseLocationAccessory from "./pages/Warehouse/ScanQRWarehouseLocationAccessory";
+import ScanQRIssueRequestAccessory from "./pages/Warehouse/ScanQRIssueRequestAccessory";
+import PackingListManagementPageAccessory from "./pages/Warehouse/PackingListManagementPageAccessory";
+import ImportPackingListFormPageAccessory from "./pages/Warehouse/ImportPackingListFormPageAccessory";
+import ScanQRWarehouseLocationPackaging from "./pages/Warehouse/ScanQRWarehouseLocationPackaging";
+import ScanQRPackaging from "./pages/Warehouse/ScanQRPackaging";
+import ScanQRIssueRequestPackaging from "./pages/Warehouse/ScanQRIssueRequestPackaging";
+import PackingListManagementPagePackaging from "./pages/Warehouse/PackingListManagementPagePackaging";
+import ImportPackingListFormPagePackaging from "./pages/Warehouse/ImportPackingListFormPagePackaging";
 
 function App() {
   return (
@@ -128,6 +138,23 @@ function App() {
             path="reports/issues"
             element={<AccessoryIssueTransactionReportsPage />}
           />
+          <Route
+            path="qr-scan-location"
+            element={<ScanQRWarehouseLocationAccessory />}
+          />
+          <Route path="qr-scan-accessory" element={<ScanQRAccessory />} />
+          <Route
+            path="qr-scan-request"
+            element={<ScanQRIssueRequestAccessory />}
+          />
+          <Route
+            path="packing-list"
+            element={<PackingListManagementPageAccessory />}
+          />
+          <Route
+            path="packing-list-form"
+            element={<ImportPackingListFormPageAccessory />}
+          />
         </Route>
 
         {/* === Module Kho Đóng Gói (Ví dụ) === */}
@@ -145,6 +172,23 @@ function App() {
           <Route
             path="reports/issues"
             element={<PackagingIssueTransactionReportsPage />}
+          />
+          <Route
+            path="qr-scan-location"
+            element={<ScanQRWarehouseLocationPackaging />}
+          />
+          <Route path="qr-scan-packaging" element={<ScanQRPackaging />} />
+          <Route
+            path="qr-scan-request"
+            element={<ScanQRIssueRequestPackaging />}
+          />
+          <Route
+            path="packing-list"
+            element={<PackingListManagementPagePackaging />}
+          />
+          <Route
+            path="packing-list-form"
+            element={<ImportPackingListFormPagePackaging />}
           />
         </Route>
 

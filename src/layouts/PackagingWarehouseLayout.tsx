@@ -26,6 +26,9 @@ import {
   ArrowLeft,
   Globe,
   type LucideIcon,
+  Upload,
+  ListPlus,
+  QrCode,
 } from "lucide-react";
 
 type NavItem = {
@@ -68,12 +71,48 @@ const sidebarNavItems: NavItem[] = [
           },
         ],
       },
-
+      {
+        title: "Receipt",
+        icon: ScrollText,
+        key: "productivity-receipt",
+        children: [
+          {
+            title: "Packing List/Print QR",
+            path: "/packaging-warehouse/packing-list",
+            icon: ListPlus,
+            key: "packing-list",
+          },
+          {
+            title: "Packing List Form",
+            path: "/packaging-warehouse/packing-list-form",
+            icon: Upload,
+            key: "packing-list-form",
+          },
+        ],
+      },
       {
         title: "Inventory Tracking",
         icon: Boxes,
         key: "productivity-inventory",
         children: [
+          {
+            title: "Scan QR Location",
+            path: "/packaging-warehouse/qr-scan-location",
+            icon: QrCode,
+            key: "qr-scan-location",
+          },
+          {
+            title: "Scan QR Packaging",
+            path: "/packaging-warehouse/qr-scan-packaging",
+            icon: QrCode,
+            key: "qr-scan-packaging",
+          },
+          {
+            title: "Scan QR Issue Request",
+            path: "/packaging-warehouse/qr-scan-request",
+            icon: QrCode,
+            key: "qr-scan-request",
+          },
           {
             title: "Daily Issue Packaging Report",
             path: "/packaging-warehouse/reports/issues",
