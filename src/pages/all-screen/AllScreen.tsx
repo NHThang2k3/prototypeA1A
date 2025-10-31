@@ -1,158 +1,103 @@
 import React from "react";
-import WipDashboardPage from "../SewwingLine/WipDashboardPage";
-import SupermarketReportPage from "../Buffer/SupermarketReportPage";
-import SupermarketScanPage from "../Buffer/SupermarketScanPage";
-import BufferReportPage from "../Buffer/BufferReportPage";
-import BufferScanPage from "../Buffer/BufferScanPage";
-import KanbanReportPage from "../Buffer/KanbanReportPage";
-import CreateRepairRequestPage from "../Decoration/CreateRepairRequestPage";
-import RepairRequestListPage from "../Decoration/RepairRequestListPage";
-import BondingOutputPage from "../Decoration/BondingOutputPage";
-import WorkPlanPage from "../Decoration/WorkPlanPage";
-import CuttingWeeklyDailyPlanPage from "../Cutting/CuttingWeeklyDailyPlanPage";
-import ToolManagementPage from "../Cutting/ToolManagementPage";
-import OverallDashboardPage from "../overall-dashboard/OverallDashboardPage";
-import AccessoryIssueTransactionReportsPageWrapper from "./components/AccessoryIssueTransactionReportsPageWrapper";
-import ActionPlanPageWrapper from "./components/ActionPlanPageWrapper";
-import AuditLogPageWrapper from "./components/AuditLogPageWrapper";
-import BufferScanInPageWrapper from "./components/BufferScanInPageWrapper";
-import BufferScanOutPageWrapper from "./components/BufferScanOutPageWrapper";
-import ConsolidatedReportPageWrapper from "./components/ConsolidatedReportPageWrapper";
-import CuttingDashboardPerformanceWrapper from "./components/CuttingDashboardPerformanceWrapper";
-import DecorationDashboardPageWrapper from "./components/DecorationDashboardPageWrapper";
-import EFFDashboardPageWrapper from "./components/EFFDashboardPageWrapper";
-import EMSPageWrapper from "./components/EMSPageWrapper";
-import FgWhMonitoringReportPageWrapper from "./components/FgWhMonitoringReportPageWrapper";
-import GarmentInspectionPageWrapper from "./components/GarmentInspectionPageWrapper";
-import InboundDashboardPageWrapper from "./components/InboundDashboardPageWrapper";
-import IncentiveCalculationPageWrapper from "./components/IncentiveCalculationPageWrapper";
-import IssueAccessoryFormPageWrapper from "./components/IssueAccessoryFormPageWrapper";
-import IssueFabricFromJobPageWrapper from "./components/IssueFabricFromJobPageWrapper";
-import IssuePackagingFormPageWrapper from "./components/IssuePackagingFormPageWrapper";
-import IssueTransactionReportsPageWrapper from "./components/IssueTransactionReportsPageWrapper";
-import KanbanMonitoringPageWrapper from "./components/KanbanMonitoringPageWrapper";
-import LocationManagementPage from "../FactorySetting/LocationManagementPage";
-import MachineLocationPage from "../Decoration/MachineLocationPage";
-import ManageWorkforcePage from "../SewwingLine/ManageWorkforcePage";
-import MasterPlanPage from "../Cutting/MasterPlanPage";
+// import ActionPlanPage from "../Warehouse/ActionPlanPage";
+import SewingTrimsKanbanPage from "../Warehouse/SewingTrimsKanbanPage";
+import ImportPackingListFormPage from "../Warehouse/ImportPackingListFormPage";
+import IssueFabricFromJobPage from "../Warehouse/IssueFabricFromJobPage";
+import IssueAccessoryFormPage from "../Warehouse/IssueAccessoryFormPage";
+import IssuePackagingFormPage from "../Warehouse/IssuePackagingFormPage";
+import ScanQRIssueRequest from "../Warehouse/ScanQRIssueRequest";
+import ScanQRFabric from "../Warehouse/ScanQRFabric";
+import ScanQRWarehouseLocation from "../Warehouse/ScanQRWarehouseLocation";
+import KanbanBoardPage from "../Warehouse/KanbanBoardPage";
+import PackingListManagementPage from "../Warehouse/PackingListManagementPage";
+import InventoryListPage from "../Warehouse/InventoryListPage";
+import IssueTransactionReportsPage from "../Warehouse/IssueTransactionReportsPage";
+import FabricRelaxScreen from "../Warehouse/FabricRelaxScreen";
+import AccessoryInventoryListPage from "../Warehouse/AccessoryInventoryListPage";
+import AccessoryIssueTransactionReportsPage from "../Warehouse/AccessoryIssueTransactionReportsPage";
+import PackagingInventoryListPage from "../Warehouse/PackagingInventoryListPage";
 import PackagingIssueTransactionReportsPage from "../Warehouse/PackagingIssueTransactionReportsPage";
-import PackingPlanReportPage from "../FGsWH/PackingPlanReportPage";
-import ProductionPlanPage from "../SewwingLine/ProductionPlanPage";
-import QualityDashboardPage from "../SewwingLine/QualityDashboardPage";
-import SampleInspectionPage from "../FGsWH/SampleInspectionPage";
-import SkillMatrixPage from "../SewwingLine/SkillMatrixPage";
-import ToolStatusDashboardPage from "../SewwingLine/ToolStatusDashboardPage";
-import TPMDashboardPage from "../SewwingLine/TPMDashboardPage";
-import UploadPackingPlanPage from "../FGsWH/UploadPackingPlanPage";
-import UploadPlanloadPage from "../FGsWH/UploadPlanloadPage";
-import WeeklyDailyPlanPage from "../Decoration/WeeklyDailyPlanPage";
-// import QRScanInterfacePageWrapper from "./components/QRScanInterfacePageWrapper";
-import HomePageWrapper from "./components/HomePageWrapper";
-import ApproveRepairRequestPageWrapper from "./components/ApproveRepairRequestPageWrapper";
-import RecordReworkResultPageWrapper from "./components/RecordReworkResultPageWrapper";
+import ScanQRAccessory from "../Warehouse/ScanQRAccessory";
+import ScanQRIssueRequestAccessory from "../Warehouse/ScanQRIssueRequestAccessory";
+import ScanQRWarehouseLocationAccessory from "../Warehouse/ScanQRWarehouseLocationAccessory";
+import ImportPackingListFormPageAccessory from "../Warehouse/ImportPackingListFormPageAccessory";
+import PackingListManagementPageAccessory from "../Warehouse/PackingListManagementPageAccessory";
+import PackingListManagementPagePackaging from "../Warehouse/PackingListManagementPagePackaging";
+import ImportPackingListFormPagePackaging from "../Warehouse/ImportPackingListFormPagePackaging";
+import ScanQRWarehouseLocationPackaging from "../Warehouse/ScanQRWarehouseLocationPackaging";
+import ScanQRIssueRequestPackaging from "../Warehouse/ScanQRIssueRequestPackaging";
+import ScanQRPackaging from "../Warehouse/ScanQRPackaging";
 
 const AllScreens: React.FC = () => {
   type PageComponent = React.ComponentType<Record<string, unknown>>;
   const pages: { name: string; component: PageComponent }[] = [
-    { name: "HomePageWrapper", component: HomePageWrapper },
+    // { name: "ActionPlanPage", component: ActionPlanPage },
+    { name: "SewingTrimsKanbanPage", component: SewingTrimsKanbanPage },
+    { name: "ImportPackingListFormPage", component: ImportPackingListFormPage },
+    { name: "IssueFabricFromJobPage", component: IssueFabricFromJobPage },
+    { name: "IssueAccessoryFormPage", component: IssueAccessoryFormPage },
+    { name: "IssuePackagingFormPage", component: IssuePackagingFormPage },
+    { name: "ScanQRIssueRequest", component: ScanQRIssueRequest },
+    { name: "ScanQRFabric", component: ScanQRFabric },
+    { name: "ScanQRWarehouseLocation", component: ScanQRWarehouseLocation },
+    { name: "KanbanBoardPage", component: KanbanBoardPage },
+    { name: "PackingListManagementPage", component: PackingListManagementPage },
+    { name: "InventoryListPage", component: InventoryListPage },
     {
-      name: "InboundDashboardPage (Fabric)",
-      component: InboundDashboardPageWrapper,
+      name: "IssueTransactionReportsPage",
+      component: IssueTransactionReportsPage,
     },
-    // {
-    //   name: "QRScanInterfacePage (Fabric)",
-    //   component: QRScanInterfacePageWrapper,
-    // },
+    { name: "FabricRelaxScreen", component: FabricRelaxScreen },
     {
-      name: "IssueTransactionReportsPage (Fabric)",
-      component: IssueTransactionReportsPageWrapper,
-    },
-    {
-      name: "IssueFabricFromJobPage",
-      component: IssueFabricFromJobPageWrapper,
+      name: "AccessoryInventoryListPage",
+      component: AccessoryInventoryListPage,
     },
     {
       name: "AccessoryIssueTransactionReportsPage",
-      component: AccessoryIssueTransactionReportsPageWrapper,
+      component: AccessoryIssueTransactionReportsPage,
     },
     {
-      name: "IssueAccessoryFormPage",
-      component: IssueAccessoryFormPageWrapper,
+      name: "PackagingInventoryListPage",
+      component: PackagingInventoryListPage,
     },
     {
       name: "PackagingIssueTransactionReportsPage",
       component: PackagingIssueTransactionReportsPage,
     },
+    { name: "ScanQRAccessory", component: ScanQRAccessory },
     {
-      name: "IssuePackagingFormPage",
-      component: IssuePackagingFormPageWrapper,
-    },
-    { name: "MasterPlanPage (Cutting)", component: MasterPlanPage },
-    {
-      name: "CuttingWeeklyDailyPlanPage",
-      component: CuttingWeeklyDailyPlanPage,
+      name: "ScanQRIssueRequestAccessory",
+      component: ScanQRIssueRequestAccessory,
     },
     {
-      name: "CuttingDashboardPerformance",
-      component: CuttingDashboardPerformanceWrapper,
-    },
-    { name: "ToolManagementPage", component: ToolManagementPage },
-    { name: "ActionPlanPage (Shared)", component: ActionPlanPageWrapper },
-    { name: "KanbanReportPage", component: KanbanReportPage },
-    { name: "BufferScanPage", component: BufferScanPage },
-    { name: "BufferReportPage", component: BufferReportPage },
-    { name: "SupermarketScanPage", component: SupermarketScanPage },
-    { name: "SupermarketReportPage", component: SupermarketReportPage },
-    { name: "WipDashboardPage", component: WipDashboardPage },
-    { name: "WeeklyDailyPlanPage", component: WeeklyDailyPlanPage },
-    { name: "WorkPlanPage", component: WorkPlanPage },
-    { name: "BufferScanInPage", component: BufferScanInPageWrapper },
-    { name: "BufferScanOutPage", component: BufferScanOutPageWrapper },
-    { name: "BondingOutputPage", component: BondingOutputPage },
-    {
-      name: "DecorationDashboardPage",
-      component: DecorationDashboardPageWrapper,
-    },
-    { name: "RepairRequestListPage", component: RepairRequestListPage },
-    { name: "CreateRepairRequestPage", component: CreateRepairRequestPage },
-    {
-      name: "ApproveRepairRequestPage",
-      component: ApproveRepairRequestPageWrapper,
+      name: "ScanQRWarehouseLocationAccessory",
+      component: ScanQRWarehouseLocationAccessory,
     },
     {
-      name: "RecordReworkResultPage",
-      component: RecordReworkResultPageWrapper,
+      name: "ImportPackingListFormPageAccessory",
+      component: ImportPackingListFormPageAccessory,
     },
-    { name: "MachineLocationPage", component: MachineLocationPage },
-    { name: "ProductionPlanPage", component: ProductionPlanPage },
-    { name: "KanbanMonitoringPage", component: KanbanMonitoringPageWrapper },
-    { name: "EFFDashboardPage", component: EFFDashboardPageWrapper },
     {
-      name: "ConsolidatedReportPage (Performance Monitoring)",
-      component: ConsolidatedReportPageWrapper,
+      name: "PackingListManagementPageAccessory",
+      component: PackingListManagementPageAccessory,
     },
-    { name: "QualityDashboardPage", component: QualityDashboardPage },
-    { name: "ToolStatusDashboardPage", component: ToolStatusDashboardPage },
-    { name: "EMSPage", component: EMSPageWrapper },
-    { name: "TPMDashboardPage", component: TPMDashboardPage },
     {
-      name: "IncentiveCalculationPage",
-      component: IncentiveCalculationPageWrapper,
+      name: "PackingListManagementPagePackaging",
+      component: PackingListManagementPagePackaging,
     },
-    { name: "ManageWorkforcePage", component: ManageWorkforcePage },
-    { name: "SkillMatrixPage", component: SkillMatrixPage },
-    { name: "UploadPackingPlanPage", component: UploadPackingPlanPage },
-    { name: "PackingPlanReportPage", component: PackingPlanReportPage },
-    { name: "UploadPlanloadPage", component: UploadPlanloadPage },
     {
-      name: "FgWhMonitoringReportPage",
-      component: FgWhMonitoringReportPageWrapper,
+      name: "ImportPackingListFormPagePackaging",
+      component: ImportPackingListFormPagePackaging,
     },
-    { name: "SampleInspectionPage", component: SampleInspectionPage },
-    { name: "GarmentInspectionPage", component: GarmentInspectionPageWrapper },
-    { name: "LocationManagementPage", component: LocationManagementPage },
-    { name: "AuditLogPage", component: AuditLogPageWrapper },
-    { name: "OverallDashboardPage", component: OverallDashboardPage },
+    {
+      name: "ScanQRWarehouseLocationPackaging",
+      component: ScanQRWarehouseLocationPackaging,
+    },
+    {
+      name: "ScanQRIssueRequestPackaging",
+      component: ScanQRIssueRequestPackaging,
+    },
+    { name: "ScanQRPackaging", component: ScanQRPackaging },
   ];
 
   return (
