@@ -27,6 +27,11 @@ import ImportPackingListFormPagePackaging from "../Warehouse/ImportPackingListFo
 import ScanQRWarehouseLocationPackaging from "../Warehouse/ScanQRWarehouseLocationPackaging";
 import ScanQRIssueRequestPackaging from "../Warehouse/ScanQRIssueRequestPackaging";
 import ScanQRPackaging from "../Warehouse/ScanQRPackaging";
+import ToolManagementPage from "../Cutting/ToolManagementPage";
+import CuttingDashboardPerformance from "../Cutting/CuttingDashboardPerformance";
+import BundleManagementPage from "../Cutting/BundleManagementPage";
+import MasterPlanPage from "../Cutting/MasterPlanPage";
+import CuttingWeeklyDailyPlanPage from "../Cutting/CuttingWeeklyDailyPlanPage";
 
 const AllScreens: React.FC = () => {
   type PageComponent = React.ComponentType<Record<string, unknown>>;
@@ -98,6 +103,19 @@ const AllScreens: React.FC = () => {
       component: ScanQRIssueRequestPackaging,
     },
     { name: "ScanQRPackaging", component: ScanQRPackaging },
+
+    // Cutting Screens
+    {
+      name: "CuttingWeeklyDailyPlanPage",
+      component: CuttingWeeklyDailyPlanPage,
+    },
+    { name: "MasterPlanPage", component: MasterPlanPage },
+    { name: "BundleManagementPage", component: BundleManagementPage },
+    {
+      name: "CuttingDashboardPerformance",
+      component: CuttingDashboardPerformance,
+    },
+    { name: "ToolManagementPage", component: ToolManagementPage },
   ];
 
   return (
