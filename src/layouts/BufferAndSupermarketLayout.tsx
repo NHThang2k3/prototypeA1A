@@ -70,7 +70,7 @@ const sidebarNavItems: NavItem[] = [
             key: "buffer-scan",
           },
           {
-            title: "Buffer progress + status report",
+            title: "Buffer progress & status",
             path: "/buffer-supermarket/productivity/buffer-report",
             icon: ScrollText,
             key: "buffer-report",
@@ -89,7 +89,7 @@ const sidebarNavItems: NavItem[] = [
             key: "supermarket-scan",
           },
           {
-            title: "Supermarket progress + status report",
+            title: "Supermarket progress & status",
             path: "/buffer-supermarket/productivity/supermarket-report",
             icon: ScrollText,
             key: "supermarket-report",

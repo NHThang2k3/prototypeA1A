@@ -1,17 +1,19 @@
-// src/pages/BufferScanPage/BufferScanPage.tsx
-
-import React, { useState, useRef, useEffect } from "react";
+import React from "react";
 import {
-  ScanLine,
   Info,
   ArrowRight,
   Warehouse,
   CheckCircle,
   XCircle,
+  QrCode,
+  Loader2,
 } from "lucide-react";
 
-// Mock data
-const decorationSteps = ["Bonding", "Heat Press", "Embroidery", "Screen Print"];
+// ============================================================================
+// 1. MOCK DATA & TYPES (Giữ nguyên từ file gốc)
+// ============================================================================
+
+const decorationSteps = ["Bonding", "Heat Press", "Embroidery", "Pad Print"];
 type Bundle = {
   id: string;
   po: string;
@@ -21,80 +23,93 @@ type Bundle = {
   status: "At Cutting" | "At Buffer" | "At Decoration";
 };
 
-const findBundle = (id: string): Bundle | null => {
-  if (id.startsWith("B-")) {
-    return {
-      id,
-      po: "PO-2024-001",
-      style: "Men T-Shirt",
-      color: "Black",
-      size: "M",
-      status: Math.random() > 0.5 ? "At Cutting" : "At Buffer",
-    };
-  }
-  return null;
+// Dữ liệu giả cho các kịch bản
+const mockBundleAtCutting: Bundle = {
+  id: "B-12345",
+  po: "PO-2024-001",
+  style: "Men T-Shirt",
+  color: "Black",
+  size: "M",
+  status: "At Cutting",
 };
 
-const BufferScanPage: React.FC = () => {
-  const [scannedCode, setScannedCode] = useState("");
-  const [scannedBundle, setScannedBundle] = useState<Bundle | null>(null);
-  const [feedback, setFeedback] = useState<{
-    type: "success" | "error";
-    message: string;
-  } | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+const mockBundleAtBuffer: Bundle = {
+  id: "B-67890",
+  po: "PO-2024-002",
+  style: "Women Hoodie",
+  color: "Gray",
+  size: "S",
+  status: "At Buffer",
+};
 
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, [scannedBundle]);
+const successFeedback = {
+  type: "success" as const,
+  message: "Success! Bundle B-12345 has been recorded: Scan In to Buffer",
+};
 
-  const handleScan = (e: React.FormEvent) => {
-    e.preventDefault();
-    setFeedback(null);
-    const bundle = findBundle(scannedCode);
-    if (bundle) {
-      setScannedBundle(bundle);
-    } else {
-      setFeedback({
-        type: "error",
-        message: `Bundle with code: ${scannedCode} not found`,
-      });
-      setScannedBundle(null);
-    }
-  };
+const errorFeedback = {
+  type: "error" as const,
+  message: "Error! Bundle with code: B-INVALID not found",
+};
 
-  const handleAction = (action: string) => {
-    // Handle scan out or scan in logic
-    setFeedback({
-      type: "success",
-      message: `Bundle ${scannedBundle?.id} has been recorded: ${action}`,
-    });
-    resetState();
-  };
+// ============================================================================
+// 2. TÁCH CÁC COMPONENT GIAO DIỆN "CÂM" (DUMB UI COMPONENTS)
+//    Các component này chỉ nhận props và hiển thị, không chứa logic.
+// ============================================================================
 
-  const resetState = () => {
-    setScannedCode("");
-    setScannedBundle(null);
-    setTimeout(() => setFeedback(null), 3000);
-  };
+// --- Component hiển thị giao diện Quét QR ---
+const ScannerView: React.FC<{ isScanning: boolean }> = ({ isScanning }) => (
+  <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white p-4">
+    <h1 className="text-4xl font-bold mb-4">Scan Bundle QR Code</h1>
+    <p className="text-gray-400 mb-8 text-lg">
+      Position the QR code inside the frame
+    </p>
+    <div className="relative w-80 h-80 bg-gray-800 rounded-2xl overflow-hidden shadow-2xl border-4 border-gray-700">
+      <QrCode
+        className="absolute inset-0 w-full h-full text-gray-700/50"
+        strokeWidth={0.5}
+      />
+      <div className="absolute top-4 left-4 w-10 h-10 border-t-4 border-l-4 border-green-400 rounded-tl-lg"></div>
+      <div className="absolute top-4 right-4 w-10 h-10 border-t-4 border-r-4 border-green-400 rounded-tr-lg"></div>
+      <div className="absolute bottom-4 left-4 w-10 h-10 border-b-4 border-l-4 border-green-400 rounded-bl-lg"></div>
+      <div className="absolute bottom-4 right-4 w-10 h-10 border-b-4 border-r-4 border-green-400 rounded-br-lg"></div>
+      {isScanning && (
+        <div className="absolute top-0 left-0 w-full h-1.5 bg-green-400 shadow-[0_0_20px_5px_rgba(52,211,153,0.7)] animate-scan"></div>
+      )}
+    </div>
+    <button
+      disabled={isScanning}
+      className="mt-10 flex items-center justify-center w-64 bg-blue-600 text-white font-bold py-4 px-8 rounded-full shadow-lg hover:bg-blue-700 transition-all text-xl disabled:bg-gray-500 disabled:cursor-not-allowed"
+    >
+      {isScanning ? (
+        <>
+          <Loader2 className="w-6 h-6 mr-3 animate-spin" />
+          Scanning...
+        </>
+      ) : (
+        "Scan"
+      )}
+    </button>
+  </div>
+);
 
+// --- Component hiển thị giao diện Chi tiết & Hành động ---
+const DetailsView: React.FC<{
+  bundle: Bundle | null;
+  feedback: { type: "success" | "error"; message: string } | null;
+}> = ({ bundle, feedback }) => {
   const renderActions = () => {
-    if (!scannedBundle) return null;
-    if (scannedBundle.status === "At Cutting") {
-      // Logic for Scan In
+    if (!bundle) return null;
+    if (bundle.status === "At Cutting") {
       return (
         <div className="mt-6 text-center">
-          <button
-            onClick={() => handleAction("Scan In to Buffer")}
-            className="bg-green-500 text-white font-bold py-4 px-8 rounded-lg shadow-lg hover:bg-green-600 transition-colors text-xl"
-          >
+          <button className="bg-green-500 text-white font-bold py-4 px-8 rounded-lg shadow-lg hover:bg-green-600 transition-colors text-xl">
             Confirm Scan In to Buffer
           </button>
         </div>
       );
     }
-    if (scannedBundle.status === "At Buffer") {
-      // Logic for Scan Out
+    if (bundle.status === "At Buffer") {
       return (
         <div className="mt-6">
           <h3 className="text-lg font-semibold text-gray-700 text-center mb-4">
@@ -104,17 +119,13 @@ const BufferScanPage: React.FC = () => {
             {decorationSteps.map((step) => (
               <button
                 key={step}
-                onClick={() => handleAction(`Scan Out to ${step}`)}
                 className="flex items-center justify-center p-4 bg-white border rounded-lg shadow hover:bg-gray-50 transition-all"
               >
                 <ArrowRight className="w-5 h-5 mr-3 text-blue-500" />
                 <span className="font-semibold text-gray-800">{step}</span>
               </button>
             ))}
-            <button
-              onClick={() => handleAction("Store in Temporary WH")}
-              className="md:col-span-2 flex items-center justify-center p-4 bg-white border rounded-lg shadow hover:bg-gray-50 transition-all"
-            >
+            <button className="md:col-span-2 flex items-center justify-center p-4 bg-white border rounded-lg shadow hover:bg-gray-50 transition-all">
               <Warehouse className="w-5 h-5 mr-3 text-purple-500" />
               <span className="font-semibold text-gray-800">
                 Store in Temporary Warehouse
@@ -128,36 +139,14 @@ const BufferScanPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-4">
+    <div className="max-w-4xl mx-auto p-4 pt-10 bg-gray-100 min-h-screen">
       <h1 className="text-3xl font-bold text-gray-800 mb-6">
         Buffer Scan In/Out
       </h1>
-
       <div className="bg-white p-6 rounded-xl shadow-md">
-        <form
-          onSubmit={handleScan}
-          className="flex flex-col sm:flex-row items-center gap-4"
-        >
-          <ScanLine className="w-10 h-10 text-gray-400 flex-shrink-0" />
-          <input
-            ref={inputRef}
-            type="text"
-            value={scannedCode}
-            onChange={(e) => setScannedCode(e.target.value)}
-            placeholder="Scan bundle QR code..."
-            className="w-full text-lg px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-          />
-          <button
-            type="submit"
-            className="w-full sm:w-auto bg-blue-600 text-white font-semibold px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors shadow"
-          >
-            Check
-          </button>
-        </form>
-
         {feedback && (
           <div
-            className={`mt-4 p-3 rounded-lg flex items-center ${
+            className={`mb-4 p-3 rounded-lg flex items-center ${
               feedback.type === "success"
                 ? "bg-green-100 text-green-800"
                 : "bg-red-100 text-red-800"
@@ -172,8 +161,8 @@ const BufferScanPage: React.FC = () => {
           </div>
         )}
 
-        {scannedBundle && (
-          <div className="mt-6 border-t pt-6">
+        {bundle && (
+          <div>
             <div className="bg-gray-50 p-4 rounded-lg">
               <h2 className="text-xl font-bold text-gray-800 mb-3 flex items-center">
                 <Info className="w-6 h-6 mr-2 text-blue-500" /> Bundle
@@ -182,26 +171,25 @@ const BufferScanPage: React.FC = () => {
               <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-gray-700">
                 <p>
                   <strong className="font-semibold">Bundle ID:</strong>{" "}
-                  {scannedBundle.id}
+                  {bundle.id}
                 </p>
                 <p>
-                  <strong className="font-semibold">PO #:</strong>{" "}
-                  {scannedBundle.po}
+                  <strong className="font-semibold">PO #:</strong> {bundle.po}
                 </p>
                 <p>
                   <strong className="font-semibold">Style:</strong>{" "}
-                  {scannedBundle.style}
+                  {bundle.style}
                 </p>
                 <p>
                   <strong className="font-semibold">Status:</strong>{" "}
                   <span
                     className={`px-2 py-1 text-xs font-bold rounded-full ${
-                      scannedBundle.status === "At Buffer"
+                      bundle.status === "At Buffer"
                         ? "bg-yellow-200 text-yellow-800"
                         : "bg-blue-200 text-blue-800"
                     }`}
                   >
-                    {scannedBundle.status}
+                    {bundle.status}
                   </span>
                 </p>
               </div>
@@ -209,6 +197,78 @@ const BufferScanPage: React.FC = () => {
             {renderActions()}
           </div>
         )}
+
+        {!bundle && !feedback && (
+          <p className="text-gray-500 text-center p-8">Waiting for scan...</p>
+        )}
+      </div>
+      <button className="mt-6 text-blue-600 hover:underline">
+        &larr; Back to Scanner
+      </button>
+    </div>
+  );
+};
+
+// ============================================================================
+// 3. COMPONENT REVIEW CHÍNH
+//    Component này sẽ hiển thị tất cả các trạng thái của UI.
+// ============================================================================
+
+// Helper component để tạo khung cho mỗi trạng thái
+const StateCard: React.FC<{ title: string; children: React.ReactNode }> = ({
+  title,
+  children,
+}) => (
+  <div className="border border-dashed border-gray-400 rounded-lg mb-12">
+    <h2 className="text-xl font-bold bg-gray-200 p-3 rounded-t-lg text-gray-700">
+      {title}
+    </h2>
+    <div className="bg-white overflow-hidden">{children}</div>
+  </div>
+);
+
+// Component review chính
+const BufferScanPage: React.FC = () => {
+  return (
+    <div className="p-8 bg-gray-50 font-sans">
+      <div className="max-w-7xl mx-auto">
+        {/* --- KỊCH BẢN 1: Màn hình quét mặc định --- */}
+        <StateCard title="1. Scanner View - Idle">
+          {/* Vì ScannerView chiếm cả màn hình, chúng ta cần bọc nó để giới hạn kích thước */}
+          <div className="relative h-[80vh] w-full transform scale-[0.9] origin-top-left">
+            <ScannerView isScanning={false} />
+          </div>
+        </StateCard>
+
+        {/* --- KỊCH BẢN 2: Màn hình đang quét --- */}
+        <StateCard title="2. Scanner View - Scanning Animation">
+          <div className="relative h-[80vh] w-full transform scale-[0.9] origin-top-left">
+            <ScannerView isScanning={true} />
+          </div>
+        </StateCard>
+
+        {/* --- KỊCH BẢN 3: Hiển thị lỗi không tìm thấy bundle --- */}
+        <StateCard title="3. Details View - Bundle Not Found (Error)">
+          <DetailsView bundle={null} feedback={errorFeedback} />
+        </StateCard>
+
+        {/* --- KỊCH BẢN 4: Tìm thấy bundle, sẵn sàng 'Scan In' --- */}
+        <StateCard title="4. Details View - Ready for 'Scan In'">
+          <DetailsView bundle={mockBundleAtCutting} feedback={null} />
+        </StateCard>
+
+        {/* --- KỊCH BẢN 5: Tìm thấy bundle, sẵn sàng 'Scan Out' --- */}
+        <StateCard title="5. Details View - Ready for 'Scan Out'">
+          <DetailsView bundle={mockBundleAtBuffer} feedback={null} />
+        </StateCard>
+
+        {/* --- KỊCH BẢN 6: Hiển thị thông báo thành công sau khi action --- */}
+        <StateCard title="6. Details View - Action Succeeded (Success Feedback)">
+          <DetailsView
+            bundle={mockBundleAtCutting}
+            feedback={successFeedback}
+          />
+        </StateCard>
       </div>
     </div>
   );
