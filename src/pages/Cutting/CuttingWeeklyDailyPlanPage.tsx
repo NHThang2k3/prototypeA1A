@@ -1,4 +1,7 @@
-import React, { useState } from "react";
+// Filename: CuttingWeeklyDailyPlanPage.tsx
+// Dependencies: react, lucide-react, tailwindcss
+
+import React, { useState, type FC } from "react";
 import {
   UploadCloud,
   X,
@@ -9,11 +12,13 @@ import {
   FileUp,
 } from "lucide-react";
 
-// --- TYPES AND HELPER FUNCTIONS ---
+// ============================================================================
+// --- SECTION 1: TYPES, HELPERS, DATA & REUSABLE COMPONENTS ---
+// ============================================================================
 
+// --- Types ---
 type ExcelCellValue = string | number | Date | null | undefined;
 type ExcelRow = Record<string, ExcelCellValue>;
-
 type ImportStatus =
   | "idle"
   | "parsing"
@@ -22,6 +27,7 @@ type ImportStatus =
   | "success"
   | "error";
 
+// --- Helper Functions ---
 const formatBytes = (bytes: number, decimals = 2) => {
   if (bytes === 0) return "0 Bytes";
   const k = 1024;
@@ -50,13 +56,13 @@ const renderCell = (value: ExcelCellValue): React.ReactNode => {
   return String(value);
 };
 
-// --- REUSABLE DATA TABLE COMPONENT ---
+// --- Reusable DataTable Component ---
 interface DataTableProps {
   headers: string[];
   data: ExcelRow[];
 }
 
-const DataTable: React.FC<DataTableProps> = ({ headers, data }) => {
+const DataTable: FC<DataTableProps> = ({ headers, data }) => {
   if (headers.length === 0) {
     return (
       <p className="text-center text-gray-500 py-8">No data to display.</p>
@@ -71,7 +77,7 @@ const DataTable: React.FC<DataTableProps> = ({ headers, data }) => {
               <th
                 key={index}
                 scope="col"
-                className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider whitespace-pre-wrap"
+                className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap"
               >
                 {header}
               </th>
@@ -97,404 +103,184 @@ const DataTable: React.FC<DataTableProps> = ({ headers, data }) => {
   );
 };
 
-// --- MOCK DATA FOR CUTTING WEEKLY/DAILY PLAN ---
-
+// --- Mock Data ---
 const fullHeaders = [
-  "Ngày cắt",
-  "JOB",
-  "MÃ HÀNG\n(Style)",
-  "Inform\nWarehouse FB",
-  "Inform\nQC Fabric",
-  "Inform\nPattern",
-  "Inform\nTrimcard",
-  "Inform\nMarker",
+  "Cut Date",
+  "Job",
+  "Style Code",
+  "Inform Marker",
   "PO",
-  "Make\nMarker",
-  "SỐ LƯỢNG\n(Qty)(pcs)",
-  "KẾ HOẠCH CẮT\n(Plan)",
-  "MÀU\n(Color)",
-  "START\nSewing",
+  "Quantity (pcs)",
+  "Plan (pcs)",
+  "Color",
+  "Sewing Start",
   "Decoration",
-  "Ship\nDate",
-  "REMARK",
-  "LINE",
-  "TỔNG YDS\nVẢI",
+  "Ship Date",
+  "Remark",
+  "Line",
+  "Total Fabric (Yds)",
 ];
 
-// DATA UPDATED: "Inform\nMarker" is null, "PO" is "all"
 const initialWeeklyDailyPlanData: ExcelRow[] = [
   {
-    "Ngày cắt": "3-Sep",
-    JOB: "AA2506/00013",
-    "MÃ HÀNG\n(Style)": "S2506GHTT412WN",
-    "Inform\nWarehouse FB": null,
-    "Inform\nQC Fabric": null,
-    "Inform\nPattern": null,
-    "Inform\nTrimcard": null,
-    "Inform\nMarker": null,
+    "Cut Date": "3-Sep",
+    Job: "AA2506/00013",
+    "Style Code": "S2506GHTT412WN",
+    "Inform Marker": null,
     PO: "all",
-    "Make\nMarker": null,
-    "SỐ LƯỢNG\n(Qty)(pcs)": 1672,
-    "KẾ HOẠCH CẮT\n(Plan)": 1672,
-    "MÀU\n(Color)": "all",
-    "START\nSewing": "5-Sep",
+    "Quantity (pcs)": 1672,
+    "Plan (pcs)": 1672,
+    Color: "all",
+    "Sewing Start": "5-Sep",
     Decoration: "HE3,PD1",
-    "Ship\nDate": "12-Sep",
-    REMARK: null,
-    LINE: "F2A18",
-    "TỔNG YDS\nVẢI": 1386,
+    "Ship Date": "12-Sep",
+    Remark: null,
+    Line: "F2A18",
+    "Total Fabric (Yds)": 1386,
   },
   {
-    "Ngày cắt": "T4",
-    JOB: "AA2509/00617",
-    "MÃ HÀNG\n(Style)": "S2606CHJT104W",
-    "Inform\nWarehouse FB": null,
-    "Inform\nQC Fabric": null,
-    "Inform\nPattern": null,
-    "Inform\nTrimcard": null,
-    "Inform\nMarker": null,
+    "Cut Date": "4-Sep",
+    Job: "AA2509/00617",
+    "Style Code": "S2606CHJT104W",
+    "Inform Marker": null,
     PO: "all",
-    "Make\nMarker": null,
-    "SỐ LƯỢNG\n(Qty)(pcs)": 1218,
-    "KẾ HOẠCH CẮT\n(Plan)": 1218,
-    "MÀU\n(Color)": "all",
-    "START\nSewing": "26-Aug",
+    "Quantity (pcs)": 1218,
+    "Plan (pcs)": 1218,
+    Color: "all",
+    "Sewing Start": "6-Sep",
     Decoration: "HE3",
-    "Ship\nDate": "13-Sep",
-    REMARK: null,
-    LINE: "F2A06",
-    "TỔNG YDS\nVẢI": 579,
+    "Ship Date": "13-Sep",
+    Remark: null,
+    Line: "F2A06",
+    "Total Fabric (Yds)": 579,
   },
 ];
 
-// DATA UPDATED: "Inform\nMarker" is null, "PO" is "all"
 const importedExcelData: ExcelRow[] = [
   {
-    "Ngày cắt": null,
-    JOB: "AA2509/01390",
-    "MÃ HÀNG\n(Style)": "S2606GHTT428Y",
-    "Inform\nMarker": null,
+    Job: "AA2509/01390",
+    "Style Code": "S2606GHTT428Y",
+    "Inform Marker": null,
     PO: "all",
-    "SỐ LƯỢNG\n(Qty)(pcs)": 3909,
-    "KẾ HOẠCH CẮT\n(Plan)": 3909,
-    "MÀU\n(Color)": "all",
-    "START\nSewing": "30-Aug",
+    "Quantity (pcs)": 3909,
+    "Plan (pcs)": 3909,
+    Color: "all",
+    "Sewing Start": "30-Aug",
     Decoration: "HE1&EMB1&PD1",
-    "Ship\nDate": "13-Sep",
-    REMARK: "0",
-    LINE: "F2A07",
-    "TỔNG YDS\nVẢI": 4794,
+    "Ship Date": "13-Sep",
+    Remark: "0",
+    Line: "F2A07",
+    "Total Fabric (Yds)": 4794,
   },
   {
-    "Ngày cắt": null,
-    JOB: "AA2509/01353",
-    "MÃ HÀNG\n(Style)": "S2602M907P",
-    "Inform\nMarker": null,
+    Job: "AA2509/01353",
+    "Style Code": "S2602M907P",
+    "Inform Marker": null,
     PO: "all",
-    "SỐ LƯỢNG\n(Qty)(pcs)": 66,
-    "KẾ HOẠCH CẮT\n(Plan)": 66,
-    "MÀU\n(Color)": "all",
-    "START\nSewing": "3-Sep",
+    "Quantity (pcs)": 66,
+    "Plan (pcs)": 66,
+    Color: "all",
+    "Sewing Start": "3-Sep",
     Decoration: "bonding10&HE18&PD1&pr1&Sublimation pr1",
-    "Ship\nDate": "13-Sep",
-    REMARK: null,
-    LINE: "F2-PPA2",
-    "TỔNG YDS\nVẢI": 109,
+    "Ship Date": "13-Sep",
+    Remark: null,
+    Line: "F2-PPA2",
+    "Total Fabric (Yds)": 109,
   },
   {
-    "Ngày cắt": null,
-    JOB: "AA2509/00334",
-    "MÃ HÀNG\n(Style)": "F2507W302",
-    "Inform\nMarker": null,
+    Job: "AA2509/00334",
+    "Style Code": "F2507W302",
+    "Inform Marker": null,
     PO: "all",
-    "SỐ LƯỢNG\n(Qty)(pcs)": 800,
-    "KẾ HOẠCH CẮT\n(Plan)": 800,
-    "MÀU\n(Color)": "all",
-    "START\nSewing": "3-Sep",
+    "Quantity (pcs)": 800,
+    "Plan (pcs)": 800,
+    Color: "all",
+    "Sewing Start": "3-Sep",
     Decoration: "HE2",
-    "Ship\nDate": "13-Sep",
-    REMARK: null,
-    LINE: "F2A17",
-    "TỔNG YDS\nVẢI": 552,
+    "Ship Date": "13-Sep",
+    Remark: null,
+    Line: "F2A17",
+    "Total Fabric (Yds)": 552,
   },
   {
-    "Ngày cắt": null,
-    JOB: "AA2509/02353",
-    "MÃ HÀNG\n(Style)": "S2408MR2302A",
-    "Inform\nMarker": null,
+    Job: "AA2509/02353",
+    "Style Code": "S2408MR2302A",
+    "Inform Marker": null,
     PO: "all",
-    "SỐ LƯỢNG\n(Qty)(pcs)": 2135,
-    "KẾ HOẠCH CẮT\n(Plan)": 2135,
-    "MÀU\n(Color)": "all",
-    "START\nSewing": "5-Sep",
+    "Quantity (pcs)": 2135,
+    "Plan (pcs)": 2135,
+    Color: "all",
+    "Sewing Start": "5-Sep",
     Decoration: "HE4,PD1",
-    "Ship\nDate": "13-Sep",
-    REMARK: null,
-    LINE: "F2A02",
-    "TỔNG YDS\nVẢI": 2218,
+    "Ship Date": "13-Sep",
+    Remark: null,
+    Line: "F2A02",
+    "Total Fabric (Yds)": 2218,
   },
   {
-    "Ngày cắt": null,
-    JOB: "AA2509/01414",
-    "MÃ HÀNG\n(Style)": "S2606LHUB400WN",
-    "Inform\nMarker": null,
+    Job: "AA2509/01414",
+    "Style Code": "S2606LHUB400WN",
+    "Inform Marker": null,
     PO: "all",
-    "SỐ LƯỢNG\n(Qty)(pcs)": 1776,
-    "KẾ HOẠCH CẮT\n(Plan)": 1776,
-    "MÀU\n(Color)": "all",
-    "START\nSewing": "6-Sep",
+    "Quantity (pcs)": 1776,
+    "Plan (pcs)": 1776,
+    Color: "all",
+    "Sewing Start": "6-Sep",
     Decoration: "HE2&EMB1&PD1&pr1",
-    "Ship\nDate": "13-Sep",
-    REMARK: null,
-    LINE: "F2A20",
-    "TỔNG YDS\nVẢI": 1429,
-  },
-  {
-    "Ngày cắt": null,
-    JOB: "AA2509/01442",
-    "MÃ HÀNG\n(Style)": "S2507M508B",
-    "Inform\nMarker": null,
-    PO: "all",
-    "SỐ LƯỢNG\n(Qty)(pcs)": 1965,
-    "KẾ HOẠCH CẮT\n(Plan)": 1965,
-    "MÀU\n(Color)": "all",
-    "START\nSewing": "10-Sep",
-    Decoration: "HE3",
-    "Ship\nDate": "13-Sep",
-    REMARK: "0",
-    LINE: "F2A03",
-    "TỔNG YDS\nVẢI": 1022,
-  },
-  {
-    "Ngày cắt": null,
-    JOB: "AA2509/02057",
-    "MÃ HÀNG\n(Style)": "S2606CHAG029",
-    "Inform\nMarker": null,
-    PO: "all",
-    "SỐ LƯỢNG\n(Qty)(pcs)": 4,
-    "KẾ HOẠCH CẮT\n(Plan)": 4,
-    "MÀU\n(Color)": "all",
-    "START\nSewing": "6-Sep",
-    Decoration: "bonding2&PD1&pr2",
-    "Ship\nDate": "18-Sep",
-    REMARK: null,
-    LINE: "F2A15",
-    "TỔNG YDS\nVẢI": 12,
-  },
-  {
-    "Ngày cắt": null,
-    JOB: "AA2509/00444",
-    "MÃ HÀNG\n(Style)": "S2606GHTT508M",
-    "Inform\nMarker": null,
-    PO: "all",
-    "SỐ LƯỢNG\n(Qty)(pcs)": 355,
-    "KẾ HOẠCH CẮT\n(Plan)": 355,
-    "MÀU\n(Color)": "all",
-    "START\nSewing": "8-Sep",
-    Decoration: "pr1",
-    "Ship\nDate": "20-Sep",
-    REMARK: "0",
-    LINE: "F2A23",
-    "TỔNG YDS\nVẢI": 1356,
-  },
-  {
-    "Ngày cắt": null,
-    JOB: "AA2509/00688",
-    "MÃ HÀNG\n(Style)": "SMSUS26RUBMBPM4",
-    "Inform\nMarker": null,
-    PO: "all",
-    "SỐ LƯỢNG\n(Qty)(pcs)": 1994,
-    "KẾ HOẠCH CẮT\n(Plan)": 1994,
-    "MÀU\n(Color)": "all",
-    "START\nSewing": "26-Aug",
-    Decoration: "HE6&PD1",
-    "Ship\nDate": "27-Sep",
-    REMARK: null,
-    LINE: "F2A02",
-    "TỔNG YDS\nVẢI": 1743,
-  },
-  {
-    "Ngày cắt": null,
-    JOB: "AA2509/00245",
-    "MÃ HÀNG\n(Style)": "S2607M302",
-    "Inform\nMarker": null,
-    PO: "all",
-    "SỐ LƯỢNG\n(Qty)(pcs)": 639,
-    "KẾ HOẠCH CẮT\n(Plan)": 639,
-    "MÀU\n(Color)": "all",
-    "START\nSewing": "6-Sep",
-    Decoration: "HE2&PD2",
-    "Ship\nDate": "27-Sep",
-    REMARK: null,
-    LINE: "F2A24",
-    "TỔNG YDS\nVẢI": 936,
-  },
-  {
-    "Ngày cắt": null,
-    JOB: "AA2509/01371",
-    "MÃ HÀNG\n(Style)": "S2606CHJT104",
-    "Inform\nMarker": null,
-    PO: "all",
-    "SỐ LƯỢNG\n(Qty)(pcs)": 337,
-    "KẾ HOẠCH CẮT\n(Plan)": 337,
-    "MÀU\n(Color)": "all",
-    "START\nSewing": "8-Sep",
-    Decoration: "HE1&EMB1&PD1",
-    "Ship\nDate": "27-Sep",
-    REMARK: null,
-    LINE: "F2A22",
-    "TỔNG YDS\nVẢI": 195,
-  },
-  {
-    "Ngày cắt": null,
-    JOB: "AA2509/00105",
-    "MÃ HÀNG\n(Style)": "S2506LHSD105Y",
-    "Inform\nMarker": null,
-    PO: "all",
-    "SỐ LƯỢNG\n(Qty)(pcs)": 581,
-    "KẾ HOẠCH CẮT\n(Plan)": 581,
-    "MÀU\n(Color)": "all",
-    "START\nSewing": "10-Sep",
-    Decoration: "HE2,EM2,PD,Inotex 1+sublimation 2",
-    "Ship\nDate": "27-Sep",
-    REMARK: null,
-    LINE: "F2A13",
-    "TỔNG YDS\nVẢI": 432,
-  },
-  {
-    "Ngày cắt": null,
-    JOB: "AA2509/01359",
-    "MÃ HÀNG\n(Style)": "S2606CHAG030",
-    "Inform\nMarker": null,
-    PO: "all",
-    "SỐ LƯỢNG\n(Qty)(pcs)": 1526,
-    "KẾ HOẠCH CẮT\n(Plan)": 1526,
-    "MÀU\n(Color)": "all",
-    "START\nSewing": "11-Sep",
-    Decoration: "pr2",
-    "Ship\nDate": "27-Sep",
-    REMARK: null,
-    LINE: "F2A19",
-    "TỔNG YDS\nVẢI": 1760,
-  },
-  {
-    "Ngày cắt": null,
-    JOB: "AA2509/00685",
-    "MÃ HÀNG\n(Style)": "S2662LHME001ALM",
-    "Inform\nMarker": null,
-    PO: "all",
-    "SỐ LƯỢNG\n(Qty)(pcs)": 1494,
-    "KẾ HOẠCH CẮT\n(Plan)": 1494,
-    "MÀU\n(Color)": "all",
-    "START\nSewing": "12-Sep",
-    Decoration: "HE4,Pr6",
-    "Ship\nDate": "27-Sep",
-    REMARK: null,
-    LINE: "F2A01",
-    "TỔNG YDS\nVẢI": 1947,
+    "Ship Date": "13-Sep",
+    Remark: null,
+    Line: "F2A20",
+    "Total Fabric (Yds)": 1429,
   },
 ];
 
-// --- MAIN COMPONENT ---
+const mockFile = new File(["mock content"], "cutting_plan_data.xlsx", {
+  type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+});
 
-const CuttingWeeklyDailyPlanPage = () => {
-  const [planHeaders, setPlanHeaders] = useState<string[]>(fullHeaders);
-  const [planData, setPlanData] = useState<ExcelRow[]>(
-    initialWeeklyDailyPlanData
+// ============================================================================
+// --- SECTION 2: REFACTORED, CONTROLLABLE COMPONENT ---
+// ============================================================================
+
+interface ControllableCuttingPlanProps {
+  initialModalOpen?: boolean;
+  initialImportStatus?: ImportStatus;
+  initialErrorMessage?: string;
+  initialIsDragging?: boolean;
+}
+
+const ControllableCuttingPlanPage: FC<ControllableCuttingPlanProps> = ({
+  initialModalOpen = false,
+  initialImportStatus = "idle",
+  initialErrorMessage = "",
+  initialIsDragging = false,
+}) => {
+  const [planHeaders] = useState<string[]>(fullHeaders);
+  const [planData] = useState<ExcelRow[]>(initialWeeklyDailyPlanData);
+  const [isModalOpen, setIsModalOpen] = useState(initialModalOpen);
+  const [importStatus, setImportStatus] =
+    useState<ImportStatus>(initialImportStatus);
+  const [selectedFile] = useState<File | null>(
+    initialImportStatus === "preview" ? mockFile : null
   );
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [importStatus, setImportStatus] = useState<ImportStatus>("idle");
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewHeaders, setPreviewHeaders] = useState<string[]>([]);
-  const [previewData, setPreviewData] = useState<ExcelRow[]>([]);
-  const [errorMessage, setErrorMessage] = useState<string>("");
-  const [isDragging, setIsDragging] = useState(false);
+  const [previewHeaders] = useState<string[]>(
+    initialImportStatus === "preview" ? fullHeaders : []
+  );
+  const [previewData] = useState<ExcelRow[]>(
+    initialImportStatus === "preview" ? importedExcelData : []
+  );
+  // --- FIX START ---
+  // The setter functions setErrorMessage and setIsDragging were removed
+  // because they were declared but never used in this component.
+  const [errorMessage] = useState<string>(initialErrorMessage);
+  const [isDragging] = useState(initialIsDragging);
+  // --- FIX END ---
 
-  const resetImportState = () => {
-    setImportStatus("idle");
-    setSelectedFile(null);
-    setPreviewHeaders([]);
-    setPreviewData([]);
-    setErrorMessage("");
-  };
-
+  const resetImportState = () => setImportStatus("idle");
   const handleOpenModal = () => setIsModalOpen(true);
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setTimeout(resetImportState, 300);
-  };
+  const handleCloseModal = () => setIsModalOpen(false);
 
-  const parseExcel = (file: File) => {
-    setImportStatus("parsing");
-    setErrorMessage("");
-    setTimeout(() => {
-      try {
-        if (file.name.includes("error"))
-          throw new Error("Simulated file error.");
-        setPreviewHeaders(fullHeaders);
-        setPreviewData(importedExcelData);
-        setImportStatus("preview");
-      } catch (_error) {
-        if (_error) {
-          //
-        }
-        setErrorMessage("Could not parse the file.");
-        setImportStatus("error");
-      }
-    }, 1500);
-  };
-
-  const handleFileSelect = (file: File | undefined) => {
-    if (!file) return;
-    if (
-      file.type ===
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
-      file.name.endsWith(".xlsx")
-    ) {
-      setSelectedFile(file);
-      parseExcel(file);
-    } else {
-      setErrorMessage(
-        "Invalid file type. Please upload an Excel file (.xlsx)."
-      );
-      setImportStatus("error");
-    }
-  };
-
-  const handleConfirmImport = () => {
-    setImportStatus("importing");
-    setTimeout(() => {
-      setPlanHeaders(previewHeaders);
-      setPlanData(previewData);
-      setImportStatus("success");
-      setTimeout(handleCloseModal, 2000);
-    }, 2000);
-  };
-
-  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(true);
-  };
-  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-  };
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-    const mockFile = new File([""], "cutting_plan_data.xlsx", {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    });
-    handleFileSelect(mockFile);
-  };
-
+  // Render function for modal content based on state
   const renderModalContent = () => {
     switch (importStatus) {
       case "parsing":
@@ -537,7 +323,7 @@ const CuttingWeeklyDailyPlanPage = () => {
                       {selectedFile.name}
                     </p>
                     <p className="text-xs text-gray-500">
-                      {formatBytes(selectedFile.size)}
+                      {formatBytes(128000)}
                     </p>
                   </div>
                 </div>
@@ -557,10 +343,7 @@ const CuttingWeeklyDailyPlanPage = () => {
               >
                 Cancel
               </button>
-              <button
-                onClick={handleConfirmImport}
-                className="px-4 py-2 rounded-md text-white bg-blue-600 hover:bg-blue-700 font-semibold"
-              >
+              <button className="px-4 py-2 rounded-md text-white bg-blue-600 hover:bg-blue-700 font-semibold">
                 Confirm & Update
               </button>
             </div>
@@ -572,31 +355,12 @@ const CuttingWeeklyDailyPlanPage = () => {
         return (
           <>
             <div
-              onDragEnter={handleDragEnter}
-              onDragLeave={handleDragLeave}
-              onDragOver={handleDragOver}
-              onDrop={handleDrop}
               className={`border-2 border-dashed rounded-lg p-8 w-full text-center transition-colors duration-300 ${
                 isDragging ? "border-blue-500 bg-blue-50" : "border-gray-300"
               }`}
             >
-              <input
-                type="file"
-                id="file-upload"
-                className="hidden"
-                accept=".xlsx"
-                onChange={(_e) => {
-                  if (_e) {
-                    //
-                  }
-                  const mockFile = new File([""], "cutting_plan_data.xlsx", {
-                    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                  });
-                  handleFileSelect(mockFile);
-                }}
-              />
               <label
-                htmlFor="file-upload"
+                htmlFor="file-upload-showcase"
                 className="cursor-pointer flex flex-col items-center space-y-4"
               >
                 <UploadCloud className="w-12 h-12 text-gray-400" />
@@ -627,8 +391,8 @@ const CuttingWeeklyDailyPlanPage = () => {
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen p-4 sm:p-8">
-      <div className="w-full max-w-7xl mx-auto bg-white p-6 sm:p-8 rounded-xl shadow-lg">
+    <div className="bg-gray-50 min-h-screen">
+      <div className="w-full bg-white p-6 sm:p-8 rounded-xl">
         <header className="flex justify-between items-center mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
             Cutting Weekly/Daily Plan
@@ -637,20 +401,17 @@ const CuttingWeeklyDailyPlanPage = () => {
             onClick={handleOpenModal}
             className="flex items-center gap-2 bg-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:bg-blue-700 transition-all"
           >
-            <FileUp className="w-5 h-5" />
-            Import Cutting Plan
+            <FileUp className="w-5 h-5" /> Import Cutting Plan
           </button>
         </header>
-
         <main>
           <DataTable headers={planHeaders} data={planData} />
         </main>
       </div>
 
-      {/* --- MODAL --- */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 transition-opacity duration-300">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col transform transition-all duration-300">
+        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
             <header className="flex justify-between items-center p-4 border-b">
               <h2 className="text-xl font-semibold text-gray-800">
                 Import Cutting Plan Data
@@ -666,6 +427,119 @@ const CuttingWeeklyDailyPlanPage = () => {
           </div>
         </div>
       )}
+    </div>
+  );
+};
+
+// ============================================================================
+// --- SECTION 3: THE SHOWCASE PAGE ---
+// ============================================================================
+
+const StateCard: FC<{ title: string; children: React.ReactNode }> = ({
+  title,
+  children,
+}) => (
+  <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
+    <h3 className="text-lg font-bold text-gray-800 p-4 bg-gray-50 border-b">
+      {title}
+    </h3>
+    <div className="p-6 relative">{children}</div>
+  </div>
+);
+
+const ModalStateWrapper: FC<{ children: React.ReactNode }> = ({ children }) => (
+  <div className="relative w-full h-[650px] bg-gray-200 p-4 rounded-lg flex items-center justify-center overflow-hidden border">
+    {children}
+  </div>
+);
+
+const CuttingWeeklyDailyPlanPage = () => {
+  return (
+    <div className="bg-gray-100 p-4 sm:p-8 font-sans">
+      <div className="max-w-screen-2xl mx-auto">
+        {/* --- Default State --- */}
+        <section>
+          <h2 className="text-2xl font-bold text-gray-800 mb-6 pb-2 border-b-2 border-blue-500">
+            Main Page (Default State)
+          </h2>
+          <div className="rounded-xl shadow-2xl overflow-hidden border">
+            <ControllableCuttingPlanPage />
+          </div>
+        </section>
+
+        {/* --- Modal States --- */}
+        <section className="mt-16">
+          <h2 className="text-2xl font-bold text-gray-800 mb-6 pb-2 border-b-2 border-green-500">
+            Import Popup States
+          </h2>
+          <div className="grid grid-cols-1 gap-8">
+            <StateCard title="1. Ready to Upload (Idle)">
+              <ModalStateWrapper>
+                <ControllableCuttingPlanPage
+                  initialModalOpen={true}
+                  initialImportStatus="idle"
+                />
+              </ModalStateWrapper>
+            </StateCard>
+
+            <StateCard title="2. Dragging File Over">
+              <ModalStateWrapper>
+                <ControllableCuttingPlanPage
+                  initialModalOpen={true}
+                  initialImportStatus="idle"
+                  initialIsDragging={true}
+                />
+              </ModalStateWrapper>
+            </StateCard>
+
+            <StateCard title="3. Upload Error (Error State)">
+              <ModalStateWrapper>
+                <ControllableCuttingPlanPage
+                  initialModalOpen={true}
+                  initialImportStatus="error"
+                  initialErrorMessage="File error: Invalid format. Please select an .xlsx file."
+                />
+              </ModalStateWrapper>
+            </StateCard>
+
+            <StateCard title="4. Processing File (Parsing...)">
+              <ModalStateWrapper>
+                <ControllableCuttingPlanPage
+                  initialModalOpen={true}
+                  initialImportStatus="parsing"
+                />
+              </ModalStateWrapper>
+            </StateCard>
+
+            <StateCard title="5. Previewing Data (Preview)">
+              <ModalStateWrapper>
+                <ControllableCuttingPlanPage
+                  initialModalOpen={true}
+                  initialImportStatus="preview"
+                />
+              </ModalStateWrapper>
+            </StateCard>
+
+            <StateCard title="6. Updating Data (Importing...)">
+              <ModalStateWrapper>
+                <ControllableCuttingPlanPage
+                  initialModalOpen={true}
+                  initialImportStatus="importing"
+                />
+              </ModalStateWrapper>
+            </StateCard>
+
+            <StateCard title="7. Update Successful (Success)">
+              <ModalStateWrapper>
+                <ControllableCuttingPlanPage
+                  initialModalOpen={true}
+                  initialImportStatus="success"
+                />
+              </ModalStateWrapper>
+            </StateCard>
+          </div>
+        </section>
+      </div>
     </div>
   );
 };

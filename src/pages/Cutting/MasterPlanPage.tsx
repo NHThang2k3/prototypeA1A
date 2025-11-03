@@ -1,6 +1,7 @@
-// Path: src/pages/Cutting/MasterPlanPage.tsx
+// Filename: MasterPlanPage.tsx
+// Dependencies: react, lucide-react, tailwindcss
 
-import React, { useState } from "react";
+import React, { useState, type FC } from "react";
 import {
   UploadCloud,
   X,
@@ -11,11 +12,13 @@ import {
   FileUp,
 } from "lucide-react";
 
-// --- TYPES AND HELPER FUNCTIONS ---
+// ============================================================================
+// --- SECTION 1: TYPES, HELPERS, DATA & REUSABLE COMPONENTS (FROM ORIGINAL FILE) ---
+// ============================================================================
 
+// --- Types ---
 type ExcelCellValue = string | number | Date | null | undefined;
 type ExcelRow = Record<string, ExcelCellValue>;
-
 type ImportStatus =
   | "idle"
   | "parsing"
@@ -24,6 +27,7 @@ type ImportStatus =
   | "success"
   | "error";
 
+// --- Helper Functions ---
 const formatBytes = (bytes: number, decimals = 2) => {
   if (bytes === 0) return "0 Bytes";
   const k = 1024;
@@ -52,13 +56,12 @@ const renderCell = (value: ExcelCellValue): React.ReactNode => {
   return String(value);
 };
 
-// --- REUSABLE DATA TABLE COMPONENT ---
+// --- Reusable DataTable Component ---
 interface DataTableProps {
   headers: string[];
   data: ExcelRow[];
 }
-
-const DataTable: React.FC<DataTableProps> = ({ headers, data }) => {
+const DataTable: FC<DataTableProps> = ({ headers, data }) => {
   if (headers.length === 0) {
     return (
       <p className="text-center text-gray-500 py-8">No data to display.</p>
@@ -99,8 +102,7 @@ const DataTable: React.FC<DataTableProps> = ({ headers, data }) => {
   );
 };
 
-// --- MOCK DATA ---
-
+// --- Mock Data ---
 const fullHeaders = [
   "Receive\nFab date",
   "JOB",
@@ -119,7 +121,6 @@ const fullHeaders = [
   "Fabric Arrival Date",
 ];
 
-// CHANGE 1: Initial data now has all the required columns with English keys
 const initialMasterPlanData: ExcelRow[] = [
   {
     "Receive\nFab date": "10-Jul",
@@ -192,152 +193,70 @@ const importedExcelData: ExcelRow[] = [
     LC: new Date("2024-11-29"),
     "Fabric Arrival Date": new Date("2025-05-16"),
   },
-  {
-    "Receive\nFab date": null,
-    JOB: "AA2508/00331",
-    ITEM: "70005507-58",
-    "COLOR CODE": "095A",
-    Color: "BLACK",
-    "Requested\nQty": "Deducted",
-    "Qty (Inet)\n(yds)": 639.55,
-    "MAY\nMORGAN": null,
-    "Update's Store": "OK",
-    "Update's QC": null,
-    "Inform Marker_1": null,
-    "Inform Marker_2": null,
-    "Inform Pattern": null,
-    LC: new Date("2024-12-20"),
-    "Fabric Arrival Date": new Date("2025-06-14"),
-  },
-  {
-    "Receive\nFab date": null,
-    JOB: "AA2508/00240",
-    ITEM: "70038349-66",
-    "COLOR CODE": "AAG4/046A",
-    Color: "HI-RES BLUE S18/BOLD BLUE",
-    "Requested\nQty": "Deducted",
-    "Qty (Inet)\n(yds)": 2000.0,
-    "MAY\nMORGAN": null,
-    "Update's Store": "OK",
-    "Update's QC": null,
-    "Inform Marker_1": null,
-    "Inform Marker_2": null,
-    "Inform Pattern": null,
-    LC: new Date("2025-04-25"),
-    "Fabric Arrival Date": new Date("2025-06-30"),
-  },
-  {
-    "Receive\nFab date": null,
-    JOB: "AA2507/00369",
-    ITEM: "70029953-53",
-    "COLOR CODE": "001A",
-    Color: "WHITE",
-    "Requested\nQty": "Deducted",
-    "Qty (Inet)\n(yds)": 240.04,
-    "MAY\nMORGAN": null,
-    "Update's Store": "WAIT QC",
-    "Update's QC": "OK",
-    "Inform Marker_1": null,
-    "Inform Marker_2": null,
-    "Inform Pattern": null,
-    LC: new Date("2025-04-11"),
-    "Fabric Arrival Date": new Date("2025-07-10"),
-  },
-  {
-    "Receive\nFab date": null,
-    JOB: "AA2508/00910",
-    ITEM: "70030561-53",
-    "COLOR CODE": "AFDE",
-    Color: "SEMI LUCID RED S25",
-    "Requested\nQty": "Deducted",
-    "Qty (Inet)\n(yds)": 15.28,
-    "MAY\nMORGAN": null,
-    "Update's Store": "OK",
-    "Update's QC": null,
-    "Inform Marker_1": null,
-    "Inform Marker_2": null,
-    "Inform Pattern": null,
-    LC: new Date("2025-04-25"),
-    "Fabric Arrival Date": "#REF!",
-  },
+  // ... more mock data
 ];
 
-// --- MAIN COMPONENT ---
+const mockFile = new File(["mock content"], "master_plan_data.xlsx", {
+  type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+});
 
-const MasterPlanPage = () => {
-  const [masterPlanHeaders, setMasterPlanHeaders] =
-    useState<string[]>(fullHeaders);
-  const [masterPlanData, setMasterPlanData] = useState<ExcelRow[]>(
-    initialMasterPlanData
+// ============================================================================
+// --- SECTION 2: REFACTORED, CONTROLLABLE COMPONENT ---
+// ============================================================================
+
+interface ControllableMasterPlanProps {
+  initialModalOpen?: boolean;
+  initialImportStatus?: ImportStatus;
+  initialErrorMessage?: string;
+  initialIsDragging?: boolean;
+}
+
+const ControllableMasterPlanPage: FC<ControllableMasterPlanProps> = ({
+  initialModalOpen = false,
+  initialImportStatus = "idle",
+  initialErrorMessage = "",
+  initialIsDragging = false,
+}) => {
+  const [masterPlanHeaders] = useState<string[]>(fullHeaders);
+  const [masterPlanData] = useState<ExcelRow[]>(initialMasterPlanData);
+  const [isModalOpen, setIsModalOpen] = useState(initialModalOpen);
+  const [importStatus, setImportStatus] =
+    useState<ImportStatus>(initialImportStatus);
+  const [selectedFile] = useState<File | null>(
+    initialImportStatus === "preview" ? mockFile : null
   );
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [importStatus, setImportStatus] = useState<ImportStatus>("idle");
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewHeaders, setPreviewHeaders] = useState<string[]>([]);
-  const [previewData, setPreviewData] = useState<ExcelRow[]>([]);
-  const [errorMessage, setErrorMessage] = useState<string>("");
-  const [isDragging, setIsDragging] = useState(false);
+  const [previewHeaders] = useState<string[]>(
+    initialImportStatus === "preview" ? fullHeaders : []
+  );
+  const [previewData] = useState<ExcelRow[]>(
+    initialImportStatus === "preview" ? importedExcelData : []
+  );
+  const [errorMessage, setErrorMessage] = useState<string>(initialErrorMessage);
+  const [isDragging, setIsDragging] = useState(initialIsDragging);
 
   const resetImportState = () => {
     setImportStatus("idle");
-    setSelectedFile(null);
-    setPreviewHeaders([]);
-    setPreviewData([]);
-    setErrorMessage("");
+    setErrorMessage(""); // Also clear the error message
   };
-
   const handleOpenModal = () => setIsModalOpen(true);
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setTimeout(resetImportState, 300);
-  };
+  const handleCloseModal = () => setIsModalOpen(false);
 
-  const parseExcel = (file: File) => {
-    setImportStatus("parsing");
-    setErrorMessage("");
-    setTimeout(() => {
-      try {
-        if (file.name.includes("error"))
-          throw new Error("Simulated file error.");
-        setPreviewHeaders(fullHeaders);
-        setPreviewData(importedExcelData);
-        setImportStatus("preview");
-        // FIX 2: Add '_' before 'error' as it's not used
-      } catch (_error) {
-        if (_error) {
-          //
-        }
-        setErrorMessage("Could not parse the file.");
-        setImportStatus("error");
-      }
-    }, 1500);
-  };
-
-  const handleFileSelect = (file: File | undefined) => {
+  // --- ERROR FIX START: Added Event Handlers ---
+  const handleFile = (file: File | null) => {
     if (!file) return;
-    if (
-      file.type ===
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
-      file.name.endsWith(".xlsx")
-    ) {
-      setSelectedFile(file);
-      parseExcel(file);
+
+    // Mock validation
+    if (file.name.endsWith(".xlsx") || file.name.endsWith(".xls")) {
+      // In a real app, you would parse the file here and then set preview data
+      // For this showcase, we immediately switch to the preview state
+      console.log("File accepted:", file.name);
+      setImportStatus("preview");
     } else {
       setErrorMessage(
-        "Invalid file type. Please upload an Excel file (.xlsx)."
+        "Invalid file type. Please upload an Excel file (.xlsx, .xls)."
       );
       setImportStatus("error");
     }
-  };
-
-  const handleConfirmImport = () => {
-    setImportStatus("importing");
-    setTimeout(() => {
-      setMasterPlanHeaders(previewHeaders);
-      setMasterPlanData(previewData);
-      setImportStatus("success");
-      setTimeout(handleCloseModal, 2000);
-    }, 2000);
   };
 
   const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
@@ -345,25 +264,32 @@ const MasterPlanPage = () => {
     e.stopPropagation();
     setIsDragging(true);
   };
+
   const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
   };
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
+
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
-    const mockFile = new File([""], "master_plan_real_data.xlsx", {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    });
-    handleFileSelect(mockFile);
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      handleFile(files[0]);
+    }
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      handleFile(files[0]);
+    }
+  };
+  // --- ERROR FIX END ---
+
+  // Render function for modal content based on state
   const renderModalContent = () => {
     switch (importStatus) {
       case "parsing":
@@ -406,7 +332,7 @@ const MasterPlanPage = () => {
                       {selectedFile.name}
                     </p>
                     <p className="text-xs text-gray-500">
-                      {formatBytes(selectedFile.size)}
+                      {formatBytes(256000)}
                     </p>
                   </div>
                 </div>
@@ -426,10 +352,7 @@ const MasterPlanPage = () => {
               >
                 Cancel
               </button>
-              <button
-                onClick={handleConfirmImport}
-                className="px-4 py-2 rounded-md text-white bg-blue-600 hover:bg-blue-700 font-semibold"
-              >
+              <button className="px-4 py-2 rounded-md text-white bg-blue-600 hover:bg-blue-700 font-semibold">
                 Confirm & Update
               </button>
             </div>
@@ -441,36 +364,18 @@ const MasterPlanPage = () => {
         return (
           <>
             <div
+              // --- ERROR FIX START: Added Event Handlers to DIV ---
               onDragEnter={handleDragEnter}
               onDragLeave={handleDragLeave}
-              onDragOver={handleDragOver}
               onDrop={handleDrop}
+              onDragOver={(e) => e.preventDefault()} // This is necessary to allow dropping
+              // --- ERROR FIX END ---
               className={`border-2 border-dashed rounded-lg p-8 w-full text-center transition-colors duration-300 ${
                 isDragging ? "border-blue-500 bg-blue-50" : "border-gray-300"
               }`}
             >
-              <input
-                type="file"
-                id="file-upload"
-                className="hidden"
-                accept=".xlsx"
-                // FIX 3: Add '_' before 'e' as it's not used
-                onChange={(_e) => {
-                  if (_e) {
-                    //
-                  }
-                  const mockFile = new File(
-                    [""],
-                    "master_plan_real_data.xlsx",
-                    {
-                      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    }
-                  );
-                  handleFileSelect(mockFile);
-                }}
-              />
               <label
-                htmlFor="file-upload"
+                htmlFor="file-upload-showcase"
                 className="cursor-pointer flex flex-col items-center space-y-4"
               >
                 <UploadCloud className="w-12 h-12 text-gray-400" />
@@ -482,6 +387,15 @@ const MasterPlanPage = () => {
                   Choose File
                 </span>
               </label>
+              {/* --- ERROR FIX START: Added hidden file input --- */}
+              <input
+                id="file-upload-showcase"
+                type="file"
+                className="hidden"
+                onChange={handleFileChange}
+                accept=".xlsx, .xls, application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              />
+              {/* --- ERROR FIX END --- */}
             </div>
             {errorMessage && (
               <div className="mt-4 flex items-center gap-2 text-red-600 bg-red-100 p-3 rounded-md w-full">
@@ -501,8 +415,8 @@ const MasterPlanPage = () => {
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen p-4 sm:p-8">
-      <div className="w-full max-w-7xl mx-auto bg-white p-6 sm:p-8 rounded-xl shadow-lg">
+    <div className="bg-gray-50 min-h-screen">
+      <div className="w-full bg-white p-6 sm:p-8 rounded-xl">
         <header className="flex justify-between items-center mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
             Master Plan
@@ -511,20 +425,17 @@ const MasterPlanPage = () => {
             onClick={handleOpenModal}
             className="flex items-center gap-2 bg-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:bg-blue-700 transition-all"
           >
-            <FileUp className="w-5 h-5" />
-            Import Master Plan
+            <FileUp className="w-5 h-5" /> Import Master Plan
           </button>
         </header>
-
         <main>
           <DataTable headers={masterPlanHeaders} data={masterPlanData} />
         </main>
       </div>
 
-      {/* --- MODAL --- */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 transition-opacity duration-300">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col transform transition-all duration-300">
+        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col">
             <header className="flex justify-between items-center p-4 border-b">
               <h2 className="text-xl font-semibold text-gray-800">
                 Import Master Plan Data
@@ -540,6 +451,119 @@ const MasterPlanPage = () => {
           </div>
         </div>
       )}
+    </div>
+  );
+};
+
+// ============================================================================
+// --- SECTION 3: THE SHOWCASE PAGE (TRANSLATED) ---
+// ============================================================================
+
+const StateCard: FC<{ title: string; children: React.ReactNode }> = ({
+  title,
+  children,
+}) => (
+  <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
+    <h3 className="text-lg font-bold text-gray-800 p-4 bg-gray-50 border-b">
+      {title}
+    </h3>
+    <div className="p-6 relative">{children}</div>
+  </div>
+);
+
+const ModalStateWrapper: FC<{ children: React.ReactNode }> = ({ children }) => (
+  <div className="relative w-full h-[700px] bg-gray-200 p-4 rounded-lg flex items-center justify-center overflow-hidden border">
+    {children}
+  </div>
+);
+
+const MasterPlanPage = () => {
+  return (
+    <div className="bg-gray-100 p-4 sm:p-8 font-sans">
+      <div className="max-w-screen-2xl mx-auto">
+        {/* --- Default State --- */}
+        <section>
+          <h2 className="text-2xl font-bold text-gray-800 mb-6 pb-2 border-b-2 border-purple-500">
+            Main Page (Default State)
+          </h2>
+          <div className="rounded-xl shadow-2xl overflow-hidden border">
+            <ControllableMasterPlanPage />
+          </div>
+        </section>
+
+        {/* --- Modal States --- */}
+        <section className="mt-16">
+          <h2 className="text-2xl font-bold text-gray-800 mb-6 pb-2 border-b-2 border-teal-500">
+            Import Popup States
+          </h2>
+          <div className="grid grid-cols-1 gap-8">
+            <StateCard title="1. Ready to Upload (Idle)">
+              <ModalStateWrapper>
+                <ControllableMasterPlanPage
+                  initialModalOpen={true}
+                  initialImportStatus="idle"
+                />
+              </ModalStateWrapper>
+            </StateCard>
+
+            <StateCard title="2. Dragging File Over">
+              <ModalStateWrapper>
+                <ControllableMasterPlanPage
+                  initialModalOpen={true}
+                  initialImportStatus="idle"
+                  initialIsDragging={true}
+                />
+              </ModalStateWrapper>
+            </StateCard>
+
+            <StateCard title="3. Upload Error">
+              <ModalStateWrapper>
+                <ControllableMasterPlanPage
+                  initialModalOpen={true}
+                  initialImportStatus="error"
+                  initialErrorMessage="Invalid file format. Please use the template file."
+                />
+              </ModalStateWrapper>
+            </StateCard>
+
+            <StateCard title="4. Processing File (Parsing...)">
+              <ModalStateWrapper>
+                <ControllableMasterPlanPage
+                  initialModalOpen={true}
+                  initialImportStatus="parsing"
+                />
+              </ModalStateWrapper>
+            </StateCard>
+
+            <StateCard title="5. Data Preview">
+              <ModalStateWrapper>
+                <ControllableMasterPlanPage
+                  initialModalOpen={true}
+                  initialImportStatus="preview"
+                />
+              </ModalStateWrapper>
+            </StateCard>
+
+            <StateCard title="6. Updating Data (Importing...)">
+              <ModalStateWrapper>
+                <ControllableMasterPlanPage
+                  initialModalOpen={true}
+                  initialImportStatus="importing"
+                />
+              </ModalStateWrapper>
+            </StateCard>
+
+            <StateCard title="7. Update Successful (Success)">
+              <ModalStateWrapper>
+                <ControllableMasterPlanPage
+                  initialModalOpen={true}
+                  initialImportStatus="success"
+                />
+              </ModalStateWrapper>
+            </StateCard>
+          </div>
+        </section>
+      </div>
     </div>
   );
 };
