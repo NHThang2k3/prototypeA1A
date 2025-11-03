@@ -1,7 +1,7 @@
 // src/pages/BufferReportPage/BufferReportPage.tsx
 
 import React, { useState, useMemo } from "react";
-import { Search, Filter, Clock } from "lucide-react";
+import { Search, Filter } from "lucide-react";
 
 type BundleStatus =
   | "At Heat Press"
@@ -16,7 +16,6 @@ type Bundle = {
   quantity: number;
   color: string;
   status: BundleStatus;
-  timeInStatus: number; // in hours
 };
 
 const mockBundles: Bundle[] = [
@@ -27,7 +26,6 @@ const mockBundles: Bundle[] = [
     quantity: 50,
     color: "Black",
     status: "At Heat Press",
-    timeInStatus: 26,
   },
   {
     bundleId: "B-002",
@@ -36,7 +34,6 @@ const mockBundles: Bundle[] = [
     quantity: 75,
     color: "Black",
     status: "In Temp WH",
-    timeInStatus: 10,
   },
   {
     bundleId: "B-005",
@@ -45,7 +42,6 @@ const mockBundles: Bundle[] = [
     quantity: 60,
     color: "Black",
     status: "At Heat Press",
-    timeInStatus: 15,
   },
   {
     bundleId: "B-003",
@@ -54,7 +50,6 @@ const mockBundles: Bundle[] = [
     quantity: 120,
     color: "Red",
     status: "Returned from Embroidery",
-    timeInStatus: 5,
   },
   {
     bundleId: "B-004",
@@ -63,13 +58,10 @@ const mockBundles: Bundle[] = [
     quantity: 80,
     color: "Red",
     status: "At Bonding",
-    timeInStatus: 48,
   },
 
   //... add more data
 ];
-
-const OVERDUE_THRESHOLD_HOURS = 24;
 
 const BufferReportPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -129,7 +121,6 @@ const BufferReportPage: React.FC = () => {
         <table className="w-full text-sm text-left text-gray-600">
           <thead className="text-xs text-gray-700 uppercase bg-gray-50">
             <tr>
-              {/* 1. Đã di chuyển PO ID lên đầu */}
               <th scope="col" className="px-6 py-3">
                 PO ID
               </th>
@@ -148,41 +139,26 @@ const BufferReportPage: React.FC = () => {
               <th scope="col" className="px-6 py-3">
                 Current Status
               </th>
-              <th scope="col" className="px-6 py-3">
-                Time in Status
-              </th>
+              {/* Cột Time in Status đã bị xóa */}
             </tr>
           </thead>
           <tbody>
-            {filteredBundles.map((bundle) => {
-              const isOverdue = bundle.timeInStatus > OVERDUE_THRESHOLD_HOURS;
-              return (
-                <tr
-                  key={bundle.bundleId}
-                  className={`border-b ${
-                    isOverdue ? "bg-red-50" : "bg-white"
-                  } hover:bg-gray-50`}
-                >
-                  {/* 2. Đã di chuyển PO ID lên đầu */}
-                  <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">
-                    {bundle.poId}
-                  </td>
-                  <td className="px-6 py-4">{bundle.bundleId}</td>
-                  <td className="px-6 py-4">{bundle.styleId}</td>
-                  <td className="px-6 py-4">{bundle.color}</td>
-                  <td className="px-6 py-4">{bundle.quantity}</td>
-                  <td className="px-6 py-4">{bundle.status}</td>
-                  <td
-                    className={`px-6 py-4 font-semibold flex items-center ${
-                      isOverdue ? "text-red-600" : "text-gray-700"
-                    }`}
-                  >
-                    <Clock className="w-4 h-4 mr-2" />
-                    {bundle.timeInStatus} hours
-                  </td>
-                </tr>
-              );
-            })}
+            {filteredBundles.map((bundle) => (
+              <tr
+                key={bundle.bundleId}
+                className="bg-white border-b hover:bg-gray-50"
+              >
+                <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">
+                  {bundle.poId}
+                </td>
+                <td className="px-6 py-4">{bundle.bundleId}</td>
+                <td className="px-6 py-4">{bundle.styleId}</td>
+                <td className="px-6 py-4">{bundle.color}</td>
+                <td className="px-6 py-4">{bundle.quantity}</td>
+                <td className="px-6 py-4">{bundle.status}</td>
+                {/* Cột Time in Status đã bị xóa */}
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>

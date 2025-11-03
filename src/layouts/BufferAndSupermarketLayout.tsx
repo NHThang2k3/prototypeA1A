@@ -64,10 +64,16 @@ const sidebarNavItems: NavItem[] = [
         key: "productivity-buffer-monitoring",
         children: [
           {
-            title: "Scan In/Out",
-            path: "/buffer-supermarket/productivity/buffer-scan",
+            title: "Scan In",
+            path: "/buffer-supermarket/productivity/buffer-scan-in",
             icon: ScanLine,
-            key: "buffer-scan",
+            key: "buffer-scan-in",
+          },
+          {
+            title: "Scan Out",
+            path: "/buffer-supermarket/productivity/buffer-scan-out",
+            icon: ScanLine,
+            key: "buffer-scan-out",
           },
           {
             title: "Buffer progress & status",

@@ -41,7 +41,7 @@ import DecorationDashboardPage from "./pages/Decoration/DecorationDashboardPage"
 import ActionPlanPage from "./pages/Warehouse/ActionPlanPage";
 import MachineLocationPage from "./pages/Decoration/MachineLocationPage";
 import KanbanReportPage from "./pages/Buffer/KanbanReportPage";
-import BufferScanPage from "./pages/Buffer/BufferScanPage";
+// import BufferScanPage from "./pages/Buffer/BufferScanPage";
 import BufferReportPage from "./pages/Buffer/BufferReportPage";
 import SupermarketScanPage from "./pages/Buffer/SupermarketScanPage";
 import SupermarketReportPage from "./pages/Buffer/SupermarketReportPage";
@@ -87,6 +87,8 @@ import ScanQRPackaging from "./pages/Warehouse/ScanQRPackaging";
 import ScanQRIssueRequestPackaging from "./pages/Warehouse/ScanQRIssueRequestPackaging";
 import PackingListManagementPagePackaging from "./pages/Warehouse/PackingListManagementPagePackaging";
 import ImportPackingListFormPagePackaging from "./pages/Warehouse/ImportPackingListFormPagePackaging";
+import ScanInBufferPage from "./pages/Buffer/ScanInBufferPage";
+import ScanOutBufferPage from "./pages/Buffer/ScanOutBufferPage";
 
 function App() {
   return (
@@ -324,7 +326,18 @@ function App() {
             path="productivity/kanban-report"
             element={<KanbanReportPage />}
           />
-          <Route path="productivity/buffer-scan" element={<BufferScanPage />} />
+          <Route
+            path="productivity/buffer-scan-in"
+            element={<ScanInBufferPage />}
+          />
+          <Route
+            path="productivity/buffer-scan-in"
+            element={<ScanInBufferPage />}
+          />
+          <Route
+            path="productivity/buffer-scan-out"
+            element={<ScanOutBufferPage />}
+          />
           <Route
             path="productivity/buffer-report"
             element={<BufferReportPage />}

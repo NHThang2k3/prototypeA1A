@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+// src/pages/ScanOutBufferPage.tsx
+
+import { useState } from "react";
 import {
   Info,
   ArrowRight,
@@ -10,11 +12,11 @@ import {
 } from "lucide-react";
 
 // ============================================================================
-// 1. MOCK DATA & TYPES
+// CODE BLOCK DÙNG CHUNG (TYPES, MOCK DATA, UI COMPONENTS)
+// Khối này được sao chép vào mỗi file nghiệp vụ để đảm bảo tính độc lập.
 // ============================================================================
 
 const decorationSteps = ["Bonding", "Heat Press", "Embroidery", "Pad Print"];
-
 type Bundle = {
   id: string;
   po: string;
@@ -23,16 +25,7 @@ type Bundle = {
   size: string;
   status: "At Cutting" | "At Buffer" | "At Decoration";
 };
-
-// Dữ liệu giả cho các kịch bản
-const mockBundleAtCutting: Bundle = {
-  id: "B-12345",
-  po: "PO-2024-001",
-  style: "Men T-Shirt",
-  color: "Black",
-  size: "M",
-  status: "At Cutting",
-};
+type Feedback = { type: "success" | "error"; message: string };
 
 const mockBundleAtBuffer: Bundle = {
   id: "B-67890",
@@ -43,16 +36,10 @@ const mockBundleAtBuffer: Bundle = {
   status: "At Buffer",
 };
 
-// ============================================================================
-// 2. DUMB UI COMPONENTS (Components giao diện phụ)
-//    Các component này chỉ nhận props và hiển thị, không chứa logic nghiệp vụ.
-// ============================================================================
-
-// --- Component hiển thị giao diện Quét QR ---
-const ScannerView: React.FC<{
-  isScanning: boolean;
-  onScan: () => void;
-}> = ({ isScanning, onScan }) => (
+const ScannerView: React.FC<{ isScanning: boolean; onScan: () => void }> = ({
+  isScanning,
+  onScan,
+}) => (
   <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white p-4">
     <h1 className="text-4xl font-bold mb-4">Scan Bundle QR Code</h1>
     <p className="text-gray-400 mb-8 text-lg">
@@ -82,14 +69,11 @@ const ScannerView: React.FC<{
           Scanning...
         </>
       ) : (
-        "Scan"
+        "Start Scan"
       )}
     </button>
   </div>
 );
-
-// --- Component hiển thị giao diện Chi tiết & Hành động ---
-type Feedback = { type: "success" | "error"; message: string };
 
 const DetailsView: React.FC<{
   bundle: Bundle | null;
@@ -97,10 +81,10 @@ const DetailsView: React.FC<{
   onConfirmScanIn: () => void;
   onScanOut: (destination: string) => void;
   onBack: () => void;
-}> = ({ bundle, feedback, onConfirmScanIn, onScanOut, onBack }) => {
+  pageTitle: string;
+}> = ({ bundle, feedback, onConfirmScanIn, onScanOut, onBack, pageTitle }) => {
   const renderActions = () => {
     if (!bundle) return null;
-
     if (bundle.status === "At Cutting") {
       return (
         <div className="mt-6 text-center">
@@ -145,12 +129,9 @@ const DetailsView: React.FC<{
     }
     return null;
   };
-
   return (
     <div className="max-w-4xl mx-auto p-4 pt-10 bg-gray-100 min-h-screen">
-      <h1 className="text-3xl font-bold text-gray-800 mb-6">
-        Buffer Scan In/Out
-      </h1>
+      <h1 className="text-3xl font-bold text-gray-800 mb-6">{pageTitle}</h1>
       <div className="bg-white p-6 rounded-xl shadow-md">
         {feedback && (
           <div
@@ -168,7 +149,6 @@ const DetailsView: React.FC<{
             <span>{feedback.message}</span>
           </div>
         )}
-
         {bundle && (
           <div>
             <div className="bg-gray-50 p-4 rounded-lg">
@@ -207,7 +187,6 @@ const DetailsView: React.FC<{
             {renderActions()}
           </div>
         )}
-
         {!bundle && !feedback && (
           <p className="text-gray-500 text-center p-8">Waiting for scan...</p>
         )}
@@ -219,75 +198,32 @@ const DetailsView: React.FC<{
   );
 };
 
-// Component helper để nhúng CSS animation vào trang.
-// Giữ nó bên trong file để đảm bảo tính độc lập.
 const GlobalStyles = () => (
-  <style>{`
-    @keyframes scan {
-      0% { transform: translateY(0); }
-      100% { transform: translateY(calc(20rem - 0.375rem)); } /* 320px (h-80) - 6px (h-1.5) */
-    }
-    .animate-scan {
-      animation: scan 1.5s ease-in-out infinite alternate;
-    }
-  `}</style>
+  <style>{`@keyframes scan {0% { transform: translateY(0); } 100% { transform: translateY(calc(20rem - 0.375rem)); }} .animate-scan { animation: scan 1.5s ease-in-out infinite alternate; }`}</style>
 );
 
 // ============================================================================
-// 3. MAIN STATEFUL COMPONENT (Component chính của trang)
-//    Quản lý trạng thái và luồng hoạt động của toàn bộ màn hình.
+// COMPONENT CHÍNH CỦA TRANG: ScanOutBufferPage
 // ============================================================================
 
-const BufferScanPage: React.FC = () => {
-  // --- STATE MANAGEMENT ---
+const ScanOutBufferPage: React.FC = () => {
   const [view, setView] = useState<"scanner" | "details">("scanner");
   const [isScanning, setIsScanning] = useState(false);
   const [currentBundle, setCurrentBundle] = useState<Bundle | null>(null);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
+  // Đã xóa scanSimulationCounter vì không cần mô phỏng lỗi nữa
 
-  // --- LOGIC & EVENT HANDLERS ---
   const handleScan = () => {
-    const code = window.prompt(
-      "SIMULATE SCAN: Enter Bundle ID (e.g., B-12345, B-67890, or anything else for an error)"
-    );
-
-    if (!code) return;
-
     setIsScanning(true);
     setFeedback(null);
+    setCurrentBundle(null);
 
+    // Luôn mô phỏng quét thành công bundle hợp lệ để scan out
     setTimeout(() => {
-      let foundBundle: Bundle | null = null;
-      if (code === mockBundleAtCutting.id) {
-        foundBundle = { ...mockBundleAtCutting };
-      } else if (code === mockBundleAtBuffer.id) {
-        foundBundle = { ...mockBundleAtBuffer };
-      }
-
-      if (foundBundle) {
-        setCurrentBundle(foundBundle);
-        setFeedback(null);
-      } else {
-        setCurrentBundle(null);
-        setFeedback({
-          type: "error",
-          message: `Error! Bundle with code: ${code} not found`,
-        });
-      }
-
+      setCurrentBundle({ ...mockBundleAtBuffer });
       setIsScanning(false);
       setView("details");
     }, 1500);
-  };
-
-  const handleConfirmScanIn = () => {
-    if (!currentBundle) return;
-    const updatedBundle: Bundle = { ...currentBundle, status: "At Buffer" };
-    setCurrentBundle(updatedBundle);
-    setFeedback({
-      type: "success",
-      message: `Success! Bundle ${currentBundle.id} has been recorded: Scan In to Buffer`,
-    });
   };
 
   const handleScanOut = (destination: string) => {
@@ -296,38 +232,33 @@ const BufferScanPage: React.FC = () => {
     setCurrentBundle(updatedBundle);
     setFeedback({
       type: "success",
-      message: `Success! Bundle ${currentBundle.id} has been sent to: ${destination}`,
+      message: `Success! Bundle ${currentBundle.id} has been sent to: ${destination}.`,
     });
   };
 
   const handleBackToScanner = () => {
     setView("scanner");
-    setCurrentBundle(null);
     setFeedback(null);
-  };
-
-  // --- RENDER LOGIC ---
-  const renderCurrentView = () => {
-    if (view === "scanner") {
-      return <ScannerView isScanning={isScanning} onScan={handleScan} />;
-    }
-    return (
-      <DetailsView
-        bundle={currentBundle}
-        feedback={feedback}
-        onConfirmScanIn={handleConfirmScanIn}
-        onScanOut={handleScanOut}
-        onBack={handleBackToScanner}
-      />
-    );
+    setCurrentBundle(null);
   };
 
   return (
     <>
       <GlobalStyles />
-      {renderCurrentView()}
+      {view === "scanner" ? (
+        <ScannerView isScanning={isScanning} onScan={handleScan} />
+      ) : (
+        <DetailsView
+          bundle={currentBundle}
+          feedback={feedback}
+          onConfirmScanIn={() => {}} // Không dùng trong trang này
+          onScanOut={handleScanOut}
+          onBack={handleBackToScanner}
+          pageTitle="Buffer Scan Out"
+        />
+      )}
     </>
   );
 };
 
-export default BufferScanPage;
+export default ScanOutBufferPage;
