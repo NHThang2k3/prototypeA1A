@@ -8,16 +8,17 @@ import {
   Loader2,
   XCircle,
   AlertCircle,
+  CheckCircle2, // Import icon mới cho trạng thái thành công
 } from "lucide-react";
 import * as XLSX from "xlsx";
 
-// --- TYPE DEFINITIONS (from types.ts) ---
+// --- TYPE DEFINITIONS (Không thay đổi) ---
 
 /**
  * Định nghĩa cho một dòng hàng hóa trong file packing list excel
  */
 interface PackingListItem {
-  id: string; // ID tạm thời ở client để xử lý key trong list
+  id: string; // ID tạm thời ở client, giờ sẽ bao gồm cả tên file để đảm bảo duy nhất
   poNumber: string;
   itemCode: string;
   factory: string;
@@ -37,7 +38,7 @@ interface PackingListItem {
   description: string;
 }
 
-// --- LOCAL COMPONENT: ActionToolbar (from ActionToolbar.tsx) ---
+// --- LOCAL COMPONENT: ActionToolbar (Không thay đổi) ---
 
 interface ActionToolbarProps {
   onSubmit: () => void;
@@ -63,10 +64,22 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
   );
 };
 
-// --- LOCAL COMPONENT: FileUploadZone (from FileUploadZone.tsx) ---
+// --- LOCAL COMPONENT: FileUploadZone (REFACTORED FOR MULTIPLE FILES) ---
+
+// Định nghĩa trạng thái cho từng file được upload
+type FileStatus = "parsing" | "success" | "error";
+
+interface ProcessedFile {
+  file: File;
+  status: FileStatus;
+  error?: string;
+  // Giữ lại các item đã parse được để có thể xóa khỏi list tổng nếu file bị gỡ
+  parsedItems: PackingListItem[];
+}
 
 interface FileUploadZoneProps {
-  onItemsChange: (items: PackingListItem[]) => void;
+  onFileAdded: (items: PackingListItem[]) => void;
+  onFileRemoved: (fileName: string) => void;
 }
 
 // Ánh xạ từ tên cột trong Excel sang key trong object PackingListItem
@@ -91,18 +104,14 @@ const headerMapping: { [key: string]: keyof Omit<PackingListItem, "id"> } = {
 };
 const requiredHeaders = Object.keys(headerMapping);
 
-const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onItemsChange }) => {
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  const [isParsing, setIsParsing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+const FileUploadZone: React.FC<FileUploadZoneProps> = ({
+  onFileAdded,
+  onFileRemoved,
+}) => {
+  const [processedFiles, setProcessedFiles] = useState<ProcessedFile[]>([]);
 
-  const handleFileParse = useCallback(
-    (file: File) => {
-      setUploadedFile(file);
-      setError(null);
-      setIsParsing(true);
-      onItemsChange([]);
-
+  const parseFile = async (file: File): Promise<PackingListItem[]> => {
+    return new Promise((resolve, reject) => {
       const reader = new FileReader();
 
       reader.onload = (event) => {
@@ -129,7 +138,7 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onItemsChange }) => {
 
           if (missingHeaders.length > 0) {
             throw new Error(
-              `File is missing required columns: ${missingHeaders.join(", ")}`
+              `Missing required columns: ${missingHeaders.join(", ")}`
             );
           }
 
@@ -138,6 +147,8 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onItemsChange }) => {
               if (Object.values(row).every((val) => val === "")) return null;
 
               const newItem: Partial<PackingListItem> = {
+                // Tạo ID duy nhất bằng cách kết hợp tên file và chỉ số dòng
+                // Rất quan trọng để có thể xóa đúng item sau này
                 id: `${file.name}-${index}`,
               };
               for (const header of requiredHeaders) {
@@ -152,9 +163,9 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onItemsChange }) => {
                   const numValue = parseFloat(String(value));
                   if (isNaN(numValue)) {
                     throw new Error(
-                      `Invalid data at row ${
+                      `Invalid number at row ${
                         index + 2
-                      }, column "${header}": "${value}" is not a number.`
+                      }, column "${header}": "${value}"`
                     );
                   }
                   newItem[key] = numValue;
@@ -170,37 +181,63 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onItemsChange }) => {
             throw new Error("No valid data found in the file.");
           }
 
-          onItemsChange(parsedItems);
+          resolve(parsedItems);
         } catch (e: unknown) {
           let message = "An error occurred while processing the file.";
-          if (e instanceof Error) {
-            message = e.message;
-          }
-          setError(message);
-          onItemsChange([]);
-          setUploadedFile(null);
-        } finally {
-          setIsParsing(false);
+          if (e instanceof Error) message = e.message;
+          reject(new Error(message));
         }
       };
-
       reader.onerror = () => {
-        setError("Could not read the file. Please try again.");
-        setIsParsing(false);
-        setUploadedFile(null);
+        reject(new Error("Could not read the file. Please try again."));
       };
       reader.readAsArrayBuffer(file);
-    },
-    [onItemsChange]
-  );
+    });
+  };
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
-      if (acceptedFiles.length > 0) {
-        handleFileParse(acceptedFiles[0]);
-      }
+      const newFilesToProcess = acceptedFiles.filter(
+        (file) =>
+          !processedFiles.some(
+            (processedFile) => processedFile.file.name === file.name
+          )
+      );
+
+      newFilesToProcess.forEach((file) => {
+        // 1. Thêm file vào state với trạng thái 'parsing' để hiển thị loading
+        setProcessedFiles((prev) => [
+          ...prev,
+          { file, status: "parsing", parsedItems: [] },
+        ]);
+
+        // 2. Bắt đầu xử lý file
+        parseFile(file)
+          .then((parsedItems) => {
+            // 3. Xử lý thành công
+            setProcessedFiles((prev) =>
+              prev.map((pf) =>
+                pf.file.name === file.name
+                  ? { ...pf, status: "success", parsedItems }
+                  : pf
+              )
+            );
+            // Gửi các item mới lên component cha
+            onFileAdded(parsedItems);
+          })
+          .catch((error: Error) => {
+            // 4. Xử lý thất bại
+            setProcessedFiles((prev) =>
+              prev.map((pf) =>
+                pf.file.name === file.name
+                  ? { ...pf, status: "error", error: error.message }
+                  : pf
+              )
+            );
+          });
+      });
     },
-    [handleFileParse]
+    [processedFiles, onFileAdded]
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -211,109 +248,91 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onItemsChange }) => {
         ".xlsx",
       ],
     },
-    multiple: false,
-    disabled: isParsing || (!!uploadedFile && !error),
+    multiple: true, // CHO PHÉP CHỌN NHIỀU FILE
   });
 
-  const handleRemoveFile = () => {
-    setUploadedFile(null);
-    setError(null);
-    onItemsChange([]);
+  const handleRemoveFile = (fileName: string) => {
+    setProcessedFiles((prev) => prev.filter((pf) => pf.file.name !== fileName));
+    // Báo cho component cha để xóa các item tương ứng
+    onFileRemoved(fileName);
   };
 
   return (
-    <div className="flex flex-col items-center">
-      {!uploadedFile && !isParsing && (
-        <div
-          {...getRootProps()}
-          className={`w-full border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-colors ${
-            isDragActive
-              ? "border-blue-500 bg-blue-50"
-              : "border-gray-300 hover:border-gray-400"
-          }`}
-        >
-          <input {...getInputProps()} />
-          <div className="flex flex-col items-center text-gray-500">
-            <UploadCloud className="w-12 h-12 mb-4" />
-            <p className="font-semibold">
-              Drag and drop the file here, or click to select a file
-            </p>
-            <p className="text-sm">
-              Only Excel files (.xls, .xlsx) are supported
-            </p>
-          </div>
+    <div className="flex flex-col items-center w-full">
+      {/* Vùng Dropzone luôn hiển thị */}
+      <div
+        {...getRootProps()}
+        className={`w-full border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-colors ${
+          isDragActive
+            ? "border-blue-500 bg-blue-50"
+            : "border-gray-300 hover:border-gray-400"
+        } ${processedFiles.length > 0 ? "mb-6" : ""}`}
+      >
+        <input {...getInputProps()} />
+        <div className="flex flex-col items-center text-gray-500">
+          <UploadCloud className="w-10 h-10 mb-3" />
+          <p className="font-semibold">
+            Drag and drop files here, or click to select files
+          </p>
+          <p className="text-sm">
+            Only Excel files (.xls, .xlsx) are supported
+          </p>
         </div>
-      )}
+      </div>
 
-      {isParsing && (
-        <div className="w-full text-center p-12 border-2 border-dashed border-gray-300 rounded-lg">
-          <div className="flex flex-col items-center text-gray-600">
-            <Loader2 className="w-12 h-12 mb-4 animate-spin" />
-            <p className="font-semibold">Processing file...</p>
-            <p className="text-sm">{uploadedFile?.name}</p>
-          </div>
-        </div>
-      )}
-
-      {error && (
-        <div className="mt-4 w-full max-w-lg bg-red-50 p-4 rounded-md border border-red-200">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <AlertCircle
-                className="h-5 w-5 text-red-400"
-                aria-hidden="true"
-              />
-            </div>
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-red-800">
-                File Processing Error
-              </h3>
-              <div className="mt-2 text-sm text-red-700">
-                <p>{error}</p>
+      {/* Danh sách các file đã upload */}
+      {processedFiles.length > 0 && (
+        <div className="w-full space-y-3">
+          {processedFiles.map(({ file, status, error }) => (
+            <div
+              key={file.name}
+              className={`w-full p-4 rounded-md border flex items-center justify-between ${
+                status === "success" && "bg-green-50 border-green-200"
+              } ${status === "error" && "bg-red-50 border-red-200"}`}
+            >
+              <div className="flex items-center overflow-hidden">
+                <FileText className="w-6 h-6 text-gray-600 mr-3 flex-shrink-0" />
+                <div className="flex-grow overflow-hidden">
+                  <p
+                    className="font-medium text-gray-800 truncate"
+                    title={file.name}
+                  >
+                    {file.name}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    {(file.size / 1024).toFixed(2)} KB
+                  </p>
+                  {status === "error" && (
+                    <p className="text-sm text-red-600 mt-1">{error}</p>
+                  )}
+                </div>
               </div>
-              <div className="mt-4">
+              <div className="flex items-center space-x-3 ml-4 flex-shrink-0">
+                {status === "parsing" && (
+                  <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
+                )}
+                {status === "success" && (
+                  <CheckCircle2 className="w-5 h-5 text-green-600" />
+                )}
+                {status === "error" && (
+                  <AlertCircle className="w-5 h-5 text-red-500" />
+                )}
                 <button
-                  onClick={handleRemoveFile}
-                  type="button"
-                  className="text-sm font-medium text-red-800 hover:text-red-600"
+                  onClick={() => handleRemoveFile(file.name)}
+                  title="Remove file"
                 >
-                  Upload another file
+                  <XCircle className="w-5 h-5 text-gray-500 hover:text-gray-800" />
                 </button>
               </div>
             </div>
-          </div>
-        </div>
-      )}
-
-      {uploadedFile && !isParsing && !error && (
-        <div className="mt-6 w-full max-w-md bg-green-50 border border-green-200 p-4 rounded-md flex items-center justify-between">
-          <div className="flex items-center">
-            <FileText className="w-6 h-6 text-green-700 mr-3" />
-            <div>
-              <p className="font-medium text-gray-800">{uploadedFile.name}</p>
-              <p className="text-sm text-gray-500">
-                {(uploadedFile.size / 1024).toFixed(2)} KB
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-3">
-            <p className="text-sm font-semibold text-green-600">
-              Processed successfully
-            </p>
-            <button
-              onClick={handleRemoveFile}
-              title="Remove file and re-upload"
-            >
-              <XCircle className="w-5 h-5 text-gray-500 hover:text-gray-800" />
-            </button>
-          </div>
+          ))}
         </div>
       )}
     </div>
   );
 };
 
-// --- LOCAL COMPONENT: PreviewTable (from PreviewTable.tsx) ---
+// --- LOCAL COMPONENT: PreviewTable (Không thay đổi) ---
 
 interface PreviewTableProps {
   items: PackingListItem[];
@@ -343,7 +362,7 @@ const PreviewTable: React.FC<PreviewTableProps> = ({ items }) => {
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">
       <h2 className="text-xl font-semibold text-gray-800 mb-4">
-        2. Data Preview ({items.length} rows)
+        2. Data Preview ({items.length} total rows)
       </h2>
       <div className="overflow-x-auto border border-gray-200 rounded-lg">
         <table className="min-w-full divide-y divide-gray-200">
@@ -423,32 +442,43 @@ const PreviewTable: React.FC<PreviewTableProps> = ({ items }) => {
   );
 };
 
-// --- MAIN PAGE COMPONENT ---
+// --- MAIN PAGE COMPONENT (UPDATED TO HANDLE MULTIPLE FILES) ---
 
 const ImportPackingListFormPage: React.FC = () => {
+  // `items` bây giờ là tổng hợp dữ liệu từ TẤT CẢ các file đã được xử lý thành công
   const [items, setItems] = useState<PackingListItem[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleItemsChange = useCallback((newItems: PackingListItem[]) => {
-    setItems(newItems);
+  // Hàm này sẽ được gọi khi một file được xử lý thành công
+  const handleFileAdded = useCallback((newItems: PackingListItem[]) => {
+    // Thêm các item mới vào danh sách hiện tại
+    setItems((prevItems) => [...prevItems, ...newItems]);
+  }, []);
+
+  // Hàm này sẽ được gọi khi người dùng xóa một file khỏi danh sách
+  const handleFileRemoved = useCallback((fileName: string) => {
+    // Lọc ra các item không thuộc về file đã bị xóa
+    // Dựa vào ID đã được tạo `file.name-index`
+    setItems((prevItems) =>
+      prevItems.filter((item) => !item.id.startsWith(`${fileName}-`))
+    );
   }, []);
 
   const handleSubmit = () => {
     if (items.length === 0) {
-      alert("There are no items to submit.");
+      alert("There are no valid items to submit.");
       return;
     }
 
     setIsSubmitting(true);
     console.log("Submitting the following items:", items);
 
-    // Simulate an API call
     setTimeout(() => {
       console.log("Submission successful!");
       setIsSubmitting(false);
-      // Optionally, clear the form after submission
       setItems([]);
-      // In a real app, you would probably want to show a success message or redirect
+      // Trong thực tế, bạn sẽ muốn xóa cả danh sách file trong `FileUploadZone`
+      // Điều này cần thêm một chút logic (vd: dùng key để reset component) hoặc để user tự xóa
       alert("Inbound shipment created successfully!");
     }, 2000);
   };
@@ -456,33 +486,32 @@ const ImportPackingListFormPage: React.FC = () => {
   return (
     <>
       <div className="space-y-6 pb-24">
-        {" "}
-        {/* Add padding to prevent content from being hidden by the sticky toolbar */}
-        {/* Header của trang */}
         <div className="flex flex-col md:flex-row justify-between md:items-center">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
               Inbound from Packing List File
             </h1>
             <p className="mt-1 text-sm text-gray-500">
-              Upload an Excel file to create a batch inbound shipment.
+              Upload one or more Excel files to create a batch inbound shipment.
             </p>
           </div>
         </div>
-        {/* Vùng tải file */}
+
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h2 className="text-xl font-semibold text-gray-800 mb-4">
-            1. Upload Packing List File
+            1. Upload Packing List Files
           </h2>
           <div>
-            <FileUploadZone onItemsChange={handleItemsChange} />
+            <FileUploadZone
+              onFileAdded={handleFileAdded}
+              onFileRemoved={handleFileRemoved}
+            />
           </div>
         </div>
-        {/* Bảng xem trước dữ liệu - Hiển thị có điều kiện */}
+
         {items.length > 0 && <PreviewTable items={items} />}
       </div>
 
-      {/* Thanh công cụ hành động - Hiển thị có điều kiện */}
       {items.length > 0 && (
         <ActionToolbar onSubmit={handleSubmit} isSubmitting={isSubmitting} />
       )}
