@@ -13,7 +13,7 @@ import DecorationLayout from "./layouts/DecorationLayout";
 
 // Import Pages
 import HomePage from "./pages/home/HomePage";
-import InboundDashboardPage from "./pages/inbound-dashboard/InboundDashboardPage";
+import InboundDashboardPage from "./pages/Warehouse/InboundDashboardPage";
 import InventoryListPage from "./pages/Warehouse/InventoryListPage";
 import KanbanBoardPage from "./pages/Warehouse/KanbanBoardPage";
 import LocationManagementPage from "./pages/FactorySetting/LocationManagementPage";
