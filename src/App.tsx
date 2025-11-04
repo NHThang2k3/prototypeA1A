@@ -95,9 +95,9 @@ function App() {
     <BrowserRouter>
       <Routes>
         {/* Route chính để chọn module */}
-        <Route path="/home" element={<HomePage />} />
-        {/* <Route path="/" element={<HomePage />} /> */}
-        <Route path="/" element={<AllScreens />} />
+        {/* <Route path="/home" element={<HomePage />} /> */}
+        <Route path="/" element={<HomePage />} />
+        {/* <Route path="/" element={<AllScreens />} /> */}
 
         {/* === Module Kho Vải === */}
         <Route path="/fabric-warehouse" element={<FabricWarehouseLayout />}>
