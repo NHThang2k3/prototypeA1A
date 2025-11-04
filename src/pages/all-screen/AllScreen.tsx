@@ -32,11 +32,13 @@ import CuttingDashboardPerformance from "../Cutting/CuttingDashboardPerformance"
 import BundleManagementPage from "../Cutting/BundleManagementPage";
 import MasterPlanPage from "../Cutting/MasterPlanPage";
 import CuttingWeeklyDailyPlanPage from "../Cutting/CuttingWeeklyDailyPlanPage";
+import InboundDashboardPage from "../Warehouse/InboundDashboardPage";
 
 const AllScreens: React.FC = () => {
   type PageComponent = React.ComponentType<Record<string, unknown>>;
   const pages: { name: string; component: PageComponent }[] = [
     // { name: "ActionPlanPage", component: ActionPlanPage },
+    { name: "InboundDashboardPage", component: InboundDashboardPage },
     { name: "SewingTrimsKanbanPage", component: SewingTrimsKanbanPage },
     { name: "ImportPackingListFormPage", component: ImportPackingListFormPage },
     { name: "IssueFabricFromJobPage", component: IssueFabricFromJobPage },

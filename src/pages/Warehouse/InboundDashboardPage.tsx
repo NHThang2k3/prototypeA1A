@@ -209,7 +209,7 @@ const InboundDashboardPage: React.FC = () => {
     legend: {
       data: ["Preparation", "Relaxation", "Issued", "Cutting"],
       top: 30,
-      right: 50,
+      left: "center",
       orient: "horizontal",
     },
     grid: {
