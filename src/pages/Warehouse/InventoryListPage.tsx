@@ -1,16 +1,12 @@
 // src/pages/Warehouse/InventoryListPage.tsx
 
+// =================================================================================
+// TYPE DEFINITIONS & DUMMY DATA (Unchanged)
+// =================================================================================
 export type QCStatus = "Passed" | "Failed" | "Pending";
 
-export interface LocationHistoryEntry {
-  dateTime: string; // ISO 8601 format string
-  from: string;
-  to: string;
-  changedBy: string;
-}
-
 export interface FabricRoll {
-  id: string; // Using QR Code as a unique ID
+  id: string;
   poNumber: string;
   itemCode: string;
   factory: string;
@@ -40,11 +36,16 @@ export interface FabricRoll {
   relaxDate: string;
   relaxTime: string;
   relaxBy: string;
-  needRelax: "Yes" | "No"; // Đã thêm cột này
+  needRelax: "Yes" | "No";
   parentQrCode: string | null;
   locationHistory: LocationHistoryEntry[];
 }
-
+export interface LocationHistoryEntry {
+  dateTime: string;
+  from: string;
+  to: string;
+  changedBy: string;
+}
 const DUMMY_FABRIC_DATA: FabricRoll[] = [
   {
     id: "QR-76433",
@@ -77,9 +78,16 @@ const DUMMY_FABRIC_DATA: FabricRoll[] = [
     relaxDate: "2023-01-17",
     relaxTime: "09:00",
     relaxBy: "Alice",
-    needRelax: "Yes", // Đã thêm giá trị
+    needRelax: "Yes",
     parentQrCode: null,
-    locationHistory: [],
+    locationHistory: [
+      {
+        dateTime: "2023-01-15T10:00:00Z",
+        from: "Receiving",
+        to: "F2-03-05",
+        changedBy: "System",
+      },
+    ],
   },
   {
     id: "QR-93641",
@@ -112,7 +120,7 @@ const DUMMY_FABRIC_DATA: FabricRoll[] = [
     relaxDate: "2023-05-10",
     relaxTime: "15:45",
     relaxBy: "Bob",
-    needRelax: "No", // Đã thêm giá trị
+    needRelax: "No",
     parentQrCode: null,
     locationHistory: [],
   },
@@ -147,7 +155,7 @@ const DUMMY_FABRIC_DATA: FabricRoll[] = [
     relaxDate: "2023-05-25",
     relaxTime: "15:45",
     relaxBy: "Bob",
-    needRelax: "Yes", // Đã thêm giá trị
+    needRelax: "Yes",
     parentQrCode: null,
     locationHistory: [],
   },
@@ -182,7 +190,7 @@ const DUMMY_FABRIC_DATA: FabricRoll[] = [
     relaxDate: "2023-03-06",
     relaxTime: "10:30",
     relaxBy: "Charlie",
-    needRelax: "No", // Đã thêm giá trị
+    needRelax: "No",
     parentQrCode: null,
     locationHistory: [],
   },
@@ -217,21 +225,19 @@ const DUMMY_FABRIC_DATA: FabricRoll[] = [
     relaxDate: "2023-02-24",
     relaxTime: "15:45",
     relaxBy: "Alice",
-    needRelax: "Yes", // Đã thêm giá trị
+    needRelax: "Yes",
     parentQrCode: null,
     locationHistory: [],
   },
 ];
 
 // =================================================================================
-// Consolidated Imports & Component Definitions
+// IMPORTS
 // =================================================================================
 
-import React, { useState, useEffect, useMemo, useRef, type FC } from "react";
+import React, { useState, useEffect, useMemo, type FC } from "react";
 import {
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   FileDown,
   History,
   MoreVertical,
@@ -240,66 +246,124 @@ import {
   Search,
   SlidersHorizontal,
   Trash2,
-  View,
+  ArrowUpDown, // ADDED: For sorting indicator
 } from "lucide-react";
+import { ColumnDef } from "@tanstack/react-table"; // ADDED
+
+// Shadcn UI Components
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+// import { Checkbox } from "@/components/ui/checkbox"; // REMOVED: Handled by CustomTable
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  // DropdownMenuCheckboxItem, // REMOVED: Handled by CustomTable
+} from "@/components/ui/dropdown-menu";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Progress } from "@/components/ui/progress";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+import { cn } from "@/lib/utils";
+
+import { CustomTable } from "@/components/ui/custom-table";
 
 export const FilterSkeleton = () => (
-  <div className="bg-white p-6 rounded-lg shadow animate-pulse">
-    {/* Header Skeleton */}
-    <div className="h-7 bg-gray-200 rounded w-full mb-6"></div>
-
-    {/* Grid Skeleton */}
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {[...Array(6)].map((_, i) => (
-        <div key={i} className="space-y-2">
-          <div className="h-4 bg-gray-200 rounded w-1/3"></div>
-          <div className="h-10 bg-gray-200 rounded w-full"></div>
-        </div>
-      ))}
-    </div>
-
-    {/* Buttons Skeleton */}
-    <div className="mt-6 pt-4 border-t border-gray-200">
-      <div className="flex justify-end space-x-3">
-        <div className="h-10 bg-gray-200 rounded w-24"></div>
-        <div className="h-10 bg-gray-200 rounded w-32"></div>
-      </div>
-    </div>
-  </div>
-);
-
-export const TableSkeleton = () => (
-  <div className="bg-white p-6 rounded-lg shadow animate-pulse">
-    {/* Header Skeleton */}
-    <div className="flex justify-between items-center mb-6">
-      <div className="h-8 bg-gray-200 rounded w-64"></div>
-      <div className="flex space-x-2">
-        <div className="h-10 bg-gray-200 rounded w-40"></div>
-      </div>
-    </div>
-
-    {/* Table Content Skeleton */}
-    <div className="w-full">
-      <div className="flex bg-gray-50 p-4 rounded-t-lg">
-        {[...Array(10)].map((_, i) => (
-          <div key={i} className="flex-1 h-6 bg-gray-200 rounded mx-2"></div>
-        ))}
-      </div>
-      <div className="space-y-2 mt-2">
-        {[...Array(10)].map((_, i) => (
-          <div
-            key={i}
-            className="flex items-center p-4 border-b border-gray-100"
-          >
-            {[...Array(10)].map((_, j) => (
-              <div
-                key={j}
-                className="flex-1 h-6 bg-gray-200 rounded mx-2"
-              ></div>
-            ))}
+  <Card>
+    <CardHeader>
+      <Skeleton className="h-7 w-full" />
+    </CardHeader>
+    <CardContent>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {[...Array(6)].map((_, i) => (
+          <div key={i} className="space-y-2">
+            <Skeleton className="h-4 w-1/3" />
+            <Skeleton className="h-10 w-full" />
           </div>
         ))}
       </div>
+      <div className="mt-6 pt-4 border-t flex justify-end space-x-3">
+        <Skeleton className="h-10 w-24" />
+        <Skeleton className="h-10 w-32" />
+      </div>
+    </CardContent>
+  </Card>
+);
+
+export const TableSkeleton = () => (
+  // ...
+  <div className="space-y-4 mt-6">
+    <div className="flex justify-between items-center">
+      <Skeleton className="h-8 w-64" />
+      <Skeleton className="h-10 w-40" />
+    </div>
+    <div className="rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            {[...Array(10)].map((_, i) => (
+              <TableHead key={i}>
+                <Skeleton className="h-6 w-full" />
+              </TableHead>
+            ))}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {[...Array(10)].map((_, i) => (
+            <TableRow key={i}>
+              {[...Array(10)].map((_, j) => (
+                <TableCell key={j}>
+                  <Skeleton className="h-6 w-full" />
+                </TableCell>
+              ))}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </div>
   </div>
 );
@@ -307,25 +371,33 @@ export const TableSkeleton = () => (
 interface StatusBadgeProps {
   status: QCStatus;
 }
-
-const statusMap: Record<QCStatus, { text: string; className: string }> = {
-  Passed: { text: "Passed", className: "bg-green-100 text-green-800" },
-  Failed: { text: "Failed", className: "bg-red-100 text-red-800" },
-  Pending: { text: "Pending", className: "bg-yellow-100 text-yellow-800" },
-};
-
 export const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
-  const { text, className } = statusMap[status] || {
-    text: "Unknown",
-    className: "bg-gray-100 text-gray-800",
-  };
-
+  const variant = useMemo(() => {
+    switch (status) {
+      case "Passed":
+        return "default";
+      case "Failed":
+        return "destructive";
+      case "Pending":
+        return "secondary";
+      default:
+        return "outline";
+    }
+  }, [status]);
+  const className = useMemo(() => {
+    switch (status) {
+      case "Passed":
+        return "bg-green-500 hover:bg-green-600";
+      case "Pending":
+        return "bg-yellow-500 hover:bg-yellow-600";
+      default:
+        return "";
+    }
+  }, [status]);
   return (
-    <span
-      className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${className}`}
-    >
-      {text}
-    </span>
+    <Badge variant={variant} className={className}>
+      {status}
+    </Badge>
   );
 };
 
@@ -338,7 +410,6 @@ interface InventoryHeaderProps {
   onViewHistory: () => void;
   onDelete: () => void;
 }
-
 export const InventoryHeader = ({
   selectedRowCount,
   onExportAll,
@@ -348,286 +419,146 @@ export const InventoryHeader = ({
   onViewHistory,
   onDelete,
 }: InventoryHeaderProps) => {
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
+  // ... (Unchanged)
   const hasSelection = selectedRowCount > 0;
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
-        setIsDropdownOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
-
-  const handleActionClick = (action: () => void) => {
-    action();
-    setIsDropdownOpen(false);
-  };
-
   return (
     <div className="flex flex-col md:flex-row justify-between md:items-center mb-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">
-          Inventory Management
-        </h1>
+        <h1 className="text-3xl font-bold">Inventory Management</h1>
         {hasSelection && (
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             {selectedRowCount} item(s) selected.
           </p>
         )}
       </div>
       <div className="flex space-x-2 mt-4 md:mt-0">
-        {/* Actions Dropdown */}
-        <div className="relative" ref={dropdownRef}>
-          <button
-            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            disabled={!hasSelection}
-            className="flex items-center justify-center px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Actions
-            <ChevronDown className="w-4 h-4 ml-2 -mr-1" />
-          </button>
-          {isDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg z-20 border border-gray-200 origin-top-right">
-              <div className="py-1">
-                <button
-                  onClick={() => handleActionClick(onExportSelected)}
-                  className="w-full text-left flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                >
-                  <FileDown className="w-4 h-4 mr-3" /> Export Selected to Excel
-                </button>
-                <button
-                  onClick={() => handleActionClick(onPrintMultiple)}
-                  className="w-full text-left flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                >
-                  <Printer className="w-4 h-4 mr-3" /> Print QR Code
-                </button>
-                <button
-                  onClick={() => handleActionClick(onTransfer)}
-                  className="w-full text-left flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                >
-                  <Move className="w-4 h-4 mr-3" /> Transfer Location
-                </button>
-                <button
-                  onClick={() => handleActionClick(onViewHistory)}
-                  className="w-full text-left flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                >
-                  <History className="w-4 h-4 mr-3" /> View Location History
-                </button>
-                <div className="border-t my-1"></div>
-                <button
-                  onClick={() => handleActionClick(onDelete)}
-                  className="w-full text-left flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                >
-                  <Trash2 className="w-4 h-4 mr-3" /> Delete
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" disabled={!hasSelection}>
+              Actions <ChevronDown className="w-4 h-4 ml-2" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuItem onSelect={onExportSelected}>
+              <FileDown className="w-4 h-4 mr-2" />
+              Export Selected
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={onPrintMultiple}>
+              <Printer className="w-4 h-4 mr-2" />
+              Print QR Code
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={onTransfer}>
+              <Move className="w-4 h-4 mr-2" />
+              Transfer Location
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={onViewHistory}>
+              <History className="w-4 h-4 mr-2" />
+              View Location History
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onSelect={onDelete}
+              className="text-red-600 focus:text-red-600 focus:bg-red-50"
+            >
+              <Trash2 className="w-4 h-4 mr-2" /> Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
-        {/* Export Button */}
-        <button
-          onClick={onExportAll}
-          className="flex items-center justify-center px-4 py-2 bg-blue-600 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-blue-700"
-        >
-          <FileDown className="w-5 h-5 mr-2" />
-          Export All to Excel
-        </button>
+        <Button onClick={onExportAll}>
+          <FileDown className="w-5 h-5 mr-2" /> Export All to Excel
+        </Button>
       </div>
     </div>
   );
 };
 
-const inputClass =
-  "mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm";
-
 export const InventoryFilters = () => {
-  // NOTE: For a real application, the state and onChange handlers would be passed via props.
-  const [isOpen, setIsOpen] = useState(true);
-
   return (
-    <div className="bg-white p-6 rounded-lg shadow-sm">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className={`w-full flex items-center justify-between text-lg font-semibold text-gray-900 ${
-          isOpen ? "mb-6" : ""
-        }`}
-      >
-        <span className="flex items-center">
-          <SlidersHorizontal className="w-5 h-5 mr-3 text-gray-500" />
-          Search
-        </span>
-        <ChevronDown
-          className={`w-5 h-5 text-gray-500 transition-transform duration-200 ${
-            isOpen ? "rotate-180" : ""
-          }`}
-        />
-      </button>
-
-      {isOpen && (
-        <form className="transition-opacity duration-300 ease-in-out">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
-            {/* PO NO */}
-            <div>
-              <label
-                htmlFor="poNumber"
-                className="block text-sm font-medium text-gray-700"
-              >
-                PO NO
-              </label>
-              <input
-                type="text"
-                id="poNumber"
-                className={inputClass}
-                placeholder="e.g., POPU0018251"
-              />
-            </div>
-
-            {/* Supplier Code */}
-            <div>
-              <label
-                htmlFor="supplierCode"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Supplier Code
-              </label>
-              <input
-                type="text"
-                id="supplierCode"
-                className={inputClass}
-                placeholder="e.g., SUP-Y"
-              />
-            </div>
-
-            {/* Invoice No */}
-            <div>
-              <label
-                htmlFor="invoiceNo"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Invoice No
-              </label>
-              <input
-                type="text"
-                id="invoiceNo"
-                className={inputClass}
-                placeholder="e.g., INV-001"
-              />
-            </div>
-
-            {/* Fabric */}
-            <div>
-              <label
-                htmlFor="rollNo"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Fabric
-              </label>
-              <input
-                type="text"
-                id="rollNo"
-                className={inputClass}
-                placeholder="e.g., 1"
-              />
-            </div>
-
-            {/* Color */}
-            <div>
-              <label
-                htmlFor="color"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Color
-              </label>
-              <input
-                type="text"
-                id="color"
-                className={inputClass}
-                placeholder="e.g., Puma Black"
-              />
-            </div>
-
-            {/* QC Status */}
-            <div>
-              <label
-                htmlFor="qcStatus"
-                className="block text-sm font-medium text-gray-700"
-              >
-                QC Status
-              </label>
-              <select id="qcStatus" className={inputClass}>
-                <option value="">All Statuses</option>
-                {(["Passed", "Failed", "Pending"] as QCStatus[]).map(
-                  (status) => (
-                    <option key={status} value={status}>
-                      {status}
-                    </option>
-                  )
-                )}
-              </select>
-            </div>
-          </div>
-
-          <div className="mt-6 pt-4 border-t border-gray-200 flex items-center justify-end space-x-3">
-            <button
-              type="button"
-              className="bg-gray-100 text-gray-700 font-medium py-2 px-4 rounded-md hover:bg-gray-200"
-            >
-              Clear
-            </button>
-            <button
-              type="submit"
-              onClick={(e) => e.preventDefault()} // Prevent form submission for this demo
-              className="flex items-center justify-center px-4 py-2 bg-blue-600 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-blue-700"
-            >
-              <Search className="w-5 h-5 mr-2 -ml-1" />
-              Search
-            </button>
-          </div>
-        </form>
-      )}
-    </div>
+    <Accordion
+      type="single"
+      collapsible
+      defaultValue="item-1"
+      className="w-full"
+    >
+      <AccordionItem value="item-1">
+        <Card>
+          <CardHeader className="p-4">
+            <AccordionTrigger className="text-lg font-semibold w-full flex justify-between p-2 hover:no-underline">
+              <span className="flex items-center">
+                <SlidersHorizontal className="w-5 h-5 mr-3 text-gray-500" />
+                Search Filters
+              </span>
+            </AccordionTrigger>
+          </CardHeader>
+          <AccordionContent>
+            <CardContent className="pt-0">
+              <form>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="poNumber">PO NO</Label>
+                    <Input id="poNumber" placeholder="e.g., POPU0018251" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="supplierCode">Supplier Code</Label>
+                    <Input id="supplierCode" placeholder="e.g., SUP-Y" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="invoiceNo">Invoice No</Label>
+                    <Input id="invoiceNo" placeholder="e.g., INV-001" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="rollNo">Fabric</Label>
+                    <Input id="rollNo" placeholder="e.g., 1" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="color">Color</Label>
+                    <Input id="color" placeholder="e.g., Puma Black" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="qcStatus">QC Status</Label>
+                    <Select>
+                      <SelectTrigger id="qcStatus">
+                        <SelectValue placeholder="All Statuses" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Statuses</SelectItem>
+                        {(["Passed", "Failed", "Pending"] as QCStatus[]).map(
+                          (status) => (
+                            <SelectItem key={status} value={status}>
+                              {status}
+                            </SelectItem>
+                          )
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="mt-6 pt-4 border-t flex items-center justify-end space-x-3">
+                  <Button type="button" variant="outline">
+                    Clear
+                  </Button>
+                  <Button type="submit" onClick={(e) => e.preventDefault()}>
+                    <Search className="w-5 h-5 mr-2 -ml-1" /> Search
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </AccordionContent>
+        </Card>
+      </AccordionItem>
+    </Accordion>
   );
 };
 
-interface Column {
-  id: string;
-  name: string;
-}
-
-interface InventoryTableProps {
-  items: FabricRoll[];
-  allColumns: Column[];
-  visibleColumns: Set<string>;
-  onColumnVisibilityChange: (newVisibleColumns: Set<string>) => void;
-  selectedRows: Set<string>;
-  onSelectionChange: (newSelection: Set<string>) => void;
-  onPrintSingle: (item: FabricRoll) => void;
-  onViewHistorySingle: (item: FabricRoll) => void;
-  onTransferSingle: (item: FabricRoll) => void;
-  onDeleteSingle: (item: FabricRoll) => void;
-}
-
 const RelaxProgressBar: React.FC<{ roll: FabricRoll }> = ({ roll }) => {
   const [progress, setProgress] = useState(0);
-  const [isCompleted, setIsCompleted] = useState(false);
 
   useEffect(() => {
     if (!roll.relaxDate || !roll.relaxTime) {
       setProgress(0);
       return;
     }
-
     const calculateProgress = () => {
       const startTime = new Date(`${roll.relaxDate}T${roll.relaxTime}`);
       const now = new Date();
@@ -637,582 +568,134 @@ const RelaxProgressBar: React.FC<{ roll: FabricRoll }> = ({ roll }) => {
         100,
         (elapsedHours / roll.hourStandard) * 100
       );
-
       setProgress(calculatedProgress);
-      setIsCompleted(calculatedProgress >= 100);
     };
-
     calculateProgress();
-    const interval = setInterval(calculateProgress, 60000); // Update every minute
-
+    const interval = setInterval(calculateProgress, 60000); // update every minute
     return () => clearInterval(interval);
   }, [roll.relaxDate, roll.relaxTime, roll.hourStandard]);
 
-  const barColor = isCompleted ? "bg-green-500" : "bg-blue-500";
-
   return (
-    <div className="w-full bg-gray-200 rounded-full h-2.5">
-      <div
-        className={`${barColor} h-2.5 rounded-full`}
-        style={{ width: `${progress}%` }}
-        title={`${Math.round(progress)}% Complete`}
-      ></div>
-    </div>
+    <Progress
+      value={progress}
+      className={cn(progress >= 100 && "bg-green-500")}
+    />
   );
 };
 
-const columnConfig: {
-  id: string;
-  header: string;
-  cell?: (item: FabricRoll) => React.ReactNode;
-}[] = [
-  { id: "poNumber", header: "PO NO" },
-  { id: "supplierCode", header: "Supplier Code" },
-  { id: "invoiceNo", header: "Invoice No" },
-  { id: "rollNo", header: "Fabric" },
-  { id: "color", header: "Color" },
-  { id: "lotNo", header: "Batch No" },
-  { id: "yards", header: "Shipped length" },
-  { id: "balanceYards", header: "Actual length" },
-  { id: "grossWeightKgs", header: "Gross Weight" },
-  { id: "netWeightKgs", header: "Net Weight" },
-  {
-    id: "qcStatus",
-    header: "QC Status",
-    cell: (item) => <StatusBadge status={item.qcStatus} />,
-  },
-  { id: "location", header: "Location" },
-  { id: "factory", header: "Factory" },
-  { id: "hourStandard", header: "Relax hour" },
-  { id: "needRelax", header: "Need Relax" }, // Đã thêm cấu hình cột
-  {
-    id: "relaxProgress",
-    header: "Relax Progress",
-    cell: (item) => <RelaxProgressBar roll={item} />,
-  },
-  {
-    id: "relaxDate",
-    header: "Date Relaxed",
-    cell: (item) =>
-      item.relaxDate ? new Date(item.relaxDate).toLocaleDateString() : "-",
-  },
-];
-
-const ColumnToggleButton: React.FC<{
-  allColumns: Column[];
-  visibleColumns: Set<string>;
-  onColumnVisibilityChange: (newVisibleColumns: Set<string>) => void;
-}> = ({ allColumns, visibleColumns, onColumnVisibilityChange }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const handleToggleColumn = (columnId: string) => {
-    const newVisibleColumns = new Set(visibleColumns);
-    if (newVisibleColumns.has(columnId)) {
-      newVisibleColumns.delete(columnId);
-    } else {
-      newVisibleColumns.add(columnId);
-    }
-    onColumnVisibilityChange(newVisibleColumns);
-  };
-
-  return (
-    <div className="relative inline-block ml-2" ref={dropdownRef}>
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-center p-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50"
-      >
-        <View className="w-5 h-5" />
-      </button>
-      {isOpen && (
-        <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg z-20 border border-gray-200">
-          <div className="p-2">
-            <p className="text-sm font-semibold text-gray-800 px-2 py-1 uppercase">
-              Toggle Columns
-            </p>
-          </div>
-          <div className="border-t border-gray-200"></div>
-          <div className="py-1 max-h-60 overflow-y-auto">
-            {allColumns.map((column) => (
-              <label
-                key={column.id}
-                className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-              >
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  checked={visibleColumns.has(column.id)}
-                  onChange={() => handleToggleColumn(column.id)}
-                />
-                <span className="ml-3 uppercase">{column.name}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-export const InventoryTable: React.FC<InventoryTableProps> = ({
-  items,
-  allColumns,
-  visibleColumns,
-  onColumnVisibilityChange,
-  selectedRows,
-  onSelectionChange,
-  onPrintSingle,
-  onViewHistorySingle,
-  onTransferSingle,
-  onDeleteSingle,
-}) => {
-  const selectAllCheckboxRef = useRef<HTMLInputElement>(null);
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const actionMenuRef = useRef<HTMLDivElement>(null);
-  const displayedColumnConfig = columnConfig.filter((c) =>
-    visibleColumns.has(c.id)
-  );
-
-  // Effect for closing the action menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        actionMenuRef.current &&
-        !actionMenuRef.current.contains(event.target as Node)
-      ) {
-        setOpenMenuId(null);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  useEffect(() => {
-    if (selectAllCheckboxRef.current) {
-      const numSelected = selectedRows.size;
-      const numItems = items.length;
-      selectAllCheckboxRef.current.checked =
-        numSelected === numItems && numItems > 0;
-      selectAllCheckboxRef.current.indeterminate =
-        numSelected > 0 && numSelected < numItems;
-    }
-  }, [selectedRows, items]);
-
-  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.checked) {
-      const allItemIds = new Set(items.map((item) => item.id));
-      onSelectionChange(allItemIds);
-    } else {
-      onSelectionChange(new Set());
-    }
-  };
-
-  const handleSelectOne = (itemId: string) => {
-    const newSelection = new Set(selectedRows);
-    if (newSelection.has(itemId)) {
-      newSelection.delete(itemId);
-    } else {
-      newSelection.add(itemId);
-    }
-    onSelectionChange(newSelection);
-  };
-
-  const handleActionClick = (action: () => void) => {
-    action();
-    setOpenMenuId(null);
-  };
-
-  return (
-    <div className="bg-white shadow-sm rounded-lg overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-4 py-3 text-left">
-                <input
-                  type="checkbox"
-                  ref={selectAllCheckboxRef}
-                  onChange={handleSelectAll}
-                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-              </th>
-              {displayedColumnConfig.map((col) => (
-                <th
-                  key={col.id}
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  {col.header}
-                </th>
-              ))}
-              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider sticky right-0 bg-gray-50 z-20">
-                <div className="flex items-center justify-end space-x-2">
-                  {/* <span>Actions</span> */}
-                  <ColumnToggleButton
-                    allColumns={allColumns}
-                    visibleColumns={visibleColumns}
-                    onColumnVisibilityChange={onColumnVisibilityChange}
-                  />
-                </div>
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {items.map((item) => (
-              <tr
-                key={item.id}
-                className={`hover:bg-gray-50 ${
-                  selectedRows.has(item.id) ? "bg-blue-50" : ""
-                }`}
-              >
-                <td className="px-4 py-4 whitespace-nowrap">
-                  <input
-                    type="checkbox"
-                    checked={selectedRows.has(item.id)}
-                    onChange={() => handleSelectOne(item.id)}
-                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                </td>
-                {displayedColumnConfig.map((col) => (
-                  <td
-                    key={col.id}
-                    className="px-4 py-4 whitespace-nowrap text-sm text-gray-500"
-                  >
-                    {col.cell
-                      ? col.cell(item)
-                      : (item[col.id as keyof FabricRoll] as string)}
-                  </td>
-                ))}
-                <td
-                  className={`relative px-4 py-4 whitespace-nowrap text-right text-sm font-medium  right-0 z-10 ${
-                    selectedRows.has(item.id) ? "bg-blue-50" : "bg-white"
-                  } hover:bg-gray-50`}
-                >
-                  <button
-                    onClick={() =>
-                      setOpenMenuId(openMenuId === item.id ? null : item.id)
-                    }
-                    className="p-1 text-gray-500 hover:text-gray-800 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                  >
-                    <MoreVertical className="w-5 h-5" />
-                  </button>
-                  {openMenuId === item.id && (
-                    <div
-                      ref={actionMenuRef}
-                      className="absolute right-12 top-0 mt-2 w-56 bg-white rounded-md shadow-lg z-30 border border-gray-200 origin-top-right"
-                    >
-                      <div className="py-1">
-                        <button
-                          onClick={() =>
-                            handleActionClick(() => onPrintSingle(item))
-                          }
-                          className="w-full text-left flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        >
-                          <Printer className="w-4 h-4 mr-3" /> Reprint QR Code
-                        </button>
-                        <button
-                          onClick={() =>
-                            handleActionClick(() => onViewHistorySingle(item))
-                          }
-                          className="w-full text-left flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        >
-                          <History className="w-4 h-4 mr-3" /> View Location
-                          History
-                        </button>
-                        <button
-                          onClick={() =>
-                            handleActionClick(() => onTransferSingle(item))
-                          }
-                          className="w-full text-left flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        >
-                          <Move className="w-4 h-4 mr-3" /> Transfer Location
-                        </button>
-                        <div className="border-t my-1"></div>
-                        <button
-                          onClick={() =>
-                            handleActionClick(() => onDeleteSingle(item))
-                          }
-                          className="w-full text-left flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                        >
-                          <Trash2 className="w-4 h-4 mr-3" /> Delete
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-};
-
-interface PaginationProps {
-  currentPage: number;
-  totalItems: number;
-  rowsPerPage: number;
-  onPageChange: (page: number) => void;
-  onRowsPerPageChange: (size: number) => void;
-}
-
-const Pagination: React.FC<PaginationProps> = ({
-  currentPage,
-  totalItems,
-  rowsPerPage,
-  onPageChange,
-  onRowsPerPageChange,
-}) => {
-  const totalPages = Math.ceil(totalItems / rowsPerPage);
-  const startItem = totalItems === 0 ? 0 : (currentPage - 1) * rowsPerPage + 1;
-  const endItem = Math.min(currentPage * rowsPerPage, totalItems);
-
-  return (
-    <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6 rounded-b-lg">
-      {/* Left side: Rows per page selector */}
-      <div className="flex-1 flex items-center">
-        <span className="text-sm text-gray-700 mr-2">Rows per page:</span>
-        <select
-          id="rowsPerPage"
-          value={rowsPerPage}
-          onChange={(e) => onRowsPerPageChange(Number(e.target.value))}
-          className="p-1 border border-gray-300 rounded-md text-sm focus:ring-indigo-500 focus:border-indigo-500"
-        >
-          {[10, 20, 50, 100].map((size) => (
-            <option key={size} value={size}>
-              {size}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Right side: Navigation */}
-      <div className="flex-1 flex justify-end items-center">
-        <p className="text-sm text-gray-700 mr-4">
-          Showing <span className="font-medium">{startItem}</span> to{" "}
-          <span className="font-medium">{endItem}</span> of{" "}
-          <span className="font-medium">{totalItems}</span> results
-        </p>
-        <div className="flex items-center">
-          <button
-            onClick={() => onPageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-            className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </button>
-          <span className="px-4 py-2 border-t border-b border-gray-300 bg-white text-sm text-gray-700">
-            Page {currentPage} of {totalPages}
-          </span>
-          <button
-            onClick={() => onPageChange(currentPage + 1)}
-            disabled={currentPage === totalPages || totalItems === 0}
-            className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <ChevronRight className="h-5 w-5" />
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// (allColumns and defaultVisibleColumns remain the same)
-const allColumns = [
-  { id: "poNumber", name: "PO NO" },
-  { id: "supplierCode", name: "Supplier Code" },
-  { id: "invoiceNo", name: "Invoice No" },
-  { id: "rollNo", name: "Fabric" },
-  { id: "color", name: "Color" },
-  { id: "lotNo", name: "Batch No" },
-  { id: "yards", name: "Shipped length" },
-  { id: "balanceYards", name: "Actual length" },
-  { id: "grossWeightKgs", name: "Gross Weight" },
-  { id: "netWeightKgs", name: "Net Weight" },
-  { id: "qcStatus", name: "QC Status" },
-  { id: "location", name: "Location" },
-  { id: "factory", name: "Factory" },
-  { id: "hourStandard", name: "Relax hour" },
-  { id: "needRelax", name: "Need Relax" }, // Đã thêm vào danh sách tất cả các cột
-  { id: "relaxProgress", name: "Relax Progress" },
-  { id: "relaxDate", name: "Date Relaxed" },
-];
-
-const defaultVisibleColumns = new Set([
-  "poNumber",
-  "supplierCode",
-  "invoiceNo",
-  "rollNo",
-  "color",
-  "lotNo",
-  "balanceYards",
-  "qcStatus",
-  "location",
-  "needRelax", // Đã thêm để hiển thị mặc định
-  "relaxProgress",
-]);
-
-// --- Modal Components ---
-
-const Modal: FC<{
-  title: string;
-  children: React.ReactNode;
-  onClose: () => void;
-  maxWidth?: string;
-}> = ({ title, children, onClose, maxWidth = "max-w-md" }) => (
-  <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
-    <div className={`bg-white p-6 rounded-lg shadow-xl w-full ${maxWidth}`}>
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-xl font-semibold text-gray-800">{title}</h3>
-        <button
-          onClick={onClose}
-          className="text-gray-400 hover:text-gray-700 text-2xl font-bold"
-        >
-          &times;
-        </button>
-      </div>
-      <div>{children}</div>
-    </div>
-  </div>
-);
-
+// --- Modal Components --- (Unchanged)
 const MultiTransferLocationModal: FC<{
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   rolls: FabricRoll[];
   onSubmit: (newLocation: string) => void;
-  onCancel: () => void;
-}> = ({ rolls, onSubmit, onCancel }) => {
+}> = ({ open, onOpenChange, rolls, onSubmit }) => {
+  // ...
   const [newLocation, setNewLocation] = useState("");
-
   return (
-    <Modal title={`Transfer ${rolls.length} Item(s)`} onClose={onCancel}>
-      <p className="mb-2 text-sm text-gray-600">
-        The following items will be moved:
-      </p>
-      <div className="mb-4 p-2 border rounded-md bg-gray-50 max-h-40 overflow-y-auto">
-        <ul className="list-disc list-inside text-sm text-gray-800">
-          {rolls.map((roll) => (
-            <li key={roll.id}>
-              {roll.qrCode} (Current: {roll.location})
-            </li>
-          ))}
-        </ul>
-      </div>
-      <div>
-        <label
-          htmlFor="new-location"
-          className="block text-sm font-medium text-gray-700 mb-1"
-        >
-          New Location
-        </label>
-        <input
-          type="text"
-          id="new-location"
-          value={newLocation}
-          onChange={(e) => setNewLocation(e.target.value)}
-          className="block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-          placeholder="e.g., F2-10-05"
-        />
-      </div>
-      <button
-        onClick={() => onSubmit(newLocation)}
-        disabled={!newLocation}
-        className="mt-6 w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed"
-      >
-        Confirm Transfer
-      </button>
-    </Modal>
-  );
-};
-
-const MultiLocationHistoryModal: FC<{
-  rolls: FabricRoll[];
-  onClose: () => void;
-}> = ({ rolls, onClose }) => {
-  return (
-    <Modal
-      title={`Location History for ${rolls.length} Item(s)`}
-      onClose={onClose}
-      maxWidth="max-w-3xl"
-    >
-      <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-2">
-        {rolls.map((roll) => (
-          <div key={roll.id}>
-            <h4 className="font-semibold text-lg text-gray-800 mb-2 border-b pb-1">
-              {roll.qrCode}
-            </h4>
-            {roll.locationHistory.length > 0 ? (
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                      Date Time
-                    </th>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                      From
-                    </th>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                      To
-                    </th>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                      By
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {[...roll.locationHistory].reverse().map((entry, index) => (
-                    <tr key={index}>
-                      <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-700">
-                        {new Date(entry.dateTime).toLocaleString()}
-                      </td>
-                      <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">
-                        {entry.from}
-                      </td>
-                      <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">
-                        {entry.to}
-                      </td>
-                      <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">
-                        {entry.changedBy}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <p className="text-center text-sm text-gray-500 py-2">
-                No location history.
-              </p>
-            )}
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Transfer {rolls.length} Item(s)</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            The following items will be moved:
+          </p>
+          <div className="max-h-40 overflow-y-auto rounded-md border p-2 bg-muted">
+            <ul className="list-disc list-inside text-sm">
+              {rolls.map((roll) => (
+                <li key={roll.id}>
+                  {roll.qrCode} (Current: {roll.location})
+                </li>
+              ))}
+            </ul>
           </div>
-        ))}
-      </div>
-    </Modal>
+          <div className="space-y-2">
+            <Label htmlFor="new-location">New Location</Label>
+            <Input
+              id="new-location"
+              value={newLocation}
+              onChange={(e) => setNewLocation(e.target.value)}
+              placeholder="e.g., F2-10-05"
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button onClick={() => onSubmit(newLocation)} disabled={!newLocation}>
+            Confirm Transfer
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+const MultiLocationHistoryModal: FC<{
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  rolls: FabricRoll[];
+}> = ({ open, onOpenChange, rolls }) => {
+  // ...
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-3xl">
+        <DialogHeader>
+          <DialogTitle>Location History for {rolls.length} Item(s)</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-2">
+          {rolls.map((roll) => (
+            <div key={roll.id}>
+              <h4 className="font-semibold text-lg mb-2 border-b pb-1">
+                {roll.qrCode}
+              </h4>
+              {roll.locationHistory.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date Time</TableHead>
+                      <TableHead>From</TableHead>
+                      <TableHead>To</TableHead>
+                      <TableHead>By</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {[...roll.locationHistory].reverse().map((entry, index) => (
+                      <TableRow key={index}>
+                        <TableCell>
+                          {new Date(entry.dateTime).toLocaleString()}
+                        </TableCell>
+                        <TableCell>{entry.from}</TableCell>
+                        <TableCell>{entry.to}</TableCell>
+                        <TableCell>{entry.changedBy}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <p className="text-center text-sm text-muted-foreground py-4">
+                  No location history.
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 
-// --- Main Page Component ---
+// =================================================================================
+// MAIN PAGE COMPONENT
+// =================================================================================
 
 const InventoryListPage = () => {
   const [fabricRolls, setFabricRolls] = useState<FabricRoll[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [visibleColumns, setVisibleColumns] = useState<Set<string>>(
-    defaultVisibleColumns
-  );
-  const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+
+  // CHANGED: State is now for the selected data objects, not just IDs
+  const [selectedRolls, setSelectedRolls] = useState<FabricRoll[]>([]);
+
+  // REMOVED: `visibleColumns`, `currentPage`, `rowsPerPage` state. CustomTable handles these.
 
   type ModalType = "transfer" | "history";
   const [modalState, setModalState] = useState<{
@@ -1220,61 +703,144 @@ const InventoryListPage = () => {
     data: FabricRoll[];
   }>({ type: null, data: [] });
 
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    open: boolean;
+    items: FabricRoll[];
+  }>({ open: false, items: [] });
+
   useEffect(() => {
     setIsLoading(true);
     const timer = setTimeout(() => {
       setFabricRolls(DUMMY_FABRIC_DATA);
       setIsLoading(false);
     }, 1500);
-
     return () => clearTimeout(timer);
   }, []);
 
-  useEffect(() => {
-    setSelectedRows(new Set());
-  }, [currentPage, rowsPerPage]);
+  // REMOVED: useEffect for clearing selection on page change.
+  // REMOVED: `paginatedRolls` useMemo hook.
 
-  const paginatedRolls = useMemo(() => {
-    const startIndex = (currentPage - 1) * rowsPerPage;
-    const endIndex = startIndex + rowsPerPage;
-    return fabricRolls.slice(startIndex, endIndex);
-  }, [fabricRolls, currentPage, rowsPerPage]);
+  // --- Single Item Action Handlers --- (These will be passed into the column definition)
+  const handlePrintSingle = (item: FabricRoll) =>
+    alert(`Printing QR Code for: ${item.id}`);
+  const handleTransferSingle = (item: FabricRoll) =>
+    setModalState({ type: "transfer", data: [item] });
+  const handleViewHistorySingle = (item: FabricRoll) =>
+    setModalState({ type: "history", data: [item] });
+  const handleDeleteSingle = (item: FabricRoll) =>
+    setDeleteConfirmation({ open: true, items: [item] });
 
-  const getSelectedItems = (): FabricRoll[] => {
-    return fabricRolls.filter((roll) => selectedRows.has(roll.id));
-  };
+  // ADDED: Define columns for CustomTable
+  const columns = useMemo<ColumnDef<FabricRoll>[]>(
+    () => [
+      {
+        accessorKey: "poNumber",
+        header: ({ column }) => (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            PO NO
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        ),
+      },
+      { accessorKey: "supplierCode", header: "Supplier Code" },
+      { accessorKey: "invoiceNo", header: "Invoice No" },
+      { accessorKey: "rollNo", header: "Fabric" },
+      { accessorKey: "color", header: "Color" },
+      { accessorKey: "lotNo", header: "Batch No" },
+      { accessorKey: "yards", header: "Shipped length" },
+      { accessorKey: "balanceYards", header: "Actual length" },
+      {
+        accessorKey: "qcStatus",
+        header: "QC Status",
+        cell: ({ row }) => <StatusBadge status={row.original.qcStatus} />,
+      },
+      { accessorKey: "location", header: "Location" },
+      { accessorKey: "factory", header: "Factory" },
+      { accessorKey: "hourStandard", header: "Relax hour" },
+      { accessorKey: "needRelax", header: "Need Relax" },
+      {
+        id: "relaxProgress",
+        header: "Relax Progress",
+        cell: ({ row }) => <RelaxProgressBar roll={row.original} />,
+      },
+      {
+        accessorKey: "relaxDate",
+        header: "Date Relaxed",
+        cell: ({ row }) =>
+          row.original.relaxDate
+            ? new Date(row.original.relaxDate).toLocaleDateString()
+            : "-",
+      },
+      {
+        id: "actions",
+        cell: ({ row }) => {
+          const item = row.original;
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="h-8 w-8 p-0">
+                  <span className="sr-only">Open menu</span>
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => handlePrintSingle(item)}>
+                  Reprint QR Code
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleViewHistorySingle(item)}>
+                  View History
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleTransferSingle(item)}>
+                  Transfer Location
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => handleDeleteSingle(item)}
+                  className="text-red-500"
+                >
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          );
+        },
+      },
+    ],
+    []
+  );
 
-  const handleExportSelected = () => {
-    const selectedItems = getSelectedItems();
-    alert(`Exporting ${selectedItems.length} selected item(s) to Excel.`);
-  };
-
-  const handlePrintMultiple = () => {
-    const selectedIds = Array.from(selectedRows).join(", ");
-    alert(`Printing QR Codes for: ${selectedIds}`);
-    setSelectedRows(new Set());
-  };
-
+  // --- Bulk Action Handlers --- (Logic simplified)
+  const handleExportSelected = () =>
+    alert(`Exporting ${selectedRolls.length} selected item(s) to Excel.`);
+  const handlePrintMultiple = () =>
+    alert(
+      `Printing QR Codes for: ${selectedRolls.map((r) => r.id).join(", ")}`
+    );
   const handleTransfer = () => {
-    const items = getSelectedItems();
-    if (items.length > 0) {
-      setModalState({ type: "transfer", data: items });
-    }
+    if (selectedRolls.length > 0)
+      setModalState({ type: "transfer", data: selectedRolls });
   };
-
   const handleViewHistory = () => {
-    const items = getSelectedItems();
-    if (items.length > 0) {
-      setModalState({ type: "history", data: items });
-    }
+    if (selectedRolls.length > 0)
+      setModalState({ type: "history", data: selectedRolls });
   };
+  const handleDeleteMultiple = () => {
+    if (selectedRolls.length > 0)
+      setDeleteConfirmation({ open: true, items: selectedRolls });
+  };
+  const handleExportAll = () =>
+    alert(`Exporting all ${fabricRolls.length} items to Excel.`);
 
+  // --- Logic Handlers --- (Slightly modified)
   const handleExecuteTransfer = (
     rollsToUpdate: FabricRoll[],
     newLocation: string
   ) => {
     const idsToUpdate = new Set(rollsToUpdate.map((r) => r.id));
-
     setFabricRolls((prevRolls) =>
       prevRolls.map((roll) => {
         if (idsToUpdate.has(roll.id)) {
@@ -1282,7 +848,7 @@ const InventoryListPage = () => {
             dateTime: new Date().toISOString(),
             from: roll.location,
             to: newLocation,
-            changedBy: "Admin User", // Mock user
+            changedBy: "Admin User",
           };
           return {
             ...roll,
@@ -1293,88 +859,25 @@ const InventoryListPage = () => {
         return roll;
       })
     );
-
     setModalState({ type: null, data: [] });
-    setSelectedRows(new Set());
+    setSelectedRolls([]); // CHANGED: Clear selection
     alert(`${rollsToUpdate.length} item(s) have been moved to ${newLocation}.`);
   };
 
-  const handleDeleteMultiple = () => {
-    if (
-      window.confirm(
-        `Are you sure you want to delete ${selectedRows.size} selected item(s)?`
-      )
-    ) {
-      setFabricRolls((prevRolls) =>
-        prevRolls.filter((roll) => !selectedRows.has(roll.id))
-      );
-      alert(`${selectedRows.size} item(s) have been deleted.`);
-      setSelectedRows(new Set());
-    }
-  };
-
-  const handleExportAll = () => {
-    alert(`Exporting all ${fabricRolls.length} items to Excel.`);
-  };
-
-  // --- Single Item Action Handlers ---
-  const handlePrintSingle = (item: FabricRoll) => {
-    alert(`Printing QR Code for: ${item.id}`);
-  };
-
-  const handleTransferSingle = (item: FabricRoll) => {
-    setModalState({ type: "transfer", data: [item] });
-  };
-
-  const handleViewHistorySingle = (item: FabricRoll) => {
-    setModalState({ type: "history", data: [item] });
-  };
-
-  const handleDeleteSingle = (item: FabricRoll) => {
-    if (window.confirm(`Are you sure you want to delete item ${item.id}?`)) {
-      setFabricRolls((prevRolls) =>
-        prevRolls.filter((roll) => roll.id !== item.id)
-      );
-      alert(`Item ${item.id} has been deleted.`);
-      // Also remove from selection if it was selected
-      setSelectedRows((prev) => {
-        const newSelection = new Set(prev);
-        newSelection.delete(item.id);
-        return newSelection;
-      });
-    }
-  };
-
-  const renderModal = () => {
-    if (!modalState.type || modalState.data.length === 0) return null;
-
-    switch (modalState.type) {
-      case "transfer":
-        return (
-          <MultiTransferLocationModal
-            rolls={modalState.data}
-            onCancel={() => setModalState({ type: null, data: [] })}
-            onSubmit={(newLocation) => {
-              handleExecuteTransfer(modalState.data, newLocation);
-            }}
-          />
-        );
-      case "history":
-        return (
-          <MultiLocationHistoryModal
-            rolls={modalState.data}
-            onClose={() => setModalState({ type: null, data: [] })}
-          />
-        );
-      default:
-        return null;
-    }
+  const confirmDelete = () => {
+    const idsToDelete = new Set(
+      deleteConfirmation.items.map((item) => item.id)
+    );
+    setFabricRolls((prevRolls) =>
+      prevRolls.filter((roll) => !idsToDelete.has(roll.id))
+    );
+    alert(`${idsToDelete.size} item(s) have been deleted.`);
+    setSelectedRolls([]); // CHANGED: Clear selection
+    setDeleteConfirmation({ open: false, items: [] });
   };
 
   return (
     <div className="p-4 md:p-6 lg:p-8 space-y-6">
-      {renderModal()}
-
       <section>
         {isLoading ? (
           <>
@@ -1384,7 +887,7 @@ const InventoryListPage = () => {
         ) : (
           <>
             <InventoryHeader
-              selectedRowCount={selectedRows.size}
+              selectedRowCount={selectedRolls.length} // CHANGED: Use selectedRolls.length
               onExportAll={handleExportAll}
               onExportSelected={handleExportSelected}
               onPrintMultiple={handlePrintMultiple}
@@ -1393,41 +896,72 @@ const InventoryListPage = () => {
               onDelete={handleDeleteMultiple}
             />
             <InventoryFilters />
-            {fabricRolls.length > 0 ? (
-              <>
-                <InventoryTable
-                  items={paginatedRolls}
-                  allColumns={allColumns}
-                  visibleColumns={visibleColumns}
-                  onColumnVisibilityChange={setVisibleColumns}
-                  selectedRows={selectedRows}
-                  onSelectionChange={setSelectedRows}
-                  onPrintSingle={handlePrintSingle}
-                  onViewHistorySingle={handleViewHistorySingle}
-                  onTransferSingle={handleTransferSingle}
-                  onDeleteSingle={handleDeleteSingle}
+
+            {/* CHANGED: Replaced InventoryTable and InventoryPagination with CustomTable */}
+            <div className="mt-6">
+              {fabricRolls.length > 0 ? (
+                <CustomTable
+                  columns={columns}
+                  data={fabricRolls}
+                  onSelectionChange={setSelectedRolls}
                 />
-                <Pagination
-                  currentPage={currentPage}
-                  totalItems={fabricRolls.length}
-                  rowsPerPage={rowsPerPage}
-                  onPageChange={setCurrentPage}
-                  onRowsPerPageChange={setRowsPerPage}
-                />
-              </>
-            ) : (
-              <div className="bg-white text-center p-12 rounded-lg shadow-sm">
-                <h3 className="text-xl font-medium text-gray-900">
-                  No items found
-                </h3>
-                <p className="mt-2 text-sm text-gray-500">
-                  No items match the current filters.
-                </p>
-              </div>
-            )}
+              ) : (
+                <Card className="text-center p-12">
+                  <CardHeader>
+                    <CardTitle>No items found</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground">
+                      No items match the current filters.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </>
         )}
       </section>
+
+      {/* --- Modals & Dialogs --- (Unchanged) */}
+      <MultiTransferLocationModal
+        open={modalState.type === "transfer"}
+        onOpenChange={(open) =>
+          !open && setModalState({ type: null, data: [] })
+        }
+        rolls={modalState.data}
+        onSubmit={(newLocation) =>
+          handleExecuteTransfer(modalState.data, newLocation)
+        }
+      />
+      <MultiLocationHistoryModal
+        open={modalState.type === "history"}
+        onOpenChange={(open) =>
+          !open && setModalState({ type: null, data: [] })
+        }
+        rolls={modalState.data}
+      />
+      <AlertDialog
+        open={deleteConfirmation.open}
+        onOpenChange={(open) =>
+          setDeleteConfirmation((prev) => ({ ...prev, open }))
+        }
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete{" "}
+              {deleteConfirmation.items.length} item(s).
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>
+              Continue
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

@@ -13,6 +13,19 @@ import {
   Trash2,
   ArrowLeft,
 } from "lucide-react";
+import { ColumnDef } from "@tanstack/react-table";
+
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { CustomTable } from "@/components/ui/custom-table";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 // --- TYPES ---
 export type ScanAction = "PUT_AWAY" | "TRANSFER" | "VIEW_DETAIL";
@@ -139,42 +152,41 @@ const Scanner: React.FC<{
   scanPrompt: string;
 }> = ({ onScan, scanPrompt }) => (
   <div className="w-full max-w-md mx-auto p-4 flex flex-col items-center">
-    <div className="relative w-full aspect-square bg-gray-900 rounded-lg flex items-center justify-center mb-4 border-4 border-gray-700">
-      <Camera className="w-24 h-24 text-gray-600" />
+    <div className="relative w-full aspect-square bg-slate-900 rounded-lg flex items-center justify-center mb-4 border-4 border-slate-700">
+      <Camera className="w-24 h-24 text-slate-600" />
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/4 h-1/2 border-4 border-dashed border-green-400 rounded-lg"></div>
     </div>
-    <p className="text-lg font-semibold text-center text-gray-700 mb-6">
+    <p className="text-lg font-semibold text-center text-foreground mb-6">
       {scanPrompt}
     </p>
-    <div className="w-full space-y-3 p-4 bg-gray-200 rounded-lg border border-gray-300">
-      <h3 className="text-sm font-bold text-center text-gray-600 uppercase">
-        Simulate Scan
-      </h3>
-      <button
-        onClick={() => onScan("LOC_QR_A_01_B")}
-        className="w-full bg-teal-500 text-white py-2 rounded-md hover:bg-teal-600 transition"
-      >
-        Scan Location A-01-B
-      </button>
-      <button
-        onClick={() => onScan("ITEM_QR_ACC_002")}
-        className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 transition"
-      >
-        Scan Buttons (No Location)
-      </button>
-      <button
-        onClick={() => onScan("ITEM_QR_ACC_003")}
-        className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 transition"
-      >
-        Scan Labels (No Location)
-      </button>
-      <button
-        onClick={() => onScan("QR_INVALID")}
-        className="w-full bg-red-500 text-white py-2 rounded-md hover:bg-red-600 transition"
-      >
-        Scan Invalid QR
-      </button>
-    </div>
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle className="text-sm font-bold text-center text-muted-foreground uppercase tracking-wider">
+          Simulate Scan
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <Button
+          onClick={() => onScan("LOC_QR_A_01_B")}
+          className="w-full bg-teal-500 hover:bg-teal-600"
+        >
+          Scan Location A-01-B
+        </Button>
+        <Button onClick={() => onScan("ITEM_QR_ACC_002")} className="w-full">
+          Scan Buttons (No Location)
+        </Button>
+        <Button onClick={() => onScan("ITEM_QR_ACC_003")} className="w-full">
+          Scan Labels (No Location)
+        </Button>
+        <Button
+          onClick={() => onScan("QR_INVALID")}
+          variant="destructive"
+          className="w-full"
+        >
+          Scan Invalid QR
+        </Button>
+      </CardContent>
+    </Card>
   </div>
 );
 
@@ -184,46 +196,60 @@ const ActionFeedback: React.FC<{
   onClose: () => void;
   details?: PutAwaySuccessDetails;
 }> = ({ status, message, onClose, details }) => {
+  type PutAwayItem = ScannedItem & { locationCode: string };
+
+  const putAwayColumns: ColumnDef<PutAwayItem>[] = [
+    {
+      accessorKey: "sku",
+      header: "SKU",
+      cell: ({ row }) => (
+        <span className="font-mono">{row.getValue("sku")}</span>
+      ),
+    },
+    {
+      accessorKey: "quantity",
+      header: "Quantity",
+      cell: ({ row }) => (
+        <span>
+          {row.original.quantity} {row.original.uom}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "locationCode",
+      header: "Put-away Location",
+      cell: ({ row }) => (
+        <Badge variant="secondary">{row.getValue("locationCode")}</Badge>
+      ),
+    },
+  ];
+
   const renderContent = () => {
     if (status === "SUCCESS" && details?.type === "PUT_AWAY_SUCCESS") {
       const { items, location } = details;
+      const tableData = items.map((item) => ({
+        ...item,
+        locationCode: location.locationCode,
+      }));
       return (
         <>
           <CheckCircle className="w-16 h-16 text-green-500 mb-4" />
           <h2 className="text-xl font-semibold">Success!</h2>
-          <p className="text-gray-600 text-center mb-4">{message}</p>
-          <div className="w-full max-w-2xl mt-4 border rounded-lg overflow-hidden">
-            <div className="max-h-60 overflow-y-auto">
-              <table className="min-w-full text-sm text-left">
-                <thead className="bg-gray-100 sticky top-0">
-                  <tr>
-                    <th className="p-2 font-semibold">SKU</th>
-                    <th className="p-2 font-semibold">Quantity</th>
-                    <th className="p-2 font-semibold">Put-away Location</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white">
-                  {items.map((item) => (
-                    <tr key={item.qrCode} className="border-t">
-                      <td className="p-2 font-mono">{item.sku}</td>
-                      <td className="p-2">
-                        {item.quantity} {item.uom}
-                      </td>
-                      <td className="p-2 font-mono bg-gray-50">
-                        {location.locationCode}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          <p className="text-muted-foreground text-center mb-4">{message}</p>
+          <div className="w-full max-w-2xl mt-4">
+            <CustomTable
+              columns={putAwayColumns}
+              data={tableData}
+              showCheckbox={false}
+              showColumnVisibility={false}
+            />
           </div>
-          <button
+          <Button
             onClick={onClose}
-            className="mt-6 bg-green-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-green-700 transition"
+            className="mt-6 bg-green-600 hover:bg-green-700"
           >
             Start New Scan
-          </button>
+          </Button>
         </>
       );
     }
@@ -239,36 +265,32 @@ const ActionFeedback: React.FC<{
       SUCCESS: "Success!",
       ERROR: "An Error Occurred!",
     };
-    const buttonTextMap = {
-      PROCESSING: "",
-      SUCCESS: "Start New Scan",
-      ERROR: "Try Again",
-    };
-    const buttonColorMap = {
-      SUCCESS: "bg-green-600 hover:bg-green-700",
-      ERROR: "bg-red-600 hover:bg-red-700",
-    };
     return (
       <>
         {iconMap[status]}
         <h2 className="text-xl font-semibold">{titleMap[status]}</h2>
-        <p className="text-gray-600 text-center">{message}</p>
-        {status !== "PROCESSING" && (
-          <button
+        <p className="text-muted-foreground text-center">{message}</p>
+        {status === "SUCCESS" && (
+          <Button
             onClick={onClose}
-            className={`mt-6 ${buttonColorMap[status]} text-white font-bold py-2 px-6 rounded-lg transition`}
+            className="mt-6 bg-green-600 hover:bg-green-700"
           >
-            {buttonTextMap[status]}
-          </button>
+            Start New Scan
+          </Button>
+        )}
+        {status === "ERROR" && (
+          <Button onClick={onClose} variant="destructive" className="mt-6">
+            Try Again
+          </Button>
         )}
       </>
     );
   };
   return (
     <div className="w-full max-w-3xl mx-auto p-4 flex flex-col items-center justify-center text-center">
-      <div className="bg-white p-8 rounded-lg shadow-lg w-full flex flex-col items-center">
+      <Card className="p-8 w-full flex flex-col items-center">
         {renderContent()}
-      </div>
+      </Card>
     </div>
   );
 };
@@ -288,46 +310,49 @@ const InboundPutAway: React.FC<InboundPutAwayProps> = ({
   onCancel,
 }) => (
   <div className="w-full max-w-lg mx-auto p-4 animate-fade-in">
-    <div className="bg-white rounded-lg shadow-lg p-6 border border-gray-200">
-      <div className="text-center mb-4 border-b pb-4">
+    <Card>
+      <CardHeader className="text-center border-b pb-4">
         <Warehouse className="mx-auto h-12 w-12 text-blue-500 mb-2" />
-        <h2 className="text-xl font-bold text-gray-800">
-          Put Away to Warehouse
-        </h2>
-        <p className="text-sm text-gray-500">Selected location:</p>
-        <p className="font-mono text-blue-600 bg-blue-100 px-3 py-1 rounded-full inline-block mt-1">
-          {location.locationCode}
-        </p>
-      </div>
-
-      <div className="text-center my-4 p-4 bg-gray-50 rounded-lg">
-        <h3 className="font-semibold text-lg text-gray-800">
-          {scannedItemCount}
-        </h3>
-        <p className="text-sm text-gray-600">Accessory Item(s) Scanned</p>
-      </div>
-
-      <div className="mt-4">
-        <Scanner
-          onScan={onScanItem}
-          scanPrompt="Scan QR codes on accessory boxes/items"
-        />
-      </div>
-    </div>
+        <CardTitle>Put Away to Warehouse</CardTitle>
+        <CardDescription>
+          Selected location:{" "}
+          <Badge variant="secondary" className="mt-1">
+            {location.locationCode}
+          </Badge>
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="pt-4">
+        <div className="text-center my-4 p-4 bg-muted rounded-lg">
+          <h3 className="font-semibold text-lg">{scannedItemCount}</h3>
+          <p className="text-sm text-muted-foreground">
+            Accessory Item(s) Scanned
+          </p>
+        </div>
+        <div className="mt-4">
+          <Scanner
+            onScan={onScanItem}
+            scanPrompt="Scan QR codes on accessory boxes/items"
+          />
+        </div>
+      </CardContent>
+    </Card>
     <div className="mt-6 flex space-x-3">
-      <button
+      <Button
         onClick={onCancel}
-        className="w-1/3 text-lg bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center shadow-md transition"
+        variant="secondary"
+        className="w-1/3 text-lg"
+        size="lg"
       >
-        <X className="mr-2" /> Cancel
-      </button>
-      <button
+        <X className="mr-2 h-5 w-5" /> Cancel
+      </Button>
+      <Button
         onClick={onComplete}
         disabled={scannedItemCount === 0}
-        className="w-2/3 text-lg bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center shadow-md disabled:bg-gray-400 transition"
+        className="w-2/3 text-lg bg-green-600 hover:bg-green-700"
+        size="lg"
       >
-        <Check className="mr-2" /> Review & Complete
-      </button>
+        <Check className="mr-2 h-5 w-5" /> Review & Complete
+      </Button>
     </div>
   </div>
 );
@@ -347,60 +372,69 @@ const ConfirmationScreen: React.FC<ConfirmationScreenProps> = ({
   onBack,
 }) => (
   <div className="w-full max-w-lg mx-auto p-4 animate-fade-in">
-    <div className="bg-white rounded-lg shadow-lg p-6 border border-gray-200">
-      <div className="text-center mb-4 border-b pb-4">
-        <h2 className="text-xl font-bold text-gray-800">Review and Confirm</h2>
-        <p className="text-sm text-gray-500">
-          Putting away {items.length} item(s) to location:
-        </p>
-        <p className="font-mono text-blue-600 bg-blue-100 px-3 py-1 rounded-full inline-block mt-1">
-          {location.locationCode}
-        </p>
-      </div>
-      <div className="mb-4">
-        <h3 className="font-semibold text-gray-700 mb-2">Scanned Items:</h3>
-        <div className="max-h-64 overflow-y-auto space-y-2 pr-2 border rounded-md p-2">
-          {items.length === 0 ? (
-            <p className="text-center text-gray-500 italic py-4">
-              No items to confirm. Please go back and scan.
-            </p>
-          ) : (
-            items.map((item) => (
-              <div
-                key={item.qrCode}
-                className="flex items-center justify-between p-2 bg-gray-50 rounded-md border text-sm"
-              >
-                <div>
-                  <p className="font-bold text-gray-800">{item.name}</p>
-                  <p className="text-xs text-gray-500">SKU: {item.sku}</p>
-                </div>
-                <button
-                  onClick={() => onRemoveItem(item.qrCode)}
-                  className="p-2 text-red-500 hover:text-red-700 hover:bg-red-100 rounded-full transition"
-                  aria-label={`Remove ${item.name}`}
+    <Card>
+      <CardHeader className="text-center border-b pb-4">
+        <CardTitle>Review and Confirm</CardTitle>
+        <CardDescription>
+          Putting away {items.length} item(s) to location:{" "}
+          <Badge variant="secondary" className="mt-1">
+            {location.locationCode}
+          </Badge>
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="pt-4">
+        <h3 className="font-semibold text-foreground mb-2">Scanned Items:</h3>
+        <ScrollArea className="h-64 rounded-md border p-2">
+          <div className="space-y-2 pr-2">
+            {items.length === 0 ? (
+              <p className="text-center text-muted-foreground italic py-4">
+                No items to confirm. Please go back and scan.
+              </p>
+            ) : (
+              items.map((item) => (
+                <div
+                  key={item.qrCode}
+                  className="flex items-center justify-between p-2 bg-muted rounded-md border text-sm"
                 >
-                  <Trash2 size={18} />
-                </button>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-    </div>
+                  <div>
+                    <p className="font-bold text-foreground">{item.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      SKU: {item.sku}
+                    </p>
+                  </div>
+                  <Button
+                    onClick={() => onRemoveItem(item.qrCode)}
+                    variant="ghost"
+                    size="icon"
+                    className="text-red-500 hover:text-red-700"
+                    aria-label={`Remove ${item.name}`}
+                  >
+                    <Trash2 size={18} />
+                  </Button>
+                </div>
+              ))
+            )}
+          </div>
+        </ScrollArea>
+      </CardContent>
+    </Card>
     <div className="mt-6 flex space-x-3">
-      <button
+      <Button
         onClick={onBack}
-        className="w-1/3 text-lg bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center shadow-md transition"
+        variant="secondary"
+        className="w-1/3 text-lg"
+        size="lg"
       >
-        <ArrowLeft className="mr-2" /> Back
-      </button>
-      <button
+        <ArrowLeft className="mr-2 h-5 w-5" /> Back
+      </Button>
+      <Button
         onClick={onSubmit}
         disabled={items.length === 0}
-        className="w-2/3 text-lg bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center shadow-md disabled:bg-gray-400 transition"
+        className="w-2/3 text-lg"
+        size="lg"
       >
-        <Check className="mr-2" /> Submit
-      </button>
+        <Check className="mr-2 h-5 w-5" /> Submit
+      </Button>
     </div>
   </div>
 );
@@ -567,7 +601,7 @@ const ScanQRWarehouseLocationAccessory: React.FC = () => {
   };
 
   return (
-    <div className="p-4 bg-gray-50 min-h-screen">
+    <div className="p-4 bg-background min-h-screen">
       <Toaster position="top-center" reverseOrder={false} />
       <div className="container mx-auto">{renderContent()}</div>
     </div>

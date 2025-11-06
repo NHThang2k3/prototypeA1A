@@ -11,6 +11,18 @@ import {
   Camera,
 } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+
 // --- TYPES ---
 
 export type ScanAction = "PUT_AWAY" | "TRANSFER" | "VIEW_DETAIL";
@@ -172,48 +184,47 @@ const Scanner: React.FC<{
   context: ScanContext;
 }> = ({ onScan, scanPrompt }) => (
   <div className="w-full max-w-md mx-auto p-4 flex flex-col items-center">
-    <div className="relative w-full aspect-square bg-gray-900 rounded-lg flex items-center justify-center mb-4 border-4 border-gray-700">
-      <Camera className="w-24 h-24 text-gray-600" />
+    <div className="relative w-full aspect-square bg-slate-900 rounded-lg flex items-center justify-center mb-4 border-4 border-slate-700">
+      <Camera className="w-24 h-24 text-slate-600" />
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/4 h-1/2 border-4 border-dashed border-green-400 rounded-lg"></div>
     </div>
-    <p className="text-lg font-semibold text-center text-gray-700 mb-6">
+    <p className="text-lg font-semibold text-center text-foreground mb-6">
       {scanPrompt}
     </p>
-    <div className="w-full space-y-3 p-4 bg-gray-200 rounded-lg border border-gray-300">
-      <h3 className="text-sm font-bold text-center text-gray-600">
-        SIMULATE SCAN
-      </h3>
-      <button
-        onClick={() => onScan("ISSUE_REQ_ACC_001")}
-        className="w-full bg-purple-500 text-white py-2 rounded-md"
-      >
-        Scan Accessory Issue Request
-      </button>
-      <button
-        onClick={() => onScan("ITEM_QR_ACC_001")}
-        className="w-full bg-blue-500 text-white py-2 rounded-md"
-      >
-        Scan Zipper (In request)
-      </button>
-      <button
-        onClick={() => onScan("ITEM_QR_ACC_002")}
-        className="w-full bg-blue-500 text-white py-2 rounded-md"
-      >
-        Scan Buttons (In request)
-      </button>
-      <button
-        onClick={() => onScan("ITEM_QR_ACC_003")}
-        className="w-full bg-orange-500 text-white py-2 rounded-md"
-      >
-        Scan Label (Not in request - Causes error)
-      </button>
-      <button
-        onClick={() => onScan("QR_INVALID")}
-        className="w-full bg-red-500 text-white py-2 rounded-md"
-      >
-        Scan Invalid QR
-      </button>
-    </div>
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle className="text-sm font-bold text-center text-muted-foreground uppercase tracking-wider">
+          Simulate Scan
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <Button
+          onClick={() => onScan("ISSUE_REQ_ACC_001")}
+          className="w-full bg-purple-500 hover:bg-purple-600"
+        >
+          Scan Accessory Issue Request
+        </Button>
+        <Button onClick={() => onScan("ITEM_QR_ACC_001")} className="w-full">
+          Scan Zipper (In request)
+        </Button>
+        <Button onClick={() => onScan("ITEM_QR_ACC_002")} className="w-full">
+          Scan Buttons (In request)
+        </Button>
+        <Button
+          onClick={() => onScan("ITEM_QR_ACC_003")}
+          className="w-full bg-orange-500 hover:bg-orange-600"
+        >
+          Scan Label (Not in request - Causes error)
+        </Button>
+        <Button
+          onClick={() => onScan("QR_INVALID")}
+          variant="destructive"
+          className="w-full"
+        >
+          Scan Invalid QR
+        </Button>
+      </CardContent>
+    </Card>
   </div>
 );
 
@@ -239,27 +250,26 @@ const ActionFeedback: React.FC<ActionFeedbackProps> = ({
     SUCCESS: "Success!",
     ERROR: "An Error Occurred!",
   };
-  const buttonTextMap = {
-    PROCESSING: "",
-    SUCCESS: "Start New Scan",
-    ERROR: "Try Again",
-  };
-  const buttonColorMap = { SUCCESS: "bg-green-600", ERROR: "bg-red-600" };
   return (
     <div className="w-full max-w-3xl mx-auto p-4 flex flex-col items-center justify-center text-center">
-      <div className="bg-white p-8 rounded-lg shadow-lg w-full flex flex-col items-center">
+      <Card className="p-8 w-full flex flex-col items-center">
         {iconMap[status]}
         <h2 className="text-xl font-semibold">{titleMap[status]}</h2>
-        <p className="text-gray-600 text-center">{message}</p>
-        {status !== "PROCESSING" && (
-          <button
+        <p className="text-muted-foreground text-center">{message}</p>
+        {status === "SUCCESS" && (
+          <Button
             onClick={onClose}
-            className={`mt-6 ${buttonColorMap[status]} text-white font-bold py-2 px-6 rounded-lg`}
+            className="mt-6 bg-green-600 hover:bg-green-700"
           >
-            {buttonTextMap[status]}
-          </button>
+            Start New Scan
+          </Button>
         )}
-      </div>
+        {status === "ERROR" && (
+          <Button onClick={onClose} variant="destructive" className="mt-6">
+            Try Again
+          </Button>
+        )}
+      </Card>
     </div>
   );
 };
@@ -279,64 +289,56 @@ const PickingList: React.FC<PickingListProps> = ({
   );
   return (
     <div className="w-full max-w-lg mx-auto p-4 animate-fade-in">
-      <button
-        onClick={onBack}
-        className="flex items-center text-gray-600 hover:text-gray-900 font-semibold mb-4"
-      >
+      <Button onClick={onBack} variant="ghost" className="mb-4">
         <ArrowLeft size={20} className="mr-2" /> Go Back
-      </button>
-      <div className="bg-white rounded-lg shadow-lg p-6 border border-gray-200">
-        <div className="text-center mb-4 border-b pb-4">
-          <h2 className="text-xl font-bold text-gray-800">
-            Accessory Issue Request
-          </h2>
-          <p className="font-mono text-blue-600 bg-blue-100 px-3 py-1 rounded-full inline-block mt-1">
+      </Button>
+      <Card>
+        <CardHeader className="text-center border-b pb-4">
+          <CardTitle>Accessory Issue Request</CardTitle>
+          <Badge variant="secondary" className="mt-1 self-center">
             {request.id}
-          </p>
-          <p className="text-sm text-gray-500 mt-2">
+          </Badge>
+          <CardDescription className="pt-2">
             Destination: <strong>{request.destination}</strong>
-          </p>
-        </div>
-        <div className="space-y-4">
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4 pt-4">
           {request.pickingList.map((item) => (
-            <div key={item.sku} className="p-3 bg-gray-50 rounded-md border">
-              <p className="font-bold text-gray-800">{item.name}</p>
-              <p className="text-sm text-gray-500">SKU: {item.sku}</p>
+            <div key={item.sku} className="p-3 bg-muted rounded-md border">
+              <p className="font-bold text-foreground">{item.name}</p>
+              <p className="text-sm text-muted-foreground">SKU: {item.sku}</p>
               <div className="mt-2">
-                <div className="w-full bg-gray-200 rounded-full h-2.5">
-                  <div
-                    className="bg-green-500 h-2.5 rounded-full"
-                    style={{
-                      width: `${Math.min(
-                        100,
-                        (item.pickedQuantity / item.requiredQuantity) * 100
-                      )}%`,
-                    }}
-                  ></div>
-                </div>
-                <p className="text-xs text-right mt-1 font-medium">
+                <Progress
+                  value={Math.min(
+                    100,
+                    (item.pickedQuantity / item.requiredQuantity) * 100
+                  )}
+                  className="h-2.5"
+                />
+                <p className="text-xs text-right mt-1 font-medium text-muted-foreground">
                   Picked: {item.pickedQuantity.toLocaleString()} /{" "}
                   {item.requiredQuantity.toLocaleString()} {item.uom}
                 </p>
               </div>
             </div>
           ))}
-        </div>
-      </div>
-      <div className="mt-6">
-        {isCompleted ? (
-          <div className="text-center p-4 bg-green-100 text-green-800 rounded-lg">
-            <p className="font-bold">Request Completed!</p>
-          </div>
-        ) : (
-          <button
-            onClick={onStartScanning}
-            className="w-full text-lg bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-4 rounded-lg flex items-center justify-center shadow-md"
-          >
-            <PackageSearch className="mr-3" /> Start Scanning Items
-          </button>
-        )}
-      </div>
+        </CardContent>
+        <CardFooter>
+          {isCompleted ? (
+            <div className="text-center w-full p-4 bg-green-100 text-green-800 rounded-lg">
+              <p className="font-bold">Request Completed!</p>
+            </div>
+          ) : (
+            <Button
+              onClick={onStartScanning}
+              size="lg"
+              className="w-full text-lg bg-green-600 hover:bg-green-700"
+            >
+              <PackageSearch className="mr-3" /> Start Scanning Items
+            </Button>
+          )}
+        </CardFooter>
+      </Card>
     </div>
   );
 };
@@ -452,12 +454,13 @@ const ScanQRIssueRequestAccessory: React.FC = () => {
       case "SCANNING_ITEM":
         return (
           <>
-            <button
+            <Button
               onClick={() => setState({ ...state, name: "SHOWING_LIST" })}
-              className="mb-4 flex items-center text-sm font-semibold text-blue-600 hover:text-blue-800"
+              variant="link"
+              className="mb-4"
             >
               <ArrowLeft size={16} className="mr-1" /> View Request Details
-            </button>
+            </Button>
             <Scanner
               onScan={handleScan}
               scanPrompt={`Request ${state.request.id}: Scan Accessory QR code`}
@@ -478,7 +481,7 @@ const ScanQRIssueRequestAccessory: React.FC = () => {
   };
 
   return (
-    <div className="p-4 bg-gray-50 min-h-full">
+    <div className="p-4 bg-background min-h-full">
       <Toaster position="top-center" reverseOrder={false} />
       <div className="container mx-auto">{renderContent()}</div>
     </div>

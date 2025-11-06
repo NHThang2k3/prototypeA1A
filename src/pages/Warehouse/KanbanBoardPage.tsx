@@ -1,43 +1,71 @@
-import React, { useState, useMemo, useEffect, useRef } from "react";
-import { Calendar, MoreHorizontal, X } from "lucide-react";
+// src/pages/kanban-board/KanbanBoardPage.tsx
+
+import React, { useState, useMemo } from "react";
+import { Calendar, MoreHorizontal } from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+
+// ============================================================================
+// TYPES, CONSTANTS, AND MOCK DATA (Unchanged)
+// ============================================================================
 
 export interface Assignee {
   id: string;
   name: string;
-  avatarUrl?: string; // Avatar URL
+  avatarUrl?: string;
 }
 
 export type Priority = "Urgent" | "High" | "Normal";
 
 export interface KanbanTask {
   id: string;
-  requestId: string; // e.g., "CP001"
-  title: string; // e.g., "Fabric CTN-005 - White" (This will be the Item)
-  issuedQuantity: number; // e.g., 150
-  requestQuantity: number; // e.g., 200
-  style: string; // e.g., "TSH-001"
-  job: string; // e.g., "JOB-101"
+  requestId: string;
+  title: string;
+  issuedQuantity: number;
+  requestQuantity: number;
+  style: string;
+  job: string;
   priority: Priority;
   assignee?: Assignee;
-  dueDate: string; // Planned date, format "DD/MM/YYYY"
-  remarks?: string; // Notes
-  factory: string; // New: To filter by factory
+  dueDate: string;
+  remarks?: string;
+  factory: string;
 }
 
 export interface KanbanColumn {
-  id: string; // e.g., "todo", "inprogress", "done"
+  id: string;
   title: string;
-  taskIds: string[]; // Array containing the IDs of the tasks in this column
+  taskIds: string[];
 }
 
 export interface KanbanBoard {
-  id: string; // e.g., "cutting-plan-fabric-issuance"
-  name: string; // e.g., "Cutting Plan - Fabric Issuance"
+  id: string;
+  name: string;
   columns: KanbanColumn[];
   tasks: KanbanTask[];
 }
 
-// For better user management
 const users: Record<string, Assignee> = {
   "an.nguyen": { id: "user-1", name: "An Nguyen" },
   "bao.tran": { id: "user-2", name: "Bao Tran" },
@@ -125,176 +153,115 @@ const mockBoards: KanbanBoard[] = [
         id: "col-1",
         title: "To Do",
         taskIds: ["task-cp001", "task-cp002", "task-cp004"],
-      }, // Status: Planned
-      { id: "col-2", title: "In Progress", taskIds: ["task-cp003"] }, // Status: In Progress
+      },
+      { id: "col-2", title: "In Progress", taskIds: ["task-cp003"] },
       { id: "col-3", title: "Ready for Delivery", taskIds: [] },
-      { id: "col-4", title: "Delivered", taskIds: ["task-cp005"] }, // Status: Completed
+      { id: "col-4", title: "Delivered", taskIds: ["task-cp005"] },
     ],
   },
 ];
 
-interface PriorityTagProps {
-  priority: Priority;
-}
+// ============================================================================
+// HELPER COMPONENTS
+// ============================================================================
 
-const PriorityTag: React.FC<PriorityTagProps> = ({ priority }) => {
-  const colorClasses: Record<Priority, string> = {
-    Urgent: "bg-red-100 text-red-800",
-    High: "bg-yellow-100 text-yellow-800",
-    Normal: "bg-green-100 text-green-800",
+const PriorityBadge: React.FC<{ priority: Priority }> = ({ priority }) => {
+  const colorMap: Record<Priority, string> = {
+    Urgent: "bg-red-100 text-red-800 border-red-200",
+    High: "bg-yellow-100 text-yellow-800 border-yellow-200",
+    Normal: "bg-green-100 text-green-800 border-green-200",
   };
-
   return (
-    <span
-      className={`px-2 py-0.5 text-xs font-medium rounded-full ${colorClasses[priority]}`}
-    >
+    <Badge variant="outline" className={colorMap[priority]}>
       {priority}
-    </span>
+    </Badge>
   );
 };
 
-interface AssigneeAvatarProps {
-  assignee?: Assignee;
-}
-
-const AssigneeAvatar: React.FC<AssigneeAvatarProps> = ({ assignee }) => {
-  if (!assignee) {
-    return null;
-  }
-
+const AssigneeAvatar: React.FC<{ assignee?: Assignee }> = ({ assignee }) => {
+  if (!assignee) return null;
   const initials = assignee.name
     .split(" ")
     .map((n) => n[0])
     .join("");
-
   return (
-    <div
-      title={assignee.name}
-      className="w-7 h-7 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold"
-    >
-      {assignee.avatarUrl ? (
-        <img
-          src={assignee.avatarUrl}
-          alt={assignee.name}
-          className="w-full h-full rounded-full"
-        />
-      ) : (
-        initials
-      )}
-    </div>
+    <Avatar className="w-7 h-7">
+      <AvatarImage src={assignee.avatarUrl} alt={assignee.name} />
+      <AvatarFallback>{initials}</AvatarFallback>
+    </Avatar>
   );
 };
 
-// MODIFIED: Add 'isSelectable' prop
-interface KanbanCardProps {
+const KanbanCard: React.FC<{
   task: KanbanTask;
   isSelected: boolean;
   onToggleSelection: (taskId: string) => void;
   onViewDetails: (taskId: string) => void;
-  isSelectable: boolean; // NEW: To control if the card can be selected
-}
-
-const KanbanCard: React.FC<KanbanCardProps> = ({
-  task,
-  isSelected,
-  onToggleSelection,
-  onViewDetails,
-  isSelectable, // NEW
-}) => {
-  const handleViewDetailsClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent the card's onClick from firing
-    onViewDetails(task.id);
-  };
-
+  isSelectable: boolean;
+}> = ({ task, isSelected, onToggleSelection, onViewDetails, isSelectable }) => {
   return (
-    <div
-      // MODIFIED: Class and onClick handler are now conditional based on 'isSelectable'
-      className={`bg-white rounded-lg p-3 shadow-sm border mb-3 transition-all space-y-3 ${
+    <Card
+      className={`mb-3 transition-all ${
         isSelectable
           ? "cursor-pointer hover:shadow-md hover:border-blue-400"
           : "cursor-default"
       } ${
         isSelected && isSelectable
-          ? "border-blue-500 ring-2 ring-blue-500 ring-offset-1 bg-blue-50"
-          : "border-gray-200"
+          ? "border-blue-500 ring-2 ring-blue-500 bg-blue-50"
+          : ""
       }`}
       onClick={() => isSelectable && onToggleSelection(task.id)}
     >
-      {/* Header: JOB, Plan Date, and Details Button */}
-      <div className="flex justify-between items-center">
-        <div className="flex items-center gap-2">
-          {/* NEW: Conditionally render the checkbox */}
-          {isSelectable && (
-            <input
-              type="checkbox"
-              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              checked={isSelected}
-              onChange={() => onToggleSelection(task.id)}
-              onClick={(e) => e.stopPropagation()} // Prevent double toggle
-            />
-          )}
-          <span className="font-bold text-gray-800">{task.job}</span>
-        </div>
-        <div className="flex items-center space-x-2">
-          <div className="flex items-center space-x-1.5 text-sm text-gray-500">
-            <Calendar className="w-4 h-4" />
-            <span>{task.dueDate}</span>
+      <CardContent className="p-3 space-y-3">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            {isSelectable && (
+              <Checkbox
+                checked={isSelected}
+                onCheckedChange={() => onToggleSelection(task.id)}
+                onClick={(e) => e.stopPropagation()}
+              />
+            )}
+            <span className="font-bold text-gray-800">{task.job}</span>
           </div>
-          <button
-            onClick={handleViewDetailsClick}
-            className="text-gray-500 hover:bg-gray-200 rounded-full p-1"
-            title="View Details"
-          >
-            <MoreHorizontal className="w-4 h-4" />
-          </button>
+          <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1.5 text-sm text-gray-500">
+              <Calendar className="w-4 h-4" />
+              <span>{task.dueDate}</span>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={(e) => {
+                e.stopPropagation();
+                onViewDetails(task.id);
+              }}
+            >
+              <MoreHorizontal className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
-      </div>
-
-      {/* Item (Title) */}
-      <p className="text-sm text-gray-600 border-t border-gray-100 pt-2">
-        {task.title}
-      </p>
-    </div>
+        <p className="text-sm text-gray-600 border-t pt-2">{task.title}</p>
+      </CardContent>
+    </Card>
   );
 };
 
-interface TaskDetailsModalProps {
+const TaskDetailsModal: React.FC<{
   task: KanbanTask;
-  onClose: () => void;
-}
-
-const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
-  task,
-  onClose,
-}) => {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}> = ({ task, open, onOpenChange }) => {
   return (
-    // Overlay
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60"
-      onClick={onClose}
-    >
-      {/* Modal Content */}
-      <div
-        className="bg-white rounded-lg shadow-xl w-full max-w-lg p-6 space-y-4 relative"
-        onClick={(e) => e.stopPropagation()} // Prevent closing modal when clicking inside
-      >
-        {/* Header */}
-        <div className="flex justify-between items-start">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800">{task.job}</h2>
-            <p className="text-sm text-gray-500">{task.requestId}</p>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-            title="Close"
-          >
-            <X size={24} />
-          </button>
-        </div>
-
-        {/* Details Grid */}
-        <div className="grid grid-cols-2 gap-x-6 gap-y-4 border-t border-b py-4">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="text-2xl">{task.job}</DialogTitle>
+          <DialogDescription>{task.requestId}</DialogDescription>
+        </DialogHeader>
+        <Separator />
+        <div className="grid grid-cols-2 gap-x-6 gap-y-4 py-4">
           <div>
             <p className="text-sm font-medium text-gray-500">Item</p>
             <p className="text-md text-gray-800">{task.title}</p>
@@ -319,51 +286,47 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
           </div>
           <div>
             <p className="text-sm font-medium text-gray-500">Priority</p>
-            <PriorityTag priority={task.priority} />
+            <PriorityBadge priority={task.priority} />
           </div>
-          <div>
+          <div className="col-span-2">
             <p className="text-sm font-medium text-gray-500">Assignee</p>
             <div className="flex items-center space-x-2 mt-1">
               <AssigneeAvatar assignee={task.assignee} />
-              <span>{task.assignee?.name || "N/A"}</span>
+              <span className="text-gray-800">
+                {task.assignee?.name || "N/A"}
+              </span>
             </div>
           </div>
         </div>
-
-        {/* Remarks */}
+        <Separator />
         <div>
           <p className="text-sm font-medium text-gray-500">Remarks</p>
           <p className="text-md text-gray-700 bg-gray-50 p-3 rounded-md mt-1">
             {task.remarks || "None"}
           </p>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 
-// MODIFIED: Add 'isSelectable' prop
-interface KanbanColumnComponentProps {
+const KanbanColumnComponent: React.FC<{
   column: KanbanColumn;
   tasks: KanbanTask[];
   selectedTaskIds: Set<string>;
   onToggleTaskSelection: (taskId: string) => void;
   onSelectAllInColumn: (taskIdsInColumn: string[]) => void;
   onViewDetails: (taskId: string) => void;
-  isSelectable: boolean; // NEW: To control selection UI
-}
-
-const KanbanColumnComponent: React.FC<KanbanColumnComponentProps> = ({
+  isSelectable: boolean;
+}> = ({
   column,
   tasks,
   selectedTaskIds,
   onToggleTaskSelection,
   onSelectAllInColumn,
   onViewDetails,
-  isSelectable, // NEW
+  isSelectable,
 }) => {
-  const checkboxRef = useRef<HTMLInputElement>(null);
-
   const taskIdsInColumn = useMemo(() => tasks.map((t) => t.id), [tasks]);
   const selectedCount = useMemo(
     () => taskIdsInColumn.filter((id) => selectedTaskIds.has(id)).length,
@@ -371,34 +334,21 @@ const KanbanColumnComponent: React.FC<KanbanColumnComponentProps> = ({
   );
 
   const isAllSelected = tasks.length > 0 && selectedCount === tasks.length;
-  const isIndeterminate = selectedCount > 0 && selectedCount < tasks.length;
-
-  useEffect(() => {
-    if (checkboxRef.current) {
-      checkboxRef.current.indeterminate = isIndeterminate;
-    }
-  }, [isIndeterminate]);
 
   return (
     <div className="w-80 flex-shrink-0 bg-gray-100 rounded-lg p-3 flex flex-col">
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-2">
-          {/* NEW: Conditionally render the "Select All" checkbox */}
           {isSelectable && (
-            <input
-              ref={checkboxRef}
-              type="checkbox"
-              className="h-4 w-4 rounded border-gray-400 text-blue-600 focus:ring-blue-500"
+            <Checkbox
               checked={isAllSelected}
-              onChange={() => onSelectAllInColumn(taskIdsInColumn)}
+              onCheckedChange={() => onSelectAllInColumn(taskIdsInColumn)}
               disabled={tasks.length === 0}
             />
           )}
           <h3 className="font-semibold text-gray-700">{column.title}</h3>
         </div>
-        <span className="bg-gray-300 text-gray-600 text-sm font-bold w-6 h-6 flex items-center justify-center rounded-full">
-          {tasks.length}
-        </span>
+        <Badge variant="secondary">{tasks.length}</Badge>
       </div>
       <div className="flex-1 overflow-y-auto pr-1">
         {tasks.map((task) => (
@@ -408,7 +358,6 @@ const KanbanColumnComponent: React.FC<KanbanColumnComponentProps> = ({
             onViewDetails={onViewDetails}
             isSelected={selectedTaskIds.has(task.id)}
             onToggleSelection={onToggleTaskSelection}
-            // MODIFIED: Pass 'isSelectable' down to the card
             isSelectable={isSelectable}
           />
         ))}
@@ -422,7 +371,10 @@ const KanbanColumnComponent: React.FC<KanbanColumnComponentProps> = ({
   );
 };
 
-// Helper function to parse 'DD/MM/YYYY' string to a Date object
+// ============================================================================
+// MAIN PAGE COMPONENT
+// ============================================================================
+
 const parseDate = (dateString: string): Date => {
   const [day, month, year] = dateString.split("/").map(Number);
   return new Date(year, month - 1, day);
@@ -434,11 +386,9 @@ const KanbanBoardPage = () => {
   const [startDateFilter, setStartDateFilter] = useState("");
   const [endDateFilter, setEndDateFilter] = useState("");
   const [factoryFilter, setFactoryFilter] = useState("all");
-
   const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(
     new Set()
   );
-
   const activeBoard = boards[0];
 
   const factories = useMemo(() => {
@@ -448,12 +398,11 @@ const KanbanBoardPage = () => {
   }, [activeBoard]);
 
   const filteredTaskIds = useMemo(() => {
-    if (!activeBoard) {
-      return new Set<string>();
-    }
+    if (!activeBoard) return new Set<string>();
     const startDate = startDateFilter ? new Date(startDateFilter) : null;
     const endDate = endDateFilter ? new Date(endDateFilter) : null;
     if (endDate) endDate.setHours(23, 59, 59, 999);
+
     const filtered = activeBoard.tasks.filter((task) => {
       const taskDate = parseDate(task.dueDate);
       const dateMatch =
@@ -468,39 +417,25 @@ const KanbanBoardPage = () => {
 
   const handleViewTaskDetails = (taskId: string) => {
     const task = activeBoard.tasks.find((t) => t.id === taskId);
-    if (task) {
-      setSelectedTask(task);
-    }
-  };
-
-  const handleCloseModal = () => {
-    setSelectedTask(null);
+    if (task) setSelectedTask(task);
   };
 
   const handleToggleTaskSelection = (taskId: string) => {
-    setSelectedTaskIds((prevSelectedIds) => {
-      const newSelectedIds = new Set(prevSelectedIds);
-      if (newSelectedIds.has(taskId)) {
-        newSelectedIds.delete(taskId);
-      } else {
-        newSelectedIds.add(taskId);
-      }
-      return newSelectedIds;
+    setSelectedTaskIds((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(taskId)) newSet.delete(taskId);
+      else newSet.add(taskId);
+      return newSet;
     });
   };
 
   const handleSelectAllInColumn = (taskIdsInColumn: string[]) => {
-    setSelectedTaskIds((prevSelectedIds) => {
-      const newSelectedIds = new Set(prevSelectedIds);
-
-      const allSelected = taskIdsInColumn.every((id) => newSelectedIds.has(id));
-
-      if (allSelected) {
-        taskIdsInColumn.forEach((id) => newSelectedIds.delete(id));
-      } else {
-        taskIdsInColumn.forEach((id) => newSelectedIds.add(id));
-      }
-      return newSelectedIds;
+    setSelectedTaskIds((prev) => {
+      const newSet = new Set(prev);
+      const allSelected = taskIdsInColumn.every((id) => newSet.has(id));
+      if (allSelected) taskIdsInColumn.forEach((id) => newSet.delete(id));
+      else taskIdsInColumn.forEach((id) => newSet.add(id));
+      return newSet;
     });
   };
 
@@ -519,16 +454,12 @@ const KanbanBoardPage = () => {
     setSelectedTaskIds(new Set());
   };
 
-  if (!activeBoard) {
-    return <div className="p-8">Kanban board not found.</div>;
-  }
+  if (!activeBoard) return <div className="p-8">Kanban board not found.</div>;
 
-  // NEW: Define which columns should not have selection enabled
-  const nonSelectableColumnIds = ["col-3", "col-4"]; // IDs for 'Ready for Delivery' and 'Delivered'
+  const nonSelectableColumnIds = ["col-3", "col-4"];
 
   return (
     <div className="p-6 md:p-8 bg-gray-50 min-h-full">
-      {/* Header and Filters */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-800">
           Fabric Issuing Management - Cutting Plan
@@ -539,72 +470,51 @@ const KanbanBoardPage = () => {
         </p>
       </div>
 
-      <div className="flex items-end justify-between space-x-4 mb-6 bg-white p-4 rounded-lg shadow-sm border">
-        {/* Filters */}
-        <div className="flex items-end space-x-4">
-          <div>
-            <label
-              htmlFor="startDate"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              From Date
-            </label>
-            <input
-              type="date"
-              id="startDate"
-              value={startDateFilter}
-              onChange={(e) => setStartDateFilter(e.target.value)}
-              className="border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-            />
+      <Card className="mb-6">
+        <CardContent className="p-4 flex items-end justify-between space-x-4">
+          <div className="flex items-end space-x-4">
+            <div>
+              <Label htmlFor="startDate">From Date</Label>
+              <Input
+                type="date"
+                id="startDate"
+                value={startDateFilter}
+                onChange={(e) => setStartDateFilter(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="endDate">To Date</Label>
+              <Input
+                type="date"
+                id="endDate"
+                value={endDateFilter}
+                onChange={(e) => setEndDateFilter(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="factory">Factory</Label>
+              <Select value={factoryFilter} onValueChange={setFactoryFilter}>
+                <SelectTrigger id="factory" className="w-[180px]">
+                  <SelectValue placeholder="Select factory" />
+                </SelectTrigger>
+                <SelectContent>
+                  {factories.map((factory) => (
+                    <SelectItem key={factory} value={factory}>
+                      {factory === "all" ? "All Factories" : factory}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-          <div>
-            <label
-              htmlFor="endDate"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              To Date
-            </label>
-            <input
-              type="date"
-              id="endDate"
-              value={endDateFilter}
-              onChange={(e) => setEndDateFilter(e.target.value)}
-              className="border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="factory"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Factory
-            </label>
-            <select
-              id="factory"
-              value={factoryFilter}
-              onChange={(e) => setFactoryFilter(e.target.value)}
-              className="border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-            >
-              {factories.map((factory) => (
-                <option key={factory} value={factory}>
-                  {factory === "all" ? "All Factories" : factory}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Action Button */}
-        <div>
-          <button
+          <Button
             onClick={handleIssueFabric}
             disabled={selectedTaskIds.size === 0}
-            className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-md shadow-sm hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
           >
             Issue Fabric ({selectedTaskIds.size})
-          </button>
-        </div>
-      </div>
+          </Button>
+        </CardContent>
+      </Card>
 
       <div className="flex space-x-4 overflow-x-auto pb-4">
         {activeBoard.columns.map((column) => {
@@ -612,12 +522,9 @@ const KanbanBoardPage = () => {
             .filter((taskId) => filteredTaskIds.has(taskId))
             .map((taskId) => activeBoard.tasks.find((t) => t.id === taskId)!)
             .filter(Boolean);
-
-          // NEW: Determine if the column should allow selection
           const isColumnSelectable = !nonSelectableColumnIds.includes(
             column.id
           );
-
           return (
             <KanbanColumnComponent
               key={column.id}
@@ -627,7 +534,6 @@ const KanbanBoardPage = () => {
               selectedTaskIds={selectedTaskIds}
               onToggleTaskSelection={handleToggleTaskSelection}
               onSelectAllInColumn={handleSelectAllInColumn}
-              // NEW: Pass the selectability flag down to the column component
               isSelectable={isColumnSelectable}
             />
           );
@@ -635,7 +541,11 @@ const KanbanBoardPage = () => {
       </div>
 
       {selectedTask && (
-        <TaskDetailsModal task={selectedTask} onClose={handleCloseModal} />
+        <TaskDetailsModal
+          task={selectedTask}
+          open={!!selectedTask}
+          onOpenChange={(open) => !open && setSelectedTask(null)}
+        />
       )}
     </div>
   );

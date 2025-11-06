@@ -11,6 +11,17 @@ import {
   Camera,
 } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+
 // --- TYPES ---
 
 export type ScanAction = "PUT_AWAY" | "TRANSFER" | "VIEW_DETAIL";
@@ -134,42 +145,44 @@ const Scanner: React.FC<{
   context: ScanContext;
 }> = ({ onScan, scanPrompt }) => (
   <div className="w-full max-w-md mx-auto p-4 flex flex-col items-center">
-    <div className="relative w-full aspect-square bg-gray-900 rounded-lg flex items-center justify-center mb-4 border-4 border-gray-700">
-      <Camera className="w-24 h-24 text-gray-600" />
+    <div className="relative w-full aspect-square bg-slate-900 rounded-lg flex items-center justify-center mb-4 border-4 border-slate-700">
+      <Camera className="w-24 h-24 text-slate-600" />
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/4 h-1/2 border-4 border-dashed border-green-400 rounded-lg"></div>
     </div>
-    <p className="text-lg font-semibold text-center text-gray-700 mb-6">
+    <p className="text-lg font-semibold text-center text-foreground mb-6">
       {scanPrompt}
     </p>
-    <div className="w-full space-y-3 p-4 bg-gray-200 rounded-lg border border-gray-300">
-      <h3 className="text-sm font-bold text-center text-gray-600">
-        SIMULATE SCAN
-      </h3>
-      <button
-        onClick={() => onScan("ITEM_QR_ACC_001")}
-        className="w-full bg-blue-500 text-white py-2 rounded-md"
-      >
-        Scan Zipper (Has Location)
-      </button>
-      <button
-        onClick={() => onScan("ITEM_QR_ACC_002")}
-        className="w-full bg-orange-500 text-white py-2 rounded-md"
-      >
-        Scan Buttons (No Location - Will Error)
-      </button>
-      <button
-        onClick={() => onScan("LOC_QR_C_03_A")}
-        className="w-full bg-teal-500 text-white py-2 rounded-md"
-      >
-        Scan New Location C-03-A
-      </button>
-      <button
-        onClick={() => onScan("QR_INVALID")}
-        className="w-full bg-red-500 text-white py-2 rounded-md"
-      >
-        Scan Invalid QR
-      </button>
-    </div>
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle className="text-sm font-bold text-center text-muted-foreground uppercase tracking-wider">
+          Simulate Scan
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <Button onClick={() => onScan("ITEM_QR_ACC_001")} className="w-full">
+          Scan Zipper (Has Location)
+        </Button>
+        <Button
+          onClick={() => onScan("ITEM_QR_ACC_002")}
+          className="w-full bg-orange-500 hover:bg-orange-600"
+        >
+          Scan Buttons (No Location - Will Error)
+        </Button>
+        <Button
+          onClick={() => onScan("LOC_QR_C_03_A")}
+          className="w-full bg-teal-500 hover:bg-teal-600"
+        >
+          Scan New Location C-03-A
+        </Button>
+        <Button
+          onClick={() => onScan("QR_INVALID")}
+          variant="destructive"
+          className="w-full"
+        >
+          Scan Invalid QR
+        </Button>
+      </CardContent>
+    </Card>
   </div>
 );
 
@@ -195,27 +208,26 @@ const ActionFeedback: React.FC<ActionFeedbackProps> = ({
     SUCCESS: "Success!",
     ERROR: "An error occurred!",
   };
-  const buttonTextMap = {
-    PROCESSING: "",
-    SUCCESS: "Start New Scan",
-    ERROR: "Try Again",
-  };
-  const buttonColorMap = { SUCCESS: "bg-green-600", ERROR: "bg-red-600" };
   return (
     <div className="w-full max-w-3xl mx-auto p-4 flex flex-col items-center justify-center text-center">
-      <div className="bg-white p-8 rounded-lg shadow-lg w-full flex flex-col items-center">
+      <Card className="p-8 w-full flex flex-col items-center">
         {iconMap[status]}
         <h2 className="text-xl font-semibold">{titleMap[status]}</h2>
-        <p className="text-gray-600 text-center">{message}</p>
-        {status !== "PROCESSING" && (
-          <button
+        <p className="text-muted-foreground text-center">{message}</p>
+        {status === "SUCCESS" && (
+          <Button
             onClick={onClose}
-            className={`mt-6 ${buttonColorMap[status]} text-white font-bold py-2 px-6 rounded-lg`}
+            className="mt-6 bg-green-600 hover:bg-green-700"
           >
-            {buttonTextMap[status]}
-          </button>
+            Start New Scan
+          </Button>
         )}
-      </div>
+        {status === "ERROR" && (
+          <Button onClick={onClose} variant="destructive" className="mt-6">
+            Try Again
+          </Button>
+        )}
+      </Card>
     </div>
   );
 };
@@ -231,40 +243,40 @@ const TransferItem: React.FC<TransferItemProps> = ({
   onCancel,
 }) => (
   <div className="w-full max-w-lg mx-auto p-4 animate-fade-in">
-    <div className="bg-white rounded-lg shadow-lg p-6 border border-gray-200">
-      <div className="text-center mb-4 border-b pb-4">
+    <Card>
+      <CardHeader className="text-center border-b pb-4">
         <Move className="mx-auto h-12 w-12 text-blue-500 mb-2" />
-        <h2 className="text-xl font-bold text-gray-800">
-          Transfer Accessory Location
-        </h2>
-        <p className="text-sm text-gray-500 mt-2">Selected accessory:</p>
-        <div className="mt-2 text-left bg-gray-50 p-3 rounded-md border">
-          <p className="font-bold text-gray-800">{item.name}</p>
-          <p className="text-xs text-gray-500">SKU: {item.sku}</p>
-          <p className="text-xs text-gray-500 mt-1">
+        <CardTitle>Transfer Accessory Location</CardTitle>
+        <CardDescription className="mt-2">Selected accessory:</CardDescription>
+      </CardHeader>
+      <CardContent className="pt-4">
+        <div className="text-left bg-muted p-3 rounded-md border">
+          <p className="font-bold text-foreground">{item.name}</p>
+          <p className="text-xs text-muted-foreground">SKU: {item.sku}</p>
+          <p className="text-xs text-muted-foreground mt-1">
             Current location:{" "}
-            <span className="font-mono bg-gray-200 px-1 rounded">
-              {item.currentLocation}
-            </span>
+            <Badge variant="outline">{item.currentLocation}</Badge>
           </p>
         </div>
-      </div>
-      <div className="mt-4">
-        <Scanner
-          onScan={onScanLocation}
-          scanPrompt="Scan the QR code of the NEW WAREHOUSE LOCATION"
-          context="TRANSFER_LOCATION"
-        />
-      </div>
-    </div>
-    <div className="mt-6 flex justify-center">
-      <button
-        onClick={onCancel}
-        className="w-1/2 text-lg bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center shadow-md"
-      >
-        <X className="mr-2" /> Cancel
-      </button>
-    </div>
+        <div className="mt-4">
+          <Scanner
+            onScan={onScanLocation}
+            scanPrompt="Scan the QR code of the NEW WAREHOUSE LOCATION"
+            context="TRANSFER_LOCATION"
+          />
+        </div>
+      </CardContent>
+      <CardFooter>
+        <Button
+          onClick={onCancel}
+          variant="secondary"
+          className="w-full text-lg"
+          size="lg"
+        >
+          <X className="mr-2 h-5 w-5" /> Cancel
+        </Button>
+      </CardFooter>
+    </Card>
   </div>
 );
 
@@ -355,7 +367,7 @@ const ScanQRAccessory: React.FC = () => {
   };
 
   return (
-    <div className="p-4 bg-gray-50 min-h-full">
+    <div className="p-4 bg-background min-h-full">
       <Toaster position="top-center" reverseOrder={false} />
       <div className="container mx-auto">{renderContent()}</div>
     </div>

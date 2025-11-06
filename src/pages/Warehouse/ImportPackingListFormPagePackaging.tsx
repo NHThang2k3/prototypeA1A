@@ -4,17 +4,23 @@ import React, { useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import {
   UploadCloud,
-  FileText,
   Loader2,
   XCircle,
   AlertCircle,
+  CheckCircle2,
 } from "lucide-react";
 import * as XLSX from "xlsx";
+import { ColumnDef } from "@tanstack/react-table";
 
-// --- TYPE DEFINITIONS ---
+import { Button } from "@/components/ui/button";
+import { CustomTable } from "@/components/ui/custom-table";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { cn } from "@/lib/utils";
 
+// --- TYPE DEFINITIONS (Unchanged) ---
 interface PackingListItem {
-  id: string; // Client-side temporary ID
+  id: string;
   poNumber: string;
   itemCode: string;
   supplier: string;
@@ -22,17 +28,16 @@ interface PackingListItem {
   boxNo: string;
   lotNo: string;
   quantity: number;
-  unit: string; // e.g., PCS, SET, BOX
+  unit: string;
   netWeight: number;
   grossWeight: number;
-  dimensions: string; // Packaging specific
+  dimensions: string;
   location: string;
   qrCode: string;
   description: string;
 }
 
-// --- LOCAL COMPONENT: ActionToolbar ---
-
+// --- LOCAL COMPONENT: ActionToolbar (Refactored) ---
 interface ActionToolbarProps {
   onSubmit: () => void;
   isSubmitting: boolean;
@@ -43,27 +48,22 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
   isSubmitting,
 }) => {
   return (
-    <div className="sticky bottom-0 bg-white bg-opacity-90 backdrop-blur-sm border-t border-gray-200 p-4 z-10">
-      <div className="max-w-7xl mx-auto flex justify-end items-center space-x-4">
-        <button
-          onClick={onSubmit}
-          disabled={isSubmitting}
-          className="inline-flex justify-center px-6 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
+    <div className="sticky bottom-0 bg-background/90 backdrop-blur-sm border-t p-4 z-10">
+      <div className="max-w-7xl mx-auto flex justify-end items-center">
+        <Button onClick={onSubmit} disabled={isSubmitting}>
+          {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {isSubmitting ? "Processing..." : "Complete"}
-        </button>
+        </Button>
       </div>
     </div>
   );
 };
 
-// --- LOCAL COMPONENT: FileUploadZone ---
-
+// --- LOCAL COMPONENT: FileUploadZone (Refactored) ---
 interface FileUploadZoneProps {
   onItemsChange: (items: PackingListItem[]) => void;
 }
 
-// Mapping from Excel column names to PackingListItem keys
 const headerMapping: { [key: string]: keyof Omit<PackingListItem, "id"> } = {
   "PO Number": "poNumber",
   "Item Code": "itemCode",
@@ -88,53 +88,44 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onItemsChange }) => {
   const [error, setError] = useState<string | null>(null);
 
   const handleFileParse = useCallback(
+    // Parsing logic remains unchanged
     (file: File) => {
       setUploadedFile(file);
       setError(null);
       setIsParsing(true);
       onItemsChange([]);
-
       const reader = new FileReader();
-
       reader.onload = (event) => {
         try {
           const data = event.target?.result;
           if (!data) throw new Error("Could not read file.");
-
           const workbook = XLSX.read(data, { type: "array" });
           const sheetName = workbook.SheetNames[0];
           if (!sheetName) throw new Error("Excel file has no sheets.");
-
           const worksheet = workbook.Sheets[sheetName];
           const json: { [key: string]: string | number }[] =
             XLSX.utils.sheet_to_json(worksheet, { raw: false, defval: "" });
-
           if (json.length === 0) {
             throw new Error("File has no data or the first sheet is empty.");
           }
-
           const fileHeaders = Object.keys(json[0] || {});
           const missingHeaders = requiredHeaders.filter(
             (h) => !fileHeaders.includes(h)
           );
-
           if (missingHeaders.length > 0) {
             throw new Error(
               `File is missing required columns: ${missingHeaders.join(", ")}`
             );
           }
-
           const parsedItems: PackingListItem[] = json
             .map((row, index) => {
               if (Object.values(row).every((val) => val === "")) return null;
-
               const newItem: Partial<PackingListItem> = {
                 id: `${file.name}-${index}`,
               };
               for (const header of requiredHeaders) {
                 const key = headerMapping[header];
                 const value = row[header];
-
                 if (
                   key === "quantity" ||
                   key === "netWeight" ||
@@ -156,17 +147,13 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onItemsChange }) => {
               return newItem as PackingListItem;
             })
             .filter((item): item is PackingListItem => item !== null);
-
           if (parsedItems.length === 0) {
             throw new Error("No valid data found in the file.");
           }
-
           onItemsChange(parsedItems);
         } catch (e: unknown) {
           let message = "An error occurred while processing the file.";
-          if (e instanceof Error) {
-            message = e.message;
-          }
+          if (e instanceof Error) message = e.message;
           setError(message);
           onItemsChange([]);
           setUploadedFile(null);
@@ -174,7 +161,6 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onItemsChange }) => {
           setIsParsing(false);
         }
       };
-
       reader.onerror = () => {
         setError("Could not read the file. Please try again.");
         setIsParsing(false);
@@ -187,9 +173,7 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onItemsChange }) => {
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
-      if (acceptedFiles.length > 0) {
-        handleFileParse(acceptedFiles[0]);
-      }
+      if (acceptedFiles.length > 0) handleFileParse(acceptedFiles[0]);
     },
     [handleFileParse]
   );
@@ -213,21 +197,22 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onItemsChange }) => {
   };
 
   return (
-    <div className="flex flex-col items-center">
-      {!uploadedFile && !isParsing && (
+    <div className="flex flex-col items-center w-full">
+      {!uploadedFile && !isParsing && !error && (
         <div
           {...getRootProps()}
-          className={`w-full border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-colors ${
+          className={cn(
+            "w-full border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-colors",
             isDragActive
-              ? "border-blue-500 bg-blue-50"
-              : "border-gray-300 hover:border-gray-400"
-          }`}
+              ? "border-primary bg-primary-foreground"
+              : "border-input hover:border-muted-foreground"
+          )}
         >
           <input {...getInputProps()} />
-          <div className="flex flex-col items-center text-gray-500">
+          <div className="flex flex-col items-center text-muted-foreground">
             <UploadCloud className="w-12 h-12 mb-4" />
             <p className="font-semibold">
-              Drag and drop the file here, or click to select a file
+              Drag and drop a file here, or click to select
             </p>
             <p className="text-sm">
               Only Excel files (.xls, .xlsx) are supported
@@ -237,8 +222,8 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onItemsChange }) => {
       )}
 
       {isParsing && (
-        <div className="w-full text-center p-12 border-2 border-dashed border-gray-300 rounded-lg">
-          <div className="flex flex-col items-center text-gray-600">
+        <div className="w-full text-center p-12 border-2 border-dashed border-input rounded-lg">
+          <div className="flex flex-col items-center text-muted-foreground">
             <Loader2 className="w-12 h-12 mb-4 animate-spin" />
             <p className="font-semibold">Processing file...</p>
             <p className="text-sm">{uploadedFile?.name}</p>
@@ -247,163 +232,93 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onItemsChange }) => {
       )}
 
       {error && (
-        <div className="mt-4 w-full max-w-lg bg-red-50 p-4 rounded-md border border-red-200">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <AlertCircle
-                className="h-5 w-5 text-red-400"
-                aria-hidden="true"
-              />
+        <Alert variant="destructive" className="w-full">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>File Processing Error</AlertTitle>
+          <AlertDescription>
+            {error}
+            <div className="mt-2">
+              <Button
+                variant="link"
+                className="p-0 h-auto"
+                onClick={handleRemoveFile}
+              >
+                Upload another file
+              </Button>
             </div>
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-red-800">
-                File Processing Error
-              </h3>
-              <div className="mt-2 text-sm text-red-700">
-                <p>{error}</p>
-              </div>
-              <div className="mt-4">
-                <button
-                  onClick={handleRemoveFile}
-                  type="button"
-                  className="text-sm font-medium text-red-800 hover:text-red-600"
-                >
-                  Upload another file
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+          </AlertDescription>
+        </Alert>
       )}
 
       {uploadedFile && !isParsing && !error && (
         <div className="mt-6 w-full max-w-md bg-green-50 border border-green-200 p-4 rounded-md flex items-center justify-between">
           <div className="flex items-center">
-            <FileText className="w-6 h-6 text-green-700 mr-3" />
+            <CheckCircle2 className="w-6 h-6 text-green-700 mr-3" />
             <div>
-              <p className="font-medium text-gray-800">{uploadedFile.name}</p>
-              <p className="text-sm text-gray-500">
+              <p className="font-medium">{uploadedFile.name}</p>
+              <p className="text-sm text-muted-foreground">
                 {(uploadedFile.size / 1024).toFixed(2)} KB
               </p>
             </div>
           </div>
-          <div className="flex items-center space-x-3">
-            <p className="text-sm font-semibold text-green-600">
-              Processed successfully
-            </p>
-            <button
-              onClick={handleRemoveFile}
-              title="Remove file and re-upload"
-            >
-              <XCircle className="w-5 h-5 text-gray-500 hover:text-gray-800" />
-            </button>
-          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleRemoveFile}
+            title="Remove and re-upload"
+          >
+            <XCircle className="w-5 h-5" />
+          </Button>
         </div>
       )}
     </div>
   );
 };
 
-// --- LOCAL COMPONENT: PreviewTable ---
+// --- LOCAL COMPONENT: PreviewTable (Refactored) ---
+const columns: ColumnDef<PackingListItem>[] = [
+  { accessorKey: "poNumber", header: "PO Number" },
+  { accessorKey: "itemCode", header: "Item Code" },
+  { accessorKey: "supplier", header: "Supplier" },
+  { accessorKey: "invoiceNo", header: "Invoice No" },
+  { accessorKey: "boxNo", header: "Box No" },
+  { accessorKey: "lotNo", header: "Lot No" },
+  { accessorKey: "quantity", header: "Quantity" },
+  { accessorKey: "unit", header: "Unit" },
+  {
+    accessorKey: "netWeight",
+    header: "Net Weight (Kgs)",
+    cell: ({ row }) => row.original.netWeight.toFixed(2),
+  },
+  {
+    accessorKey: "grossWeight",
+    header: "Gross Weight (Kgs)",
+    cell: ({ row }) => row.original.grossWeight.toFixed(2),
+  },
+  { accessorKey: "dimensions", header: "Dimensions" },
+  { accessorKey: "location", header: "Location" },
+  { accessorKey: "qrCode", header: "QR Code" },
+  { accessorKey: "description", header: "Description" },
+];
 
 interface PreviewTableProps {
   items: PackingListItem[];
 }
 
 const PreviewTable: React.FC<PreviewTableProps> = ({ items }) => {
-  const headers = [
-    "PO Number",
-    "Item Code",
-    "Supplier",
-    "Invoice No",
-    "Box No",
-    "Lot No",
-    "Quantity",
-    "Unit",
-    "Net Weight (Kgs)",
-    "Gross Weight (Kgs)",
-    "Dimensions",
-    "Location",
-    "QR Code",
-    "Description",
-  ];
-
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md">
-      <h2 className="text-xl font-semibold text-gray-800 mb-4">
-        2. Data Preview ({items.length} rows)
-      </h2>
-      <div className="overflow-x-auto border border-gray-200 rounded-lg">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              {headers.map((header) => (
-                <th
-                  key={header}
-                  scope="col"
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
-                >
-                  {header}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {items.map((item) => (
-              <tr key={item.id} className="hover:bg-gray-50">
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
-                  {item.poNumber}
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {item.itemCode}
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
-                  {item.supplier}
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
-                  {item.invoiceNo}
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
-                  {item.boxNo}
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
-                  {item.lotNo}
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-gray-700">
-                  {item.quantity}
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
-                  {item.unit}
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-gray-700">
-                  {item.netWeight.toFixed(2)}
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-gray-700">
-                  {item.grossWeight.toFixed(2)}
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
-                  {item.dimensions}
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
-                  {item.location}
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
-                  {item.qrCode}
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
-                  {item.description}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>2. Data Preview ({items.length} rows)</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <CustomTable columns={columns} data={items} showCheckbox={false} />
+      </CardContent>
+    </Card>
   );
 };
 
-// --- MAIN PAGE COMPONENT ---
-
+// --- MAIN PAGE COMPONENT (Refactored) ---
 const ImportPackingListFormPagePackaging: React.FC = () => {
   const [items, setItems] = useState<PackingListItem[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -413,6 +328,7 @@ const ImportPackingListFormPagePackaging: React.FC = () => {
   }, []);
 
   const handleSubmit = () => {
+    // Business logic remains unchanged
     if (items.length === 0) {
       alert("There are no items to submit.");
       return;
@@ -430,27 +346,24 @@ const ImportPackingListFormPagePackaging: React.FC = () => {
   return (
     <>
       <div className="space-y-6 pb-24">
-        <div className="flex flex-col md:flex-row justify-between md:items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              Inbound Packaging from Packing List
-            </h1>
-            <p className="mt-1 text-sm text-gray-500">
-              Upload an Excel file to create a batch inbound packaging shipment.
-            </p>
-          </div>
+        <div>
+          <h1 className="text-2xl font-bold">
+            Inbound Packaging from Packing List
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Upload an Excel file to create a batch inbound packaging shipment.
+          </p>
         </div>
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">
-            1. Upload Packaging Packing List File
-          </h2>
-          <div>
+        <Card>
+          <CardHeader>
+            <CardTitle>1. Upload Packaging Packing List File</CardTitle>
+          </CardHeader>
+          <CardContent>
             <FileUploadZone onItemsChange={handleItemsChange} />
-          </div>
-        </div>
+          </CardContent>
+        </Card>
         {items.length > 0 && <PreviewTable items={items} />}
       </div>
-
       {items.length > 0 && (
         <ActionToolbar onSubmit={handleSubmit} isSubmitting={isSubmitting} />
       )}

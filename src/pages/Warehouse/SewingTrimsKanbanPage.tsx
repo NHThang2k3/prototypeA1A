@@ -2,7 +2,27 @@
 // All related files have been combined into this single component file.
 
 import React, { useState, useMemo } from "react";
-import { X, Calendar, MoreHorizontal } from "lucide-react";
+import { Calendar, MoreHorizontal } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge, BadgeProps } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // --- START: types.ts ---
 interface Assignee {
@@ -250,20 +270,10 @@ const AssigneeAvatar: React.FC<AssigneeAvatarProps> = ({ assignee }) => {
     .join("");
 
   return (
-    <div
-      title={assignee.name}
-      className="w-7 h-7 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold"
-    >
-      {assignee.avatarUrl ? (
-        <img
-          src={assignee.avatarUrl}
-          alt={assignee.name}
-          className="w-full h-full rounded-full"
-        />
-      ) : (
-        initials
-      )}
-    </div>
+    <Avatar className="w-7 h-7" title={assignee.name}>
+      <AvatarImage src={assignee.avatarUrl} alt={assignee.name} />
+      <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+    </Avatar>
   );
 };
 // --- END: AssigneeAvatar.tsx ---
@@ -274,19 +284,13 @@ interface PriorityTagProps {
 }
 
 const PriorityTag: React.FC<PriorityTagProps> = ({ priority }) => {
-  const colorClasses: Record<Priority, string> = {
-    High: "bg-red-100 text-red-800",
-    Medium: "bg-yellow-100 text-yellow-800",
-    Low: "bg-blue-100 text-blue-800",
+  const priorityVariants: Record<Priority, BadgeProps["variant"]> = {
+    High: "destructive",
+    Medium: "secondary",
+    Low: "outline",
   };
 
-  return (
-    <span
-      className={`px-2 py-0.5 text-xs font-medium rounded-full ${colorClasses[priority]}`}
-    >
-      {priority}
-    </span>
-  );
+  return <Badge variant={priorityVariants[priority]}>{priority}</Badge>;
 };
 // --- END: PriorityTag.tsx ---
 
@@ -306,58 +310,52 @@ const SewingTrimsCard: React.FC<SewingTrimsCardProps> = ({
       : 0;
 
   return (
-    <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-200 mb-3 hover:shadow-md hover:border-blue-400 transition-shadow space-y-3">
-      {/* Header: Now includes JOB, Priority, Date Required, and Details Button */}
-      <div className="flex justify-between items-start">
-        {/* Left Side: JOB and Priority */}
+    <Card className="mb-3 hover:shadow-md hover:border-primary transition-shadow">
+      <CardHeader className="p-3">
+        <div className="flex justify-between items-start">
+          <div>
+            <CardTitle className="text-base">{task.job}</CardTitle>
+            <div className="mt-1">
+              <PriorityTag priority={task.priority} />
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <div
+              className="flex items-center space-x-1.5 text-sm text-muted-foreground"
+              title="Date Required"
+            >
+              <Calendar className="w-4 h-4" />
+              <span>{task.dateRequired}</span>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onViewDetails(task.id)}
+              className="h-6 w-6"
+              title="View Details"
+            >
+              <MoreHorizontal className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="p-3 pt-0 space-y-3">
+        <p className="text-sm font-semibold text-gray-700 border-t pt-2">
+          {task.requestName}
+        </p>
+
         <div>
-          <span className="font-bold text-gray-800">{task.job}</span>
-          <div className="mt-1">
-            <PriorityTag priority={task.priority} />
+          <div className="flex justify-between items-center text-xs text-muted-foreground mb-1">
+            <span>Progress</span>
+            <span className="font-semibold text-foreground">
+              {task.issuedQuantity} / {task.requiredQuantity}
+            </span>
           </div>
+          <Progress value={completionPercentage} className="h-2" />
         </div>
-
-        {/* Right Side: Date and Details Button */}
-        <div className="flex items-center space-x-2">
-          {/* Date Required (Moved from footer) */}
-          <div
-            className="flex items-center space-x-1.5 text-sm text-gray-500"
-            title="Date Required"
-          >
-            <Calendar className="w-4 h-4" />
-            <span>{task.dateRequired}</span>
-          </div>
-          <button
-            onClick={() => onViewDetails(task.id)}
-            className="text-gray-500 hover:bg-gray-200 rounded-full p-1"
-            title="View Details"
-          >
-            <MoreHorizontal className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-
-      {/* Title */}
-      <p className="text-sm font-semibold text-gray-700 border-t border-gray-100 pt-2">
-        {task.requestName}
-      </p>
-
-      {/* Progress */}
-      <div>
-        <div className="flex justify-between items-center text-xs text-gray-600 mb-1">
-          <span>Progress</span>
-          <span className="font-semibold">
-            {task.issuedQuantity} / {task.requiredQuantity}
-          </span>
-        </div>
-        <div className="w-full bg-gray-200 rounded-full h-2">
-          <div
-            className="bg-blue-500 h-2 rounded-full"
-            style={{ width: `${completionPercentage}%` }}
-          ></div>
-        </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 };
 // --- END: SewingTrimsCard.tsx ---
@@ -375,12 +373,12 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
   onViewDetails,
 }) => {
   return (
-    <div className="w-80 flex-shrink-0 bg-gray-100 rounded-lg p-3 flex flex-col">
+    <div className="w-80 flex-shrink-0 bg-muted/50 rounded-lg p-3 flex flex-col">
       <div className="flex justify-between items-center mb-4">
         <h3 className="font-semibold text-gray-700">{column.title}</h3>
-        <span className="bg-gray-300 text-gray-600 text-sm font-bold w-6 h-6 flex items-center justify-center rounded-full">
+        <Badge variant="secondary" className="rounded-full">
           {tasks.length}
-        </span>
+        </Badge>
       </div>
       <div className="flex-1 overflow-y-auto pr-1">
         {tasks.map((task) => (
@@ -398,8 +396,9 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
 
 // --- START: SewingTrimsTaskDetailsModal.tsx ---
 interface SewingTrimsTaskDetailsModalProps {
-  task: SewingTrimsTask;
-  onClose: () => void;
+  task: SewingTrimsTask | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
 const DetailItem: React.FC<{ label: string; children: React.ReactNode }> = ({
@@ -407,41 +406,23 @@ const DetailItem: React.FC<{ label: string; children: React.ReactNode }> = ({
   children,
 }) => (
   <div>
-    <p className="text-sm font-medium text-gray-500">{label}</p>
-    <div className="text-md text-gray-800 mt-1">{children}</div>
+    <p className="text-sm font-medium text-muted-foreground">{label}</p>
+    <div className="text-md text-foreground mt-1">{children}</div>
   </div>
 );
 
 const SewingTrimsTaskDetailsModal: React.FC<
   SewingTrimsTaskDetailsModalProps
-> = ({ task, onClose }) => {
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60"
-      onClick={onClose}
-    >
-      <div
-        className="bg-white rounded-lg shadow-xl w-full max-w-2xl p-6 space-y-4 relative"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex justify-between items-start">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800">
-              {task.requestName}
-            </h2>
-            <p className="text-sm text-gray-500">Request ID: {task.id}</p>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-            title="Close"
-          >
-            <X size={24} />
-          </button>
-        </div>
+> = ({ task, open, onOpenChange }) => {
+  if (!task) return null;
 
-        {/* Details Grid */}
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle className="text-2xl">{task.requestName}</DialogTitle>
+          <p className="text-sm text-muted-foreground">Request ID: {task.id}</p>
+        </DialogHeader>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4 border-t border-b py-4">
           <DetailItem label="JOB">{task.job}</DetailItem>
           <DetailItem label="Style">{task.style}</DetailItem>
@@ -467,18 +448,16 @@ const SewingTrimsTaskDetailsModal: React.FC<
             </div>
           </DetailItem>
         </div>
-
-        {/* Remarks */}
         {task.remarks && (
           <div>
-            <p className="text-sm font-medium text-gray-500">Remarks</p>
-            <p className="text-md text-gray-700 bg-gray-50 p-3 rounded-md mt-1">
+            <p className="text-sm font-medium text-muted-foreground">Remarks</p>
+            <p className="text-md text-foreground bg-muted p-3 rounded-md mt-1">
               {task.remarks}
             </p>
           </div>
         )}
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 // --- END: SewingTrimsTaskDetailsModal.tsx ---
@@ -567,88 +546,71 @@ const SewingTrimsKanbanPage = () => {
   }
 
   return (
-    <div className="p-6 md:p-8 bg-gray-50 min-h-full flex flex-col">
+    <div className="p-6 md:p-8 bg-background min-h-screen flex flex-col">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">
+        <h1 className="text-3xl font-bold text-foreground">
           Sewing Line - Trims Request
         </h1>
-        <p className="text-gray-500 mt-1">
+        <p className="text-muted-foreground mt-1">
           Track and manage material requests from sewing lines.
         </p>
       </div>
 
-      <div className="flex items-end space-x-4 mb-6 bg-white p-4 rounded-lg shadow-sm border">
-        <div>
-          <label
-            htmlFor="startDate"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            From Date Required
-          </label>
-          <input
-            type="date"
-            id="startDate"
-            value={startDateFilter}
-            onChange={(e) => setStartDateFilter(e.target.value)}
-            className="border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
-          />
-        </div>
-        <div>
-          <label
-            htmlFor="endDate"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            To Date Required
-          </label>
-          <input
-            type="date"
-            id="endDate"
-            value={endDateFilter}
-            onChange={(e) => setEndDateFilter(e.target.value)}
-            className="border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
-          />
-        </div>
-        <div>
-          <label
-            htmlFor="factoryLine"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            Factory Line
-          </label>
-          <select
-            id="factoryLine"
-            value={factoryLineFilter}
-            onChange={(e) => setFactoryLineFilter(e.target.value)}
-            className="border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
-          >
-            {uniqueFactoryLines.map((line) => (
-              <option key={line} value={line}>
-                {line === "all" ? "All Factory Lines" : line}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label
-            htmlFor="jobType"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            JOB Type
-          </label>
-          <select
-            id="jobType"
-            value={jobFilter}
-            onChange={(e) => setJobFilter(e.target.value)}
-            className="border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
-          >
-            {uniqueJobs.map((job) => (
-              <option key={job} value={job}>
-                {job === "all" ? "All JOB Types" : job}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
+      <Card className="mb-6">
+        <CardContent className="p-4 flex items-end space-x-4">
+          <div className="grid w-full max-w-sm items-center gap-1.5">
+            <Label htmlFor="startDate">From Date Required</Label>
+            <Input
+              type="date"
+              id="startDate"
+              value={startDateFilter}
+              onChange={(e) => setStartDateFilter(e.target.value)}
+            />
+          </div>
+          <div className="grid w-full max-w-sm items-center gap-1.5">
+            <Label htmlFor="endDate">To Date Required</Label>
+            <Input
+              type="date"
+              id="endDate"
+              value={endDateFilter}
+              onChange={(e) => setEndDateFilter(e.target.value)}
+            />
+          </div>
+          <div className="grid w-full max-w-sm items-center gap-1.5">
+            <Label htmlFor="factoryLine">Factory Line</Label>
+            <Select
+              value={factoryLineFilter}
+              onValueChange={setFactoryLineFilter}
+            >
+              <SelectTrigger id="factoryLine">
+                <SelectValue placeholder="Select a line" />
+              </SelectTrigger>
+              <SelectContent>
+                {uniqueFactoryLines.map((line) => (
+                  <SelectItem key={line} value={line}>
+                    {line === "all" ? "All Factory Lines" : line}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid w-full max-w-sm items-center gap-1.5">
+            <Label htmlFor="jobType">JOB Type</Label>
+            <Select value={jobFilter} onValueChange={setJobFilter}>
+              <SelectTrigger id="jobType">
+                <SelectValue placeholder="Select a job type" />
+              </SelectTrigger>
+              <SelectContent>
+                {uniqueJobs.map((job) => (
+                  <SelectItem key={job} value={job}>
+                    {job === "all" ? "All JOB Types" : job}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="flex-1 overflow-x-auto">
         <div className="flex space-x-4 pb-4">
@@ -670,12 +632,15 @@ const SewingTrimsKanbanPage = () => {
         </div>
       </div>
 
-      {selectedTask && (
-        <SewingTrimsTaskDetailsModal
-          task={selectedTask}
-          onClose={handleCloseModal}
-        />
-      )}
+      <SewingTrimsTaskDetailsModal
+        task={selectedTask}
+        open={!!selectedTask}
+        onOpenChange={(open) => {
+          if (!open) {
+            handleCloseModal();
+          }
+        }}
+      />
     </div>
   );
 };

@@ -1,10 +1,20 @@
-import React, { useState, useEffect, useMemo } from "react";
+// Path: src/pages/issue-packaging-form/IssuePackagingFormPage.tsx
+
+import React, { useState, useEffect, useMemo, useCallback } from "react"; // 1. Thêm useCallback
+import { Play, ArrowRightCircle, Trash2, PlusCircle } from "lucide-react";
+import { ColumnDef } from "@tanstack/react-table";
+
+import { Button } from "@/components/ui/button";
 import {
-  PlusCircleIcon,
-  TrashIcon,
-  PlayIcon,
-  ArrowRightCircleIcon,
-} from "@heroicons/react/24/solid";
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { CustomTable } from "@/components/ui/custom-table";
+import { Separator } from "@/components/ui/separator";
 
 // --- TYPES: Define data structures for the packaging issuance process ---
 
@@ -327,25 +337,24 @@ const IssuePackagingFormPage: React.FC = () => {
   }, [packagingRequirements]);
 
   // --- HANDLER FUNCTIONS ---
-  const handleLoadRequests = () => {
+  // 2. Bọc các hàm xử lý sự kiện trong useCallback
+  const handleLoadRequests = useCallback(() => {
     setIsLoadingRequests(true);
     setSelectedRequestIds(new Set());
     getPackagingRequests().then((data) => {
       setAllRequests(data);
       setIsLoadingRequests(false);
     });
-  };
+  }, []);
 
-  const handleRequestSelectionChange = (reqId: string, isSelected: boolean) => {
-    setSelectedRequestIds((prev) => {
-      const newSet = new Set(prev);
-      if (isSelected) newSet.add(reqId);
-      else newSet.delete(reqId);
-      return newSet;
-    });
-  };
+  const handleRequestSelectionChange = useCallback(
+    (selectedItems: PackagingRequest[]) => {
+      setSelectedRequestIds(new Set(selectedItems.map((item) => item.ID)));
+    },
+    []
+  );
 
-  const handleIssueQtyChange = (qrCode: string, newQty: number) => {
+  const handleIssueQtyChange = useCallback((qrCode: string, newQty: number) => {
     setSelectedPackaging((prevItems) =>
       prevItems.map((item) => {
         if (item.QRCode === qrCode) {
@@ -355,31 +364,36 @@ const IssuePackagingFormPage: React.FC = () => {
         return item;
       })
     );
-  };
+  }, []);
 
-  const handleAddPackagingFromInventory = (itemToAdd: InventoryPackaging) => {
-    setSelectedPackaging((prev) => [
-      ...prev,
-      { ...itemToAdd, issueQty: itemToAdd.BalanceQty },
-    ]);
-    setAvailableInventory((prev) =>
-      prev.filter((i) => i.QRCode !== itemToAdd.QRCode)
-    );
-  };
+  const handleAddPackagingFromInventory = useCallback(
+    (itemToAdd: InventoryPackaging) => {
+      setSelectedPackaging((prev) => [
+        ...prev,
+        { ...itemToAdd, issueQty: itemToAdd.BalanceQty },
+      ]);
+      setAvailableInventory((prev) =>
+        prev.filter((i) => i.QRCode !== itemToAdd.QRCode)
+      );
+    },
+    []
+  );
 
-  const handleRemoveSelectedPackaging = (
-    itemToRemove: SelectedInventoryPackaging
-  ) => {
-    setSelectedPackaging((prev) =>
-      prev.filter((i) => i.QRCode !== itemToRemove.QRCode)
-    );
-    const { ...originalItem } = itemToRemove;
-    setAvailableInventory((prev) =>
-      [...prev, originalItem].sort((a, b) => a.QRCode.localeCompare(b.QRCode))
-    );
-  };
+  const handleRemoveSelectedPackaging = useCallback(
+    (itemToRemove: SelectedInventoryPackaging) => {
+      setSelectedPackaging((prev) =>
+        prev.filter((i) => i.QRCode !== itemToRemove.QRCode)
+      );
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { issueQty, ...originalItem } = itemToRemove;
+      setAvailableInventory((prev) =>
+        [...prev, originalItem].sort((a, b) => a.QRCode.localeCompare(b.QRCode))
+      );
+    },
+    []
+  );
 
-  const handleFinishIssuance = () => {
+  const handleFinishIssuance = useCallback(() => {
     const shortage = totalRequiredQty - totalIssuedQty;
     if (shortage > 0) {
       if (
@@ -409,12 +423,122 @@ const IssuePackagingFormPage: React.FC = () => {
       setShortageInfo(null);
       setIsFinishing(false);
     }, 2000);
-  };
+  }, [
+    totalRequiredQty,
+    totalIssuedQty,
+    displayUnit,
+    allRequests,
+    selectedRequestIds,
+    selectedPackaging,
+  ]);
 
-  // --- RENDER ---
+  // 3. Bọc các mảng định nghĩa cột trong useMemo
+  const packagingRequestColumns = useMemo<ColumnDef<PackagingRequest>[]>(
+    () => [
+      { accessorKey: "ID", header: "Request ID" },
+      { accessorKey: "JOB", header: "JOB" },
+      { accessorKey: "ItemNumber", header: "Item Number" },
+      { accessorKey: "Description", header: "Description" },
+      {
+        accessorKey: "RequestQuantity",
+        header: "Required Qty",
+        cell: ({ row }) =>
+          `${row.original.RequestQuantity.toLocaleString()} ${
+            row.original.Unit
+          }`,
+      },
+      { accessorKey: "PackagingLine", header: "Packaging Line" },
+    ],
+    []
+  );
+
+  const selectedPackagingColumns = useMemo<
+    ColumnDef<SelectedInventoryPackaging>[]
+  >(
+    () => [
+      { accessorKey: "QRCode", header: "QR Code" },
+      { accessorKey: "Description", header: "Description" },
+      {
+        accessorKey: "BalanceQty",
+        header: "Balance Qty",
+        cell: ({ row }) =>
+          `${row.original.BalanceQty.toLocaleString()} ${row.original.Unit}`,
+      },
+      {
+        accessorKey: "issueQty",
+        header: "Issue Qty",
+        cell: ({ row }) => (
+          <Input
+            type="number"
+            value={row.original.issueQty}
+            onChange={(e) =>
+              handleIssueQtyChange(
+                row.original.QRCode,
+                parseFloat(e.target.value) || 0
+              )
+            }
+            className="w-24"
+            max={row.original.BalanceQty}
+            step="1"
+          />
+        ),
+      },
+      {
+        id: "actions",
+        cell: ({ row }) => (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => handleRemoveSelectedPackaging(row.original)}
+            className="text-red-500 hover:text-red-700"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        ),
+      },
+    ],
+    [handleIssueQtyChange, handleRemoveSelectedPackaging]
+  );
+
+  const availableInventoryColumns = useMemo<ColumnDef<InventoryPackaging>[]>(
+    () => [
+      { accessorKey: "QRCode", header: "QR Code" },
+      {
+        accessorKey: "Description",
+        header: "Description",
+        cell: ({ row }) => (
+          <span className="text-orange-600 font-semibold">
+            {row.original.Description}
+          </span>
+        ),
+      },
+      { accessorKey: "Location", header: "Location" },
+      {
+        accessorKey: "BalanceQty",
+        header: "Available Qty",
+        cell: ({ row }) =>
+          `${row.original.BalanceQty.toLocaleString()} ${row.original.Unit}`,
+      },
+      {
+        id: "actions",
+        cell: ({ row }) => (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => handleAddPackagingFromInventory(row.original)}
+            className="text-green-600 hover:text-green-800"
+          >
+            <PlusCircle className="h-5 w-5" />
+          </Button>
+        ),
+      },
+    ],
+    [handleAddPackagingFromInventory]
+  );
+
   return (
-    <div className="p-4 md:p-6 bg-gray-50 min-h-screen font-sans">
-      <header className="mb-6">
+    <div className="p-4 md:p-6 bg-gray-50 min-h-screen font-sans space-y-6">
+      <header>
         <h1 className="text-3xl font-bold text-gray-800">
           Issue Packaging Materials
         </h1>
@@ -422,291 +546,160 @@ const IssuePackagingFormPage: React.FC = () => {
           Issue packaging materials (cartons, bags, labels) based on requests.
         </p>
       </header>
+      <Separator />
 
-      {/* Step 1: Load and Select Requests */}
-      <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold text-gray-700">
-            Step 1: Load and Select Requests
-          </h2>
-          <button
-            onClick={handleLoadRequests}
-            disabled={isLoadingRequests}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition duration-200 disabled:bg-gray-400"
-          >
-            <PlayIcon className="h-5 w-5" />
-            {isLoadingRequests ? "Loading..." : "Load Request List"}
-          </button>
-        </div>
-        {allRequests.length > 0 ? (
-          <div className="overflow-x-auto max-h-72">
-            <table className="w-full text-sm text-left text-gray-600">
-              <thead className="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0">
-                <tr>
-                  <th className="px-4 py-3 w-12">Select</th>
-                  <th className="px-4 py-3">Request ID</th>
-                  <th className="px-4 py-3">JOB</th>
-                  <th className="px-4 py-3">Item Number</th>
-                  <th className="px-4 py-3">Description</th>
-                  <th className="px-4 py-3">Required Qty</th>
-                  <th className="px-4 py-3">Packaging Line</th>
-                </tr>
-              </thead>
-              <tbody>
-                {allRequests.map((req) => (
-                  <tr
-                    key={req.ID}
-                    className="bg-white border-b hover:bg-gray-50"
-                  >
-                    <td className="px-4 py-2 text-center">
-                      <input
-                        type="checkbox"
-                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        checked={selectedRequestIds.has(req.ID)}
-                        onChange={(e) =>
-                          handleRequestSelectionChange(req.ID, e.target.checked)
-                        }
-                      />
-                    </td>
-                    <td className="px-4 py-2 font-medium text-gray-900">
-                      {req.ID}
-                    </td>
-                    <td className="px-4 py-2">{req.JOB}</td>
-                    <td className="px-4 py-2">{req.ItemNumber}</td>
-                    <td className="px-4 py-2">{req.Description}</td>
-                    <td className="px-4 py-2 font-semibold">
-                      {req.RequestQuantity.toLocaleString()} {req.Unit}
-                    </td>
-                    <td className="px-4 py-2">{req.PackagingLine}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Step 1: Load and Select Requests</CardTitle>
+            <CardDescription>
+              Load the list of pending requests and select items to issue.
+            </CardDescription>
           </div>
-        ) : (
-          <p className="text-center text-gray-500 py-4">
-            Please load the request list to begin.
-          </p>
-        )}
-      </div>
+          <Button onClick={handleLoadRequests} disabled={isLoadingRequests}>
+            <Play className="h-4 w-4 mr-2" />
+            {isLoadingRequests ? "Loading..." : "Load Request List"}
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {allRequests.length > 0 ? (
+            <CustomTable
+              columns={packagingRequestColumns}
+              data={allRequests}
+              onSelectionChange={handleRequestSelectionChange}
+              showColumnVisibility={false}
+            />
+          ) : (
+            <p className="text-center text-gray-500 py-4">
+              Please load the request list to begin.
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
-      {/* Step 2: Summary & Issuance Section */}
       {selectedRequestIds.size > 0 && (
         <>
-          <div className="bg-white p-4 rounded-lg shadow-md mb-8 sticky top-0 z-10">
-            <h2 className="text-xl font-semibold text-gray-700 mb-3">
-              Step 2: Review and Issue
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-              <div className="bg-blue-50 p-3 rounded-md">
-                <p className="text-sm text-blue-800 font-medium">
-                  Total Required
-                </p>
-                <p className="text-2xl font-bold text-blue-900">
-                  {totalRequiredQty.toLocaleString()} {displayUnit}
-                </p>
-              </div>
-              <div className="bg-green-50 p-3 rounded-md">
-                <p className="text-sm text-green-800 font-medium">
-                  Total Selected
-                </p>
-                <p className="text-2xl font-bold text-green-900">
-                  {totalIssuedQty.toLocaleString(undefined, {
-                    maximumFractionDigits: 2,
-                  })}{" "}
-                  {displayUnit}
-                </p>
-              </div>
-              <div
-                className={`p-3 rounded-md ${
-                  totalIssuedQty < totalRequiredQty
-                    ? "bg-red-50"
-                    : "bg-green-50"
-                }`}
-              >
-                <p
-                  className={`text-sm font-medium ${
-                    totalIssuedQty < totalRequiredQty
-                      ? "text-red-800"
-                      : "text-green-800"
-                  }`}
+          <Card className="sticky top-4 z-10">
+            <CardHeader>
+              <CardTitle>Step 2: Review and Issue</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                <Card>
+                  <CardHeader>
+                    <p className="text-sm text-blue-800 font-medium">
+                      Total Required
+                    </p>
+                    <p className="text-2xl font-bold text-blue-900">
+                      {totalRequiredQty.toLocaleString()} {displayUnit}
+                    </p>
+                  </CardHeader>
+                </Card>
+                <Card>
+                  <CardHeader>
+                    <p className="text-sm text-green-800 font-medium">
+                      Total Selected
+                    </p>
+                    <p className="text-2xl font-bold text-green-900">
+                      {totalIssuedQty.toLocaleString(undefined, {
+                        maximumFractionDigits: 2,
+                      })}{" "}
+                      {displayUnit}
+                    </p>
+                  </CardHeader>
+                </Card>
+                <Card
+                  className={
+                    totalIssuedQty < totalRequiredQty ? "bg-red-50" : ""
+                  }
                 >
-                  {totalIssuedQty < totalRequiredQty ? "Shortage" : "Surplus"}
-                </p>
-                <p
-                  className={`text-2xl font-bold ${
-                    totalIssuedQty < totalRequiredQty
-                      ? "text-red-900"
-                      : "text-green-900"
-                  }`}
-                >
-                  {(totalRequiredQty - totalIssuedQty).toLocaleString(
-                    undefined,
-                    { maximumFractionDigits: 2 }
-                  )}{" "}
-                  {displayUnit}
-                </p>
+                  <CardHeader>
+                    <p
+                      className={`text-sm font-medium ${
+                        totalIssuedQty < totalRequiredQty
+                          ? "text-red-800"
+                          : "text-green-800"
+                      }`}
+                    >
+                      {totalIssuedQty < totalRequiredQty
+                        ? "Shortage"
+                        : "Surplus"}
+                    </p>
+                    <p
+                      className={`text-2xl font-bold ${
+                        totalIssuedQty < totalRequiredQty
+                          ? "text-red-900"
+                          : "text-green-900"
+                      }`}
+                    >
+                      {(totalRequiredQty - totalIssuedQty).toLocaleString(
+                        undefined,
+                        { maximumFractionDigits: 2 }
+                      )}{" "}
+                      {displayUnit}
+                    </p>
+                  </CardHeader>
+                </Card>
               </div>
-            </div>
-            {isLoading && (
-              <p className="text-center text-blue-600 mt-4">
-                Searching inventory...
-              </p>
-            )}
-            <div className="mt-6 flex justify-end">
-              <button
-                onClick={handleFinishIssuance}
-                disabled={selectedPackaging.length === 0 || isFinishing}
-                className="inline-flex items-center gap-2 px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-              >
-                <ArrowRightCircleIcon className="h-5 w-5" />
-                {isFinishing ? "Processing..." : "Finish Issuance"}
-              </button>
-            </div>
-          </div>
+              {isLoading && (
+                <p className="text-center text-blue-600 mt-4">
+                  Searching inventory...
+                </p>
+              )}
+              <div className="mt-6 flex justify-end">
+                <Button
+                  onClick={handleFinishIssuance}
+                  disabled={selectedPackaging.length === 0 || isFinishing}
+                  size="lg"
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  <ArrowRightCircle className="h-5 w-5 mr-2" />
+                  {isFinishing ? "Processing..." : "Finish Issuance"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* LEFT COLUMN: SELECTED PACKAGING */}
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                Selected Packaging for Issuance
-              </h3>
-              <div className="overflow-x-auto max-h-[600px]">
-                <table className="w-full text-sm text-left text-gray-600">
-                  <thead className="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0">
-                    <tr>
-                      <th className="px-3 py-3">QR Code</th>
-                      <th className="px-3 py-3">Description</th>
-                      <th className="px-3 py-3">Balance Qty</th>
-                      <th className="px-3 py-3">Issue Qty</th>
-                      <th className="px-3 py-3"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {selectedPackaging.map((item) => (
-                      <tr
-                        key={item.QRCode}
-                        className="bg-white border-b hover:bg-gray-50"
-                      >
-                        <td className="px-3 py-2 font-medium">{item.QRCode}</td>
-                        <td className="px-3 py-2">{item.Description}</td>
-                        <td className="px-3 py-2">
-                          {item.BalanceQty.toLocaleString()} {item.Unit}
-                        </td>
-                        <td className="px-3 py-2">
-                          <input
-                            type="number"
-                            value={item.issueQty}
-                            onChange={(e) =>
-                              handleIssueQtyChange(
-                                item.QRCode,
-                                parseFloat(e.target.value) || 0
-                              )
-                            }
-                            className="w-24 p-1 border rounded-md focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
-                            max={item.BalanceQty}
-                            step="1"
-                          />
-                        </td>
-                        <td className="px-3 py-2 text-center">
-                          <button
-                            onClick={() => handleRemoveSelectedPackaging(item)}
-                            className="text-red-500 hover:text-red-700"
-                          >
-                            <TrashIcon className="h-5 w-5" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                    {selectedPackaging.length === 0 && !isLoading && (
-                      <tr>
-                        <td
-                          colSpan={5}
-                          className="text-center py-4 text-gray-500"
-                        >
-                          No packaging items have been selected.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            <Card>
+              <CardHeader>
+                <CardTitle>Selected Packaging for Issuance</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CustomTable
+                  columns={selectedPackagingColumns}
+                  data={selectedPackaging}
+                  showCheckbox={false}
+                  showColumnVisibility={false}
+                />
+              </CardContent>
+            </Card>
 
-            {/* RIGHT COLUMN: AVAILABLE INVENTORY */}
-            <div
-              className={`bg-white p-6 rounded-lg shadow-md transition-all ${
+            <Card
+              className={
                 shortageInfo ? "border-2 border-dashed border-orange-400" : ""
-              }`}
+              }
             >
-              <h3
-                className={`text-lg font-semibold mb-4 ${
-                  shortageInfo ? "text-orange-800" : "text-gray-800"
-                }`}
-              >
-                {shortageInfo
-                  ? `Shortage! Select Substitute (Item: ${shortageInfo.itemNumber})`
-                  : `Available Inventory (Item: ${
-                      packagingRequirements[0]?.itemNumber || "N/A"
-                    })`}
-              </h3>
-              <div className="overflow-x-auto max-h-[600px]">
-                <table className="w-full text-sm text-left text-gray-600">
-                  <thead
-                    className={`text-xs text-gray-700 uppercase sticky top-0 ${
-                      shortageInfo ? "bg-orange-50" : "bg-gray-100"
-                    }`}
-                  >
-                    <tr>
-                      <th className="px-3 py-3">QR Code</th>
-                      <th className="px-3 py-3">Description</th>
-                      <th className="px-3 py-3">Location</th>
-                      <th className="px-3 py-3">Available Qty</th>
-                      <th className="px-3 py-3"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {availableInventory.map((item) => (
-                      <tr
-                        key={item.QRCode}
-                        className="bg-white border-b hover:bg-gray-50"
-                      >
-                        <td className="px-3 py-2 font-medium">{item.QRCode}</td>
-                        <td
-                          className={`px-3 py-2 text-orange-600 font-semibold`}
-                        >
-                          {item.Description}
-                        </td>
-                        <td className="px-3 py-2">{item.Location}</td>
-                        <td className="px-3 py-2 font-semibold">
-                          {item.BalanceQty.toLocaleString()} {item.Unit}
-                        </td>
-                        <td className="px-3 py-2 text-center">
-                          <button
-                            onClick={() =>
-                              handleAddPackagingFromInventory(item)
-                            }
-                            className="text-green-600 hover:text-green-800"
-                          >
-                            <PlusCircleIcon className="h-6 w-6" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                    {availableInventory.length === 0 && !isLoading && (
-                      <tr>
-                        <td
-                          colSpan={5}
-                          className="text-center py-4 text-gray-500"
-                        >
-                          No other packaging available in inventory.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+              <CardHeader>
+                <CardTitle
+                  className={shortageInfo ? "text-orange-800" : "text-gray-800"}
+                >
+                  {shortageInfo
+                    ? `Shortage! Select Substitute (Item: ${shortageInfo.itemNumber})`
+                    : `Available Inventory (Item: ${
+                        packagingRequirements[0]?.itemNumber || "N/A"
+                      })`}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CustomTable
+                  columns={availableInventoryColumns}
+                  data={availableInventory}
+                  showCheckbox={false}
+                  showColumnVisibility={false}
+                />
+              </CardContent>
+            </Card>
           </div>
         </>
       )}

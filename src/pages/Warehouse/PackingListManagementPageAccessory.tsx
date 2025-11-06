@@ -1,28 +1,38 @@
 // path: src/pages/packing-list-management/PackingListManagementPageAccessory.tsx
 
-import React, {
-  useState,
-  useEffect,
-  useMemo,
-  useRef,
-  type ReactNode,
-  type FC,
-  type HTMLProps,
-  type ButtonHTMLAttributes,
-  type InputHTMLAttributes,
-} from "react";
+import { useState, useMemo, type FC } from "react";
 import { v4 as uuidv4 } from "uuid";
 import {
   Plus,
   Search,
   QrCode,
   Undo2,
-  Columns,
   CheckCircle,
   Printer,
-  ChevronLeft,
-  ChevronRight,
+  MoreHorizontal,
 } from "lucide-react";
+import { type ColumnDef } from "@tanstack/react-table";
+
+// --- UI Imports ---
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { CustomTable } from "@/components/ui/custom-table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 // --- TYPES ---
 
@@ -48,10 +58,6 @@ export interface AccessoryItem {
   dateInHouse: string;
   qcCheck: boolean;
   printStatus: PrintStatus;
-}
-
-export interface PackingListItem {
-  id: string;
 }
 
 // --- MOCK DATA ---
@@ -143,548 +149,100 @@ const mockAccessoryItems: AccessoryItem[] = [
   },
 ];
 
-// --- UI COMPONENT PLACEHOLDERS ---
-
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary" | "outline" | "ghost";
-  size?: "sm" | "md" | "lg" | "icon";
-  children: ReactNode;
-}
-const Button: FC<ButtonProps> = ({ children, ...props }) => {
-  const baseStyle =
-    "inline-flex items-center justify-center rounded-md text-sm font-medium focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed";
-  const variantStyle = {
-    primary: "bg-blue-600 text-white hover:bg-blue-700",
-    secondary: "bg-gray-200 text-gray-800 hover:bg-gray-300",
-    outline: "border border-gray-300 bg-white hover:bg-gray-50",
-    ghost: "hover:bg-gray-100",
-  };
-  const sizeStyle = {
-    sm: "px-3 py-1.5",
-    md: "px-4 py-2",
-    lg: "px-6 py-3",
-    icon: "h-9 w-9",
-  };
-  const currentVariant = props.variant || "primary";
-  const currentSize = props.size || "md";
-  const className = `${baseStyle} ${variantStyle[currentVariant]} ${
-    sizeStyle[currentSize]
-  } ${props.className || ""}`;
-  return (
-    <button {...props} className={className}>
-      {children}
-    </button>
-  );
-};
-
-const Input: FC<InputHTMLAttributes<HTMLInputElement>> = (props) => {
-  return (
-    <input
-      {...props}
-      className={`w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 ${props.className}`}
-    />
-  );
-};
-
-interface CheckboxProps
-  extends Omit<HTMLProps<HTMLInputElement>, "onCheckedChange"> {
-  checked?: boolean;
-  onCheckedChange?: (checked: boolean) => void;
-}
-const Checkbox: FC<CheckboxProps> = ({
-  checked,
-  onCheckedChange,
-  ...props
-}) => {
-  return (
-    <input
-      type="checkbox"
-      checked={checked}
-      onChange={(e) => onCheckedChange?.(e.target.checked)}
-      {...props}
-      className={`h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 ${props.className}`}
-    />
-  );
-};
-
 // --- SUB-COMPONENTS ---
 
 const StatusBadge: FC<{ status: PrintStatus }> = ({ status }) => {
-  const config =
-    status === "PRINTED"
-      ? {
-          label: "Printed",
-          bgColor: "bg-green-100",
-          textColor: "text-green-800",
-          icon: <CheckCircle className="w-4 h-4" />,
-        }
-      : {
-          label: "Not Printed",
-          bgColor: "bg-gray-100",
-          textColor: "text-gray-800",
-          icon: <Printer className="w-4 h-4" />,
-        };
+  if (status === "PRINTED") {
+    return (
+      <Badge
+        variant="outline"
+        className="bg-green-100 text-green-800 border-green-200"
+      >
+        <CheckCircle className="w-3.5 h-3.5 mr-1.5" />
+        Printed
+      </Badge>
+    );
+  }
   return (
-    <span
-      className={`inline-flex items-center gap-x-1.5 py-1 px-2.5 rounded-full text-xs font-medium ${config.bgColor} ${config.textColor}`}
-    >
-      {config.icon}
-      {config.label}
-    </span>
-  );
-};
-
-const SimpleDropdownMenu: FC<{
-  trigger: ReactNode;
-  children: ReactNode;
-  align?: "left" | "right";
-}> = ({ trigger, children, align = "right" }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      )
-        setIsOpen(false);
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-  const alignmentClass = align === "right" ? "right-0" : "left-0";
-  return (
-    <div className="relative inline-block text-left" ref={dropdownRef}>
-      <div onClick={() => setIsOpen(!isOpen)}>{trigger}</div>
-      {isOpen && (
-        <div
-          className={`absolute ${alignmentClass} z-10 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none`}
-        >
-          <div className="py-1">{children}</div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-const DropdownCheckboxItem: FC<{
-  checked: boolean;
-  onCheckedChange: (checked: boolean) => void;
-  children: ReactNode;
-}> = ({ checked, onCheckedChange, children }) => {
-  const id = React.useId();
-  return (
-    <label
-      htmlFor={id}
-      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-    >
-      <input
-        id={id}
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => onCheckedChange(e.target.checked)}
-        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 mr-3"
-      />
-      {children}
-    </label>
+    <Badge variant="secondary">
+      <Printer className="w-3.5 h-3.5 mr-1.5" />
+      Not Printed
+    </Badge>
   );
 };
 
 const PageHeader: FC = () => (
   <div className="flex justify-between items-center mb-6">
-    <h1 className="text-3xl font-bold text-gray-900">Accessory Management</h1>
-    <Button className="inline-flex items-center justify-center">
-      <Plus className="-ml-1 mr-2 h-5 w-5" /> Import Accessory List
+    <h1 className="text-3xl font-bold">Accessory Management</h1>
+    <Button>
+      <Plus className="mr-2 h-5 w-5" /> Import Accessory List
     </Button>
   </div>
 );
 
 const PackingListFilters: FC = () => (
-  <div className="mb-4 p-4 bg-white rounded-lg shadow-sm border border-gray-200">
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      <div className="lg:col-span-2">
-        <label
-          htmlFor="item-search"
-          className="block text-sm font-medium text-gray-700 mb-1"
-        >
-          Search Item
-        </label>
-        <div className="relative">
-          <Input
-            id="item-search"
-            placeholder="Enter PO, Item Code, Color, Lot..."
-            className="pl-10"
-          />
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+  <Card className="mb-4">
+    <CardContent className="pt-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="lg:col-span-2">
+          <Label htmlFor="item-search" className="mb-1.5 block">
+            Search Item
+          </Label>
+          <div className="relative">
+            <Input
+              id="item-search"
+              placeholder="Enter PO, Item Code, Color, Lot..."
+              className="pl-10"
+            />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          </div>
         </div>
-      </div>
-      <div>
-        <label
-          htmlFor="print-status-filter"
-          className="block text-sm font-medium text-gray-700 mb-1"
-        >
-          Print Status
-        </label>
-        <select
-          id="print-status-filter"
-          className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-        >
-          <option value="">All Statuses</option>
-          <option value="NOT_PRINTED">Not Printed</option>
-          <option value="PRINTED">Printed</option>
-        </select>
-      </div>
-      <div>
-        <label
-          htmlFor="qc-check-filter"
-          className="block text-sm font-medium text-gray-700 mb-1"
-        >
-          QC Check
-        </label>
-        <select
-          id="qc-check-filter"
-          className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-        >
-          <option value="">All</option>
-          <option value="checked">Yes</option>
-          <option value="not-checked">No</option>
-        </select>
-      </div>
-    </div>
-    <div className="mt-4 flex justify-end">
-      <Button variant="primary">
-        <Search className="w-4 h-4 mr-2" />
-        Search
-      </Button>
-    </div>
-  </div>
-);
-
-const ALL_COLUMNS = [
-  { id: "poNumber", label: "PO Number" },
-  { id: "itemCode", label: "Item Code" },
-  { id: "supplier", label: "Supplier" },
-  { id: "description", label: "Description" },
-  { id: "color", label: "Color" },
-  { id: "boxNo", label: "Box No" },
-  { id: "lotNo", label: "Lot No" },
-  { id: "quantity", label: "Quantity" },
-  { id: "unit", label: "Unit" },
-  { id: "netWeightKgs", label: "Net Weight (Kgs)" },
-  { id: "size", label: "Size" },
-  { id: "location", label: "Location" },
-  { id: "qcCheck", label: "QC Check" },
-  { id: "printStatus", label: "Print Status" },
-  { id: "action", label: "Action" },
-];
-
-const PackingListTable: FC<{
-  items: AccessoryItem[];
-  onPrint: (itemIds: Set<string>) => void;
-}> = ({ items, onPrint }) => {
-  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
-  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(
-    {
-      poNumber: true,
-      itemCode: true,
-      description: true,
-      color: true,
-      boxNo: true,
-      lotNo: true,
-      quantity: true,
-      unit: true,
-      qcCheck: true,
-      printStatus: true,
-      action: true,
-      supplier: false,
-      netWeightKgs: false,
-      size: false,
-      location: false,
-    }
-  );
-
-  const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      const selectable = items
-        .filter((item) => item.printStatus === "NOT_PRINTED")
-        .map((item) => item.id);
-      setSelectedItems(new Set(selectable));
-    } else {
-      setSelectedItems(new Set());
-    }
-  };
-
-  const handleSelectItem = (itemId: string, checked: boolean) => {
-    const newSelected = new Set(selectedItems);
-    if (checked) newSelected.add(itemId);
-    else newSelected.delete(itemId);
-    setSelectedItems(newSelected);
-  };
-
-  const allSelectable = useMemo(
-    () => items.filter((item) => item.printStatus === "NOT_PRINTED"),
-    [items]
-  );
-  const isAllSelected = useMemo(
-    () =>
-      allSelectable.length > 0 && selectedItems.size === allSelectable.length,
-    [allSelectable, selectedItems]
-  );
-
-  const handlePrintSelected = () => {
-    if (selectedItems.size === 0) return;
-    onPrint(selectedItems);
-    setSelectedItems(new Set());
-  };
-
-  const handlePrintSingle = (item: AccessoryItem) =>
-    onPrint(new Set([item.id]));
-
-  return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-      <div className="p-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between gap-4">
-        <h3 className="text-lg font-semibold text-gray-800">Accessory List</h3>
-        <div className="flex items-center gap-2">
-          <SimpleDropdownMenu
-            trigger={
-              <Button variant="outline" size="sm">
-                <Columns className="w-4 h-4 mr-2" />
-                Columns
-              </Button>
-            }
-          >
-            <div className="px-4 py-2 text-xs font-semibold text-gray-500">
-              TOGGLE COLUMNS
-            </div>
-            {ALL_COLUMNS.map((col) => (
-              <DropdownCheckboxItem
-                key={col.id}
-                checked={visibleColumns[col.id]}
-                onCheckedChange={(v) =>
-                  setVisibleColumns((p) => ({ ...p, [col.id]: v }))
-                }
-              >
-                {col.label}
-              </DropdownCheckboxItem>
-            ))}
-          </SimpleDropdownMenu>
-          <Button
-            size="sm"
-            onClick={handlePrintSelected}
-            disabled={selectedItems.size === 0}
-          >
-            <QrCode className="w-4 h-4 mr-2" />
-            Print QR for Selected ({selectedItems.size})
-          </Button>
-        </div>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th scope="col" className="p-4">
-                <Checkbox
-                  checked={isAllSelected}
-                  onCheckedChange={handleSelectAll}
-                />
-              </th>
-              {ALL_COLUMNS.map(
-                (col) =>
-                  visibleColumns[col.id] && (
-                    <th
-                      key={col.id}
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
-                    >
-                      {col.label}
-                    </th>
-                  )
-              )}
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {items.map((item) => (
-              <tr key={item.id} className="hover:bg-gray-50">
-                <td className="p-4">
-                  <Checkbox
-                    checked={selectedItems.has(item.id)}
-                    onCheckedChange={(c) => handleSelectItem(item.id, !!c)}
-                    disabled={item.printStatus !== "NOT_PRINTED"}
-                  />
-                </td>
-                {visibleColumns.poNumber && (
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {item.poNumber}
-                  </td>
-                )}
-                {visibleColumns.itemCode && (
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {item.itemCode}
-                  </td>
-                )}
-                {visibleColumns.supplier && (
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {item.supplier}
-                  </td>
-                )}
-                {visibleColumns.description && (
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {item.description}
-                  </td>
-                )}
-                {visibleColumns.color && (
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {item.color}
-                  </td>
-                )}
-                {visibleColumns.boxNo && (
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {item.boxNo}
-                  </td>
-                )}
-                {visibleColumns.lotNo && (
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {item.lotNo}
-                  </td>
-                )}
-                {visibleColumns.quantity && (
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {item.quantity}
-                  </td>
-                )}
-                {visibleColumns.unit && (
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {item.unit}
-                  </td>
-                )}
-                {visibleColumns.netWeightKgs && (
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {item.netWeightKgs}
-                  </td>
-                )}
-                {visibleColumns.size && (
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {item.size}
-                  </td>
-                )}
-                {visibleColumns.location && (
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {item.location}
-                  </td>
-                )}
-                {visibleColumns.qcCheck && (
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
-                    {item.qcCheck ? "Yes" : "No"}
-                  </td>
-                )}
-                {visibleColumns.printStatus && (
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <StatusBadge status={item.printStatus} />
-                  </td>
-                )}
-                {visibleColumns.action && (
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-center">
-                    <div className="flex items-center justify-center gap-2">
-                      {item.printStatus === "PRINTED" ? (
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => handlePrintSingle(item)}
-                        >
-                          <Undo2 className="w-4 h-4 mr-2" />
-                          Reprint
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handlePrintSingle(item)}
-                        >
-                          <QrCode className="w-4 h-4 mr-2" />
-                          Print
-                        </Button>
-                      )}
-                    </div>
-                  </td>
-                )}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-};
-
-const Pagination: FC<{
-  currentPage: number;
-  totalItems: number;
-  rowsPerPage: number;
-  onPageChange: (p: number) => void;
-  onRowsPerPageChange: (s: number) => void;
-}> = ({
-  currentPage,
-  totalItems,
-  rowsPerPage,
-  onPageChange,
-  onRowsPerPageChange,
-}) => {
-  const totalPages = Math.ceil(totalItems / rowsPerPage);
-  const startItem = totalItems === 0 ? 0 : (currentPage - 1) * rowsPerPage + 1;
-  const endItem = Math.min(currentPage * rowsPerPage, totalItems);
-  return (
-    <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6 rounded-b-lg">
-      <div className="flex-1 flex items-center">
-        <span className="text-sm text-gray-700 mr-2">Rows per page:</span>
-        <select
-          value={rowsPerPage}
-          onChange={(e) => onRowsPerPageChange(Number(e.target.value))}
-          className="p-1 border border-gray-300 rounded-md text-sm"
-        >
-          <option value="10">10</option>
-          <option value="20">20</option>
-          <option value="50">50</option>
-        </select>
-      </div>
-      <div className="flex-1 flex justify-end items-center">
-        <p className="text-sm text-gray-700 mr-4">
-          Showing {startItem} to {endItem} of {totalItems} results
-        </p>
         <div>
-          <button
-            onClick={() => onPageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-            className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 disabled:opacity-50"
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </button>
-          <span className="px-4 py-2 border-t border-b border-gray-300 bg-white text-sm">
-            Page {currentPage} of {totalPages}
-          </span>
-          <button
-            onClick={() => onPageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
-            className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 disabled:opacity-50"
-          >
-            <ChevronRight className="h-5 w-5" />
-          </button>
+          <Label htmlFor="print-status-filter" className="mb-1.5 block">
+            Print Status
+          </Label>
+          <Select>
+            <SelectTrigger id="print-status-filter">
+              <SelectValue placeholder="All Statuses" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="NOT_PRINTED">Not Printed</SelectItem>
+              <SelectItem value="PRINTED">Printed</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label htmlFor="qc-check-filter" className="mb-1.5 block">
+            QC Check
+          </Label>
+          <Select>
+            <SelectTrigger id="qc-check-filter">
+              <SelectValue placeholder="All" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="checked">Yes</SelectItem>
+              <SelectItem value="not-checked">No</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
-    </div>
-  );
-};
+      <div className="mt-4 flex justify-end">
+        <Button>
+          <Search className="w-4 h-4 mr-2" />
+          Search
+        </Button>
+      </div>
+    </CardContent>
+  </Card>
+);
 
 // --- MAIN PAGE COMPONENT ---
 
 const PackingListManagementPageAccessory = () => {
   const [items, setItems] = useState<AccessoryItem[]>(mockAccessoryItems);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-
-  const paginatedItems = useMemo(() => {
-    const startIndex = (currentPage - 1) * rowsPerPage;
-    return items.slice(startIndex, startIndex + rowsPerPage);
-  }, [items, currentPage, rowsPerPage]);
+  const [selectedItems, setSelectedItems] = useState<AccessoryItem[]>([]);
 
   const handlePrintItems = (itemIds: Set<string>) => {
     setItems((prevItems) =>
@@ -693,23 +251,92 @@ const PackingListManagementPageAccessory = () => {
       )
     );
     alert(`Print command sent for ${itemIds.size} accessory items.`);
+    setSelectedItems([]);
   };
+
+  const columns: ColumnDef<AccessoryItem>[] = useMemo(
+    () => [
+      { accessorKey: "poNumber", header: "PO Number" },
+      { accessorKey: "itemCode", header: "Item Code" },
+      { accessorKey: "description", header: "Description" },
+      { accessorKey: "color", header: "Color" },
+      { accessorKey: "boxNo", header: "Box No" },
+      { accessorKey: "lotNo", header: "Lot No" },
+      { accessorKey: "quantity", header: "Quantity" },
+      { accessorKey: "unit", header: "Unit" },
+      {
+        accessorKey: "qcCheck",
+        header: "QC Check",
+        cell: ({ row }) => (row.original.qcCheck ? "Yes" : "No"),
+      },
+      {
+        accessorKey: "printStatus",
+        header: "Print Status",
+        cell: ({ row }) => <StatusBadge status={row.original.printStatus} />,
+      },
+      {
+        id: "actions",
+        header: "Actions",
+        cell: ({ row }) => {
+          const item = row.original;
+          const handlePrintSingle = () => handlePrintItems(new Set([item.id]));
+
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="h-8 w-8 p-0">
+                  <span className="sr-only">Open menu</span>
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {item.printStatus === "PRINTED" ? (
+                  <DropdownMenuItem onClick={handlePrintSingle}>
+                    <Undo2 className="w-4 h-4 mr-2" />
+                    Reprint
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem onClick={handlePrintSingle}>
+                    <QrCode className="w-4 h-4 mr-2" />
+                    Print
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          );
+        },
+      },
+    ],
+    []
+  );
 
   return (
     <div className="p-4 md:p-6 lg:p-8 bg-gray-50 min-h-full">
       <PageHeader />
       <PackingListFilters />
-      <PackingListTable items={paginatedItems} onPrint={handlePrintItems} />
-      <Pagination
-        currentPage={currentPage}
-        totalItems={items.length}
-        rowsPerPage={rowsPerPage}
-        onPageChange={setCurrentPage}
-        onRowsPerPageChange={(size) => {
-          setRowsPerPage(size);
-          setCurrentPage(1);
-        }}
-      />
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <CardTitle>Accessory List</CardTitle>
+            <Button
+              onClick={() =>
+                handlePrintItems(new Set(selectedItems.map((i) => i.id)))
+              }
+              disabled={selectedItems.length === 0}
+            >
+              <QrCode className="w-4 h-4 mr-2" />
+              Print QR for Selected ({selectedItems.length})
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <CustomTable
+            data={items}
+            columns={columns}
+            onSelectionChange={setSelectedItems}
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 };
