@@ -1,7 +1,35 @@
+// src/pages/PackingPlanReportPage.tsx
+
 import { Search, Filter, RefreshCw } from "lucide-react";
+import { type ColumnDef } from "@tanstack/react-table";
+
+import { CustomTable } from "@/components/ui/custom-table";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+
+// Data type definition
+type PackingPlan = {
+  id: string;
+  customer: string;
+  style: string;
+  totalQty: number;
+  packedQty: number;
+  status: "Completed" | "In Progress" | "New";
+  date: string;
+};
 
 // Mock data
-const packingPlans = [
+const packingPlans: PackingPlan[] = [
   {
     id: "PO77881",
     customer: "Adidas",
@@ -49,154 +77,144 @@ const packingPlans = [
   },
 ];
 
-const statusColors: { [key: string]: string } = {
-  Completed: "bg-green-100 text-green-800",
-  "In Progress": "bg-blue-100 text-blue-800",
-  New: "bg-yellow-100 text-yellow-800",
+const getStatusBadgeClass = (status: PackingPlan["status"]) => {
+  switch (status) {
+    case "Completed":
+      return "bg-green-100 text-green-800 hover:bg-green-100";
+    case "In Progress":
+      return "bg-blue-100 text-blue-800 hover:bg-blue-100";
+    case "New":
+      return "bg-yellow-100 text-yellow-800 hover:bg-yellow-100";
+    default:
+      return "bg-gray-100 text-gray-800 hover:bg-gray-100";
+  }
 };
+
+const columns: ColumnDef<PackingPlan>[] = [
+  { accessorKey: "id", header: "PO Number" },
+  { accessorKey: "customer", header: "Customer" },
+  { accessorKey: "style", header: "Style" },
+  {
+    accessorKey: "totalQty",
+    header: "Total Qty",
+    cell: ({ row }) => (
+      <div className="text-right">{row.original.totalQty.toLocaleString()}</div>
+    ),
+  },
+  {
+    accessorKey: "packedQty",
+    header: "Packed Qty",
+    cell: ({ row }) => (
+      <div className="text-right">
+        {row.original.packedQty.toLocaleString()}
+      </div>
+    ),
+  },
+  {
+    id: "progress",
+    header: "Progress",
+    cell: ({ row }) => {
+      const { totalQty, packedQty } = row.original;
+      const progress = totalQty > 0 ? (packedQty / totalQty) * 100 : 0;
+      return (
+        <div className="flex flex-col items-center">
+          <Progress value={progress} className="w-full h-2.5" />
+          <p className="text-xs text-center mt-1 text-muted-foreground">
+            {progress.toFixed(0)}%
+          </p>
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row }) => (
+      <Badge className={getStatusBadgeClass(row.original.status)}>
+        {row.original.status}
+      </Badge>
+    ),
+  },
+  { accessorKey: "date", header: "Creation Date" },
+  {
+    id: "actions",
+    header: "Actions",
+    cell: () => (
+      <Button variant="link" className="p-0 h-auto">
+        View Details
+      </Button>
+    ),
+  },
+];
 
 const PackingPlanReportPage = () => {
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <h1 className="text-3xl font-bold text-gray-800">
-          Packing Plan Report
-        </h1>
-        <button className="bg-blue-600 text-white font-bold py-2 px-4 rounded-md hover:bg-blue-700 transition-colors shadow-sm">
-          Create Final Plan Load
-        </button>
+        <h1 className="text-3xl font-bold">Packing Plan Report</h1>
+        <Button>Create Final Plan Load</Button>
       </div>
 
-      {/* Filters Card */}
-      <div className="bg-white p-4 rounded-lg shadow-md border border-gray-200">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search by PO..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+      <Card>
+        <CardContent className="p-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Search by PO..."
+                className="pl-10"
+              />
+            </div>
+            <Select>
+              <SelectTrigger>
+                <SelectValue placeholder="All Customers" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Customers</SelectItem>
+                <SelectItem value="adidas">Adidas</SelectItem>
+                <SelectItem value="puma">Puma</SelectItem>
+                <SelectItem value="nike">Nike</SelectItem>
+              </SelectContent>
+            </Select>
+            <Input type="date" />
+            <Select>
+              <SelectTrigger>
+                <SelectValue placeholder="All Statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="new">New</SelectItem>
+                <SelectItem value="in-progress">In Progress</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="flex gap-2">
+              <Button className="flex-1 flex items-center justify-center gap-2">
+                <Filter className="w-4 h-4" />
+                <span>Apply</span>
+              </Button>
+              <Button
+                variant="secondary"
+                className="flex-1 flex items-center justify-center gap-2"
+              >
+                <RefreshCw className="w-4 h-4" />
+                <span>Clear</span>
+              </Button>
+            </div>
           </div>
-          <select className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <option>All Customers</option>
-            <option>Adidas</option>
-            <option>Puma</option>
-            <option>Nike</option>
-          </select>
-          <input
-            type="date"
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="p-0">
+          <CustomTable
+            columns={columns}
+            data={packingPlans}
+            showCheckbox={false}
           />
-          <select className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <option>All Statuses</option>
-            <option>New</option>
-            <option>In Progress</option>
-            <option>Completed</option>
-          </select>
-          <div className="flex gap-2">
-            <button className="flex-1 flex items-center justify-center gap-2 bg-blue-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-600 transition-colors">
-              <Filter className="w-4 h-4" />
-              <span>Apply</span>
-            </button>
-            <button className="flex-1 flex items-center justify-center gap-2 bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-md hover:bg-gray-300 transition-colors">
-              <RefreshCw className="w-4 h-4" />
-              <span>Clear</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Table Card */}
-      <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left text-gray-600">
-            <thead className="text-xs text-gray-700 uppercase bg-gray-50">
-              <tr>
-                <th scope="col" className="px-6 py-3">
-                  PO Number
-                </th>
-                <th scope="col" className="px-6 py-3">
-                  Customer
-                </th>
-                <th scope="col" className="px-6 py-3">
-                  Style
-                </th>
-                <th scope="col" className="px-6 py-3 text-right">
-                  Total Qty
-                </th>
-                <th scope="col" className="px-6 py-3 text-right">
-                  Packed Qty
-                </th>
-                <th scope="col" className="px-6 py-3">
-                  Progress
-                </th>
-                <th scope="col" className="px-6 py-3">
-                  Status
-                </th>
-                <th scope="col" className="px-6 py-3">
-                  Creation Date
-                </th>
-                <th scope="col" className="px-6 py-3">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {packingPlans.map((plan) => {
-                const progress =
-                  plan.totalQty > 0
-                    ? (plan.packedQty / plan.totalQty) * 100
-                    : 0;
-                return (
-                  <tr
-                    key={plan.id}
-                    className="bg-white border-b hover:bg-gray-50"
-                  >
-                    <td className="px-6 py-4 font-medium text-gray-900">
-                      {plan.id}
-                    </td>
-                    <td className="px-6 py-4">{plan.customer}</td>
-                    <td className="px-6 py-4">{plan.style}</td>
-                    <td className="px-6 py-4 text-right">
-                      {plan.totalQty.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      {plan.packedQty.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="w-full bg-gray-200 rounded-full h-2.5">
-                        <div
-                          className="bg-blue-600 h-2.5 rounded-full"
-                          style={{ width: `${progress}%` }}
-                        ></div>
-                      </div>
-                      <p className="text-xs text-center mt-1 text-gray-500">
-                        {progress.toFixed(0)}%
-                      </p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`px-2 py-1 text-xs font-medium rounded-full ${
-                          statusColors[plan.status]
-                        }`}
-                      >
-                        {plan.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">{plan.date}</td>
-                    <td className="px-6 py-4">
-                      <button className="font-medium text-blue-600 hover:underline">
-                        View Details
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

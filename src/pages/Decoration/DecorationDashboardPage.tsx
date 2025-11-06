@@ -1,6 +1,6 @@
 // src/pages/DecorationDashboardPage/DecorationDashboardPage.tsx
 
-import React from "react"; // Quan trọng: Cần import React để dùng React.ElementType
+import React from "react";
 import {
   BarChart3,
   Zap,
@@ -10,34 +10,45 @@ import {
   TrendingDown,
   Target,
 } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 
-// --- PHẦN SỬA LỖI ---
-// 1. Định nghĩa một interface để mô tả các props cho KPICard
+// --- TYPE DEFINITIONS ---
 interface KPICardProps {
   title: string;
   value: string;
   change: string;
   changeType: "increase" | "decrease";
-  icon: React.ElementType; // Kiểu dữ liệu cho một component
+  icon: React.ElementType;
   color: string;
 }
-// --- KẾT THÚC PHẦN SỬA LỖI ---
 
-// 2. Áp dụng interface đã định nghĩa vào component
+// --- UI COMPONENTS ---
 const KPICard = ({
   title,
   value,
   change,
   changeType,
-  icon: Icon, // bạn vẫn có thể đổi tên prop 'icon' thành 'Icon' để dùng trong component
+  icon: Icon,
   color,
 }: KPICardProps) => (
-  <div className="bg-white p-6 rounded-xl shadow-md flex items-start justify-between">
-    <div>
-      <p className="text-sm font-medium text-gray-500">{title}</p>
-      <p className="text-3xl font-bold text-gray-800 mt-1">{value}</p>
-      <div
-        className={`flex items-center text-sm mt-2 ${
+  <Card>
+    <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
+      <CardTitle className="text-sm font-medium">{title}</CardTitle>
+      <div className={`p-3 rounded-full ${color}`}>
+        <Icon className="h-6 w-6 text-white" />
+      </div>
+    </CardHeader>
+    <CardContent>
+      <div className="text-3xl font-bold">{value}</div>
+      <p
+        className={`flex items-center text-sm mt-2 text-muted-foreground ${
           changeType === "increase" ? "text-green-600" : "text-red-600"
         }`}
       >
@@ -47,24 +58,9 @@ const KPICard = ({
           <TrendingDown size={16} className="mr-1" />
         )}
         <span>{change} vs last week</span>
-      </div>
-    </div>
-    <div className={`p-3 rounded-full ${color}`}>
-      <Icon className="h-6 w-6 text-white" />
-    </div>
-  </div>
-);
-
-// Giả lập component biểu đồ
-const MockBarChart = () => (
-  <div className="w-full h-80 bg-gray-100 rounded-lg flex items-center justify-center">
-    <p className="text-gray-500">Bar Chart Placeholder</p>
-  </div>
-);
-const MockPieChart = () => (
-  <div className="w-full h-80 bg-gray-100 rounded-lg flex items-center justify-center">
-    <p className="text-gray-500">Pie Chart Placeholder</p>
-  </div>
+      </p>
+    </CardContent>
+  </Card>
 );
 
 const DecorationDashboardPage = () => {
@@ -108,33 +104,17 @@ const DecorationDashboardPage = () => {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {/* Main charts */}
-        <div className="lg:col-span-3 bg-white p-6 rounded-xl shadow-md">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">
-            Output by Process (Today)
-          </h2>
-          <MockBarChart />
-        </div>
-        <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-md">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">
-            Machine Status
-          </h2>
-          <MockPieChart />
-        </div>
-      </div>
-
       {/* Target vs Actual */}
-      <div className="bg-white p-6 rounded-xl shadow-md">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-gray-800">
-            Daily Target vs Actual
-          </h2>
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <Target size={16} /> Overall Target: 85,000 pcs
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <CardTitle className="text-xl">Daily Target vs Actual</CardTitle>
+            <CardDescription className="flex items-center gap-2 text-sm">
+              <Target size={16} /> Overall Target: 85,000 pcs
+            </CardDescription>
           </div>
-        </div>
-        <div className="space-y-4">
+        </CardHeader>
+        <CardContent className="space-y-4">
           {["Heat Press", "Embroidery", "Pad-Print", "Bonding"].map(
             (process) => {
               const percentage = Math.floor(Math.random() * (95 - 70 + 1) + 70); // Random 70-95%
@@ -144,18 +124,13 @@ const DecorationDashboardPage = () => {
                     <span>{process}</span>
                     <span>{percentage}%</span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2.5">
-                    <div
-                      className="bg-blue-600 h-2.5 rounded-full"
-                      style={{ width: `${percentage}%` }}
-                    ></div>
-                  </div>
+                  <Progress value={percentage} className="h-2.5" />
                 </div>
               );
             }
           )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

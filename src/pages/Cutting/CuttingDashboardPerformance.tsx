@@ -1,16 +1,42 @@
 // Path: src/pages/cutting-dashboard-performance/CuttingDashboardPerformance.tsx
 import React, { useMemo } from "react";
-import ReactECharts from "echarts-for-react";
+import { Scissors, AlertTriangle, Clock, TrendingUp } from "lucide-react";
+import { ColumnDef } from "@tanstack/react-table";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Scissors,
-  AlertTriangle,
-  Clock,
-  TrendingUp,
-  ChevronDown,
-} from "lucide-react";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Badge } from "@/components/ui/badge";
+import { CustomTable } from "@/components/ui/custom-table";
+
+// --- Mock Data Type ---
+type CuttingJob = {
+  jobNo: string;
+  style: string;
+  color: string;
+  totalRequiredQty: number;
+  requiredCompletionDate: string;
+  actualCutQty: number;
+  completionRate: number;
+  status: string;
+  actualCuttingTime: number;
+  downtime: number;
+  fabricUtilizationRate: number | null;
+  targetUtilization: number;
+  utilizationVariance: number | null;
+  defectRecutQty: number;
+  machine: string;
+  worker: string;
+};
 
 // --- Mock Data ---
-const cuttingData = [
+const cuttingData: CuttingJob[] = [
   {
     jobNo: "SOAD2510113/1",
     style: "L JACKET",
@@ -48,96 +74,6 @@ const cuttingData = [
     worker: "Jane Smith",
   },
   {
-    jobNo: "SOAD2510114/1",
-    style: "KIDS TEE",
-    color: "RED",
-    totalRequiredQty: 650,
-    requiredCompletionDate: "5/12/2025",
-    actualCutQty: 0,
-    completionRate: 0,
-    status: "Waiting for Fabric",
-    actualCuttingTime: 0,
-    downtime: 0,
-    fabricUtilizationRate: null,
-    targetUtilization: 95.0,
-    utilizationVariance: null,
-    defectRecutQty: 0,
-    machine: "Cutter 01",
-    worker: "John Doe",
-  },
-  {
-    jobNo: "SOTSM2503115/1",
-    style: "SAMPLE SHOE",
-    color: "GREY",
-    totalRequiredQty: 15,
-    requiredCompletionDate: "25/11/2025",
-    actualCutQty: 15,
-    completionRate: 100,
-    status: "Completed",
-    actualCuttingTime: 45,
-    downtime: 5,
-    fabricUtilizationRate: 85.0,
-    targetUtilization: 86.0,
-    utilizationVariance: -1.0,
-    defectRecutQty: 0,
-    machine: "Cutter 03",
-    worker: "Peter Jones",
-  },
-  {
-    jobNo: "SOAD2510116/1",
-    style: "TRACKPANTS",
-    color: "NAVY",
-    totalRequiredQty: 12050,
-    requiredCompletionDate: "10/1/2026",
-    actualCutQty: 5000,
-    completionRate: 41.5,
-    status: "Cutting in Progress",
-    actualCuttingTime: 2100,
-    downtime: 250,
-    fabricUtilizationRate: 94.5,
-    targetUtilization: 94.0,
-    utilizationVariance: 0.5,
-    defectRecutQty: 120,
-    machine: "Cutter 01",
-    worker: "John Doe",
-  },
-  {
-    jobNo: "SOAD2510120/1",
-    style: "WMNS TEE",
-    color: "PINK",
-    totalRequiredQty: 5500,
-    requiredCompletionDate: "20/12/2025",
-    actualCutQty: 5500,
-    completionRate: 100,
-    status: "Completed",
-    actualCuttingTime: 1400,
-    downtime: 80,
-    fabricUtilizationRate: 96.2,
-    targetUtilization: 96.0,
-    utilizationVariance: 0.2,
-    defectRecutQty: 20,
-    machine: "Cutter 02",
-    worker: "Jane Smith",
-  },
-  {
-    jobNo: "SOAD2510121/1",
-    style: "MENS SHIRT",
-    color: "YELLOW",
-    totalRequiredQty: 9800,
-    requiredCompletionDate: "25/01/2026",
-    actualCutQty: 1500,
-    completionRate: 15.3,
-    status: "Cutting in Progress",
-    actualCuttingTime: 650,
-    downtime: 50,
-    fabricUtilizationRate: 91.0,
-    targetUtilization: 92.0,
-    utilizationVariance: -1.0,
-    defectRecutQty: 85,
-    machine: "Cutter 03",
-    worker: "Sam Wilson",
-  },
-  {
     jobNo: "SORB2510122/1",
     style: "MENS SHORTS",
     color: "ORANGE",
@@ -155,213 +91,38 @@ const cuttingData = [
     machine: "Cutter 02",
     worker: "Jane Smith",
   },
-  {
-    jobNo: "SOPU2510123/1",
-    style: "KIDS JACKET",
-    color: "PURPLE",
-    totalRequiredQty: 3200,
-    requiredCompletionDate: "10/12/2025",
-    actualCutQty: 0,
-    completionRate: 0,
-    status: "Waiting for Setup",
-    actualCuttingTime: 0,
-    downtime: 0,
-    fabricUtilizationRate: null,
-    targetUtilization: 90.0,
-    utilizationVariance: null,
-    defectRecutQty: 0,
-    machine: "Cutter 01",
-    worker: "Sam Wilson",
-  },
-  {
-    jobNo: "SOTSM2510124/1",
-    style: "UNISEX SCARF",
-    color: "GREEN",
-    totalRequiredQty: 15000,
-    requiredCompletionDate: "28/01/2026",
-    actualCutQty: 0,
-    completionRate: 0,
-    status: "Planned",
-    actualCuttingTime: 0,
-    downtime: 0,
-    fabricUtilizationRate: null,
-    targetUtilization: 88.0,
-    utilizationVariance: null,
-    defectRecutQty: 0,
-    machine: "Cutter 03",
-    worker: "Peter Jones",
-  },
 ];
 
 type KpiCardProps = {
   title: string;
   value: string;
   icon: React.ElementType;
-  color: string;
+  iconBgColor: string;
 };
 
 const KpiCard: React.FC<KpiCardProps> = ({
   title,
   value,
   icon: Icon,
-  color,
+  iconBgColor,
 }) => (
-  <div className="bg-white p-6 rounded-lg shadow-md flex items-center">
-    <div
-      className={`p-3 rounded-full mr-4`}
-      style={{ backgroundColor: `${color}20` }}
-    >
-      <Icon className="h-7 w-7" style={{ color: color }} />
-    </div>
-    <div>
-      <p className="text-sm text-gray-500 font-medium">{title}</p>
-      <p className="text-2xl font-bold text-gray-800">{value}</p>
-    </div>
-  </div>
+  <Card>
+    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardTitle className="text-sm font-medium">{title}</CardTitle>
+      <div
+        className={`p-2 rounded-full`}
+        style={{ backgroundColor: `${iconBgColor}20` }}
+      >
+        <Icon className="h-5 w-5" style={{ color: iconBgColor }} />
+      </div>
+    </CardHeader>
+    <CardContent>
+      <div className="text-2xl font-bold">{value}</div>
+    </CardContent>
+  </Card>
 );
 
-const getStatusClass = (status: string) => {
-  switch (status) {
-    case "Completed":
-      return "bg-green-100 text-green-800";
-    case "Cutting in Progress":
-      return "bg-blue-100 text-blue-800";
-    case "Urgent Cut":
-      return "bg-red-100 text-red-800 font-semibold";
-    case "Waiting for Fabric":
-    case "Waiting for Setup":
-      return "bg-yellow-100 text-yellow-800";
-    case "Planned":
-      return "bg-gray-100 text-gray-800";
-    default:
-      return "bg-gray-200 text-gray-800";
-  }
-};
-
 const CuttingDashboardPerformance: React.FC = () => {
-  // --- Chart Options ---
-  const dailyPerformanceOptions = useMemo(
-    () => ({
-      tooltip: { trigger: "axis" },
-      legend: { data: ["Required QTY", "Actual Cut QTY"] },
-      xAxis: {
-        type: "category",
-        data: cuttingData.map((d) => d.jobNo.split("/")[0]),
-      },
-      yAxis: { type: "value" },
-      series: [
-        {
-          name: "Required QTY",
-          type: "bar",
-          data: cuttingData.map((d) => d.totalRequiredQty),
-          itemStyle: { color: "#a0aec0" },
-        },
-        {
-          name: "Actual Cut QTY",
-          type: "bar",
-          data: cuttingData.map((d) => d.actualCutQty),
-          itemStyle: { color: "#4299e1" },
-        },
-      ],
-    }),
-    []
-  );
-
-  const machinePerformanceOptions = useMemo(
-    () => ({
-      tooltip: { trigger: "axis" },
-      legend: { data: ["Cutting Time (Mins)", "Downtime (Mins)"] },
-      xAxis: {
-        type: "category",
-        data: ["Cutter 01", "Cutter 02", "Cutter 03"],
-      },
-      yAxis: { type: "value" },
-      series: [
-        {
-          name: "Cutting Time (Mins)",
-          type: "bar",
-          stack: "total",
-          data: [5600, 4750, 695],
-          itemStyle: { color: "#48bb78" },
-        },
-        {
-          name: "Downtime (Mins)",
-          type: "bar",
-          stack: "total",
-          data: [400, 480, 55],
-          itemStyle: { color: "#f56565" },
-        },
-      ],
-    }),
-    []
-  );
-
-  const fabricUtilizationOptions = useMemo(
-    () => ({
-      tooltip: { trigger: "axis" },
-      legend: { data: ["Utilization Rate", "Target Rate"] },
-      xAxis: {
-        type: "category",
-        data: cuttingData
-          .filter((d) => d.fabricUtilizationRate !== null)
-          .map((d) => d.jobNo),
-      },
-      yAxis: { type: "value", axisLabel: { formatter: "{value}%" } },
-      series: [
-        {
-          name: "Utilization Rate",
-          type: "line",
-          data: cuttingData
-            .filter((d) => d.fabricUtilizationRate !== null)
-            .map((d) => d.fabricUtilizationRate),
-          smooth: true,
-          itemStyle: { color: "#38b2ac" },
-        },
-        {
-          name: "Target Rate",
-          type: "line",
-          data: cuttingData
-            .filter((d) => d.fabricUtilizationRate !== null)
-            .map((d) => d.targetUtilization),
-          smooth: true,
-          lineStyle: { type: "dashed" },
-          itemStyle: { color: "#f6ad55" },
-        },
-      ],
-    }),
-    []
-  );
-
-  const completionStatusOptions = useMemo(() => {
-    const statusCounts = cuttingData.reduce((acc, curr) => {
-      acc[curr.status] = (acc[curr.status] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
-    return {
-      tooltip: { trigger: "item" },
-      legend: { orient: "vertical", left: "left" },
-      series: [
-        {
-          name: "Job Status",
-          type: "pie",
-          radius: "50%",
-          data: Object.entries(statusCounts).map(([name, value]) => ({
-            value,
-            name,
-          })),
-          emphasis: {
-            itemStyle: {
-              shadowBlur: 10,
-              shadowOffsetX: 0,
-              shadowColor: "rgba(0, 0, 0, 0.5)",
-            },
-          },
-        },
-      ],
-    };
-  }, []);
-
   const totalCutQty = useMemo(
     () => cuttingData.reduce((sum, item) => sum + item.actualCutQty, 0),
     []
@@ -386,47 +147,128 @@ const CuttingDashboardPerformance: React.FC = () => {
     return (totalUtilization / itemsWithUtilization.length).toFixed(2);
   }, []);
 
+  const columns: ColumnDef<CuttingJob>[] = [
+    { accessorKey: "jobNo", header: "JOB NO" },
+    { accessorKey: "style", header: "Style" },
+    { accessorKey: "color", header: "Color" },
+    {
+      accessorKey: "totalRequiredQty",
+      header: "Required QTY",
+      cell: ({ row }) => (
+        <div className="text-right">
+          {row.original.totalRequiredQty.toLocaleString()}
+        </div>
+      ),
+    },
+    {
+      accessorKey: "actualCutQty",
+      header: "Actual Cut QTY",
+      cell: ({ row }) => (
+        <div className="text-right">
+          {row.original.actualCutQty.toLocaleString()}
+        </div>
+      ),
+    },
+    {
+      accessorKey: "completionRate",
+      header: "Completion Rate",
+      cell: ({ row }) => (
+        <div className="text-right font-semibold">
+          {row.original.completionRate.toFixed(2)}%
+        </div>
+      ),
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => {
+        const status = row.original.status;
+        let variant: "default" | "secondary" | "destructive" | "outline" =
+          "outline";
+        if (status === "Completed") variant = "default";
+        if (status === "Cutting in Progress") variant = "secondary";
+        if (status === "Urgent Cut") variant = "destructive";
+        return <Badge variant={variant}>{status}</Badge>;
+      },
+    },
+    {
+      accessorKey: "actualCuttingTime",
+      header: "Cutting Time (Mins)",
+      cell: ({ row }) => (
+        <div className="text-right">
+          {row.original.actualCuttingTime.toLocaleString()}
+        </div>
+      ),
+    },
+    {
+      accessorKey: "downtime",
+      header: "Downtime (Mins)",
+      cell: ({ row }) => (
+        <div className="text-right">
+          {row.original.downtime.toLocaleString()}
+        </div>
+      ),
+    },
+    {
+      accessorKey: "fabricUtilizationRate",
+      header: "Fabric Utilization",
+      cell: ({ row }) => (
+        <div className="text-right">
+          {row.original.fabricUtilizationRate !== null
+            ? `${row.original.fabricUtilizationRate.toFixed(2)}%`
+            : "N/A"}
+        </div>
+      ),
+    },
+    {
+      accessorKey: "defectRecutQty",
+      header: "Defect/Recut QTY",
+      cell: ({ row }) => (
+        <div className="text-right">
+          {row.original.defectRecutQty.toLocaleString()}
+        </div>
+      ),
+    },
+  ];
+
   return (
     <div className="space-y-6">
       {/* Header and Filters */}
       <div className="flex flex-wrap justify-between items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">
-            Cutting Performance Dashboard
-          </h1>
-          <p className="text-gray-500 mt-1">
+          <h1 className="text-3xl font-bold">Cutting Performance Dashboard</h1>
+          <p className="text-muted-foreground mt-1">
             Real-time overview of cutting floor efficiency and status.
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex bg-white rounded-md shadow-sm">
-            <button className="px-4 py-2 text-sm font-semibold text-white bg-gray-800 rounded-l-md focus:outline-none">
-              Daily
-            </button>
-            <button className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 focus:outline-none">
-              Weekly
-            </button>
-          </div>
-
-          <div className="relative">
-            <select className="appearance-none w-full bg-white border border-gray-300 text-gray-600 py-2 pl-4 pr-8 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-800">
-              <option>All Machines</option>
-              <option>Cutter 01</option>
-              <option>Cutter 02</option>
-              <option>Cutter 03</option>
-            </select>
-            <ChevronDown className="w-5 h-5 text-gray-400 absolute top-1/2 right-3 -translate-y-1/2 pointer-events-none" />
-          </div>
-          <div className="relative">
-            <select className="appearance-none w-full bg-white border border-gray-300 text-gray-600 py-2 pl-4 pr-8 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-800">
-              <option>All Workers</option>
-              <option>John Doe</option>
-              <option>Jane Smith</option>
-              <option>Peter Jones</option>
-              <option>Sam Wilson</option>
-            </select>
-            <ChevronDown className="w-5 h-5 text-gray-400 absolute top-1/2 right-3 -translate-y-1/2 pointer-events-none" />
-          </div>
+          <ToggleGroup type="single" defaultValue="daily" variant="outline">
+            <ToggleGroupItem value="daily">Daily</ToggleGroupItem>
+            <ToggleGroupItem value="weekly">Weekly</ToggleGroupItem>
+          </ToggleGroup>
+          <Select>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All Machines" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Machines</SelectItem>
+              <SelectItem value="cutter-01">Cutter 01</SelectItem>
+              <SelectItem value="cutter-02">Cutter 02</SelectItem>
+              <SelectItem value="cutter-03">Cutter 03</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All Workers" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Workers</SelectItem>
+              <SelectItem value="john-doe">John Doe</SelectItem>
+              <SelectItem value="jane-smith">Jane Smith</SelectItem>
+              <SelectItem value="peter-jones">Peter Jones</SelectItem>
+              <SelectItem value="sam-wilson">Sam Wilson</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -436,160 +278,41 @@ const CuttingDashboardPerformance: React.FC = () => {
           title="Total Cut Quantity (PCS)"
           value={totalCutQty.toLocaleString()}
           icon={Scissors}
-          color="#4299e1"
+          iconBgColor="#4299e1"
         />
         <KpiCard
           title="Defect / Recut QTY (PCS)"
           value={totalDefects.toLocaleString()}
           icon={AlertTriangle}
-          color="#f56565"
+          iconBgColor="#f56565"
         />
         <KpiCard
           title="Total Downtime (Mins)"
           value={totalDowntime.toLocaleString()}
           icon={Clock}
-          color="#f6ad55"
+          iconBgColor="#f6ad55"
         />
         <KpiCard
           title="Avg. Fabric Utilization"
           value={`${avgUtilization}%`}
           icon={TrendingUp}
-          color="#48bb78"
+          iconBgColor="#48bb78"
         />
       </div>
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="font-bold text-lg text-gray-700">
-            Daily Cutting Performance
-          </h3>
-          <ReactECharts
-            option={dailyPerformanceOptions}
-            style={{ height: 350 }}
-          />
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="font-bold text-lg text-gray-700">
-            Machine Performance (Time)
-          </h3>
-          <ReactECharts
-            option={machinePerformanceOptions}
-            style={{ height: 350 }}
-          />
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="font-bold text-lg text-gray-700">
-            Fabric Utilization Rate (%)
-          </h3>
-          <ReactECharts
-            option={fabricUtilizationOptions}
-            style={{ height: 350 }}
-          />
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="font-bold text-lg text-gray-700">
-            Job Completion Status
-          </h3>
-          <ReactECharts
-            option={completionStatusOptions}
-            style={{ height: 350 }}
-          />
-        </div>
-      </div>
-
       {/* Data Table */}
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="p-6">
-          <h3 className="font-bold text-lg text-gray-700">
-            Cutting Job Details
-          </h3>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left text-gray-500">
-            <thead className="text-xs text-gray-700 uppercase bg-gray-50">
-              <tr>
-                <th scope="col" className="px-6 py-3">
-                  JOB NO
-                </th>
-                <th scope="col" className="px-6 py-3">
-                  Style
-                </th>
-                <th scope="col" className="px-6 py-3">
-                  Color
-                </th>
-                <th scope="col" className="px-6 py-3 text-right">
-                  Required QTY
-                </th>
-                <th scope="col" className="px-6 py-3 text-right">
-                  Actual Cut QTY
-                </th>
-                <th scope="col" className="px-6 py-3 text-right">
-                  Completion Rate
-                </th>
-                <th scope="col" className="px-6 py-3">
-                  Status
-                </th>
-                <th scope="col" className="px-6 py-3 text-right">
-                  Cutting Time (Mins)
-                </th>
-                <th scope="col" className="px-6 py-3 text-right">
-                  Downtime (Mins)
-                </th>
-                <th scope="col" className="px-6 py-3 text-right">
-                  Fabric Utilization
-                </th>
-                <th scope="col" className="px-6 py-3 text-right">
-                  Defect/Recut QTY
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {cuttingData.map((job, index) => (
-                <tr key={index} className="bg-white border-b hover:bg-gray-50">
-                  <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">
-                    {job.jobNo}
-                  </td>
-                  <td className="px-6 py-4">{job.style}</td>
-                  <td className="px-6 py-4">{job.color}</td>
-                  <td className="px-6 py-4 text-right">
-                    {job.totalRequiredQty.toLocaleString()}
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    {job.actualCutQty.toLocaleString()}
-                  </td>
-                  <td className="px-6 py-4 text-right font-semibold">
-                    {job.completionRate.toFixed(2)}%
-                  </td>
-                  <td className="px-6 py-4">
-                    <span
-                      className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusClass(
-                        job.status
-                      )}`}
-                    >
-                      {job.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    {job.actualCuttingTime.toLocaleString()}
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    {job.downtime.toLocaleString()}
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    {job.fabricUtilizationRate !== null
-                      ? `${job.fabricUtilizationRate.toFixed(2)}%`
-                      : "N/A"}
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    {job.defectRecutQty.toLocaleString()}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Cutting Job Details</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <CustomTable
+            columns={columns}
+            data={cuttingData}
+            showCheckbox={false}
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 };

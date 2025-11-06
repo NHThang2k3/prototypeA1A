@@ -3,6 +3,24 @@
 import { useState } from "react";
 import { Zap, Pause, CheckCircle } from "lucide-react";
 
+// UI Components
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+
 const jobs = [
   {
     id: 1,
@@ -45,58 +63,59 @@ const WorkPlanPage = () => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-10rem)]">
       {/* Left Panel: Job List */}
-      <div className="lg:col-span-1 bg-white rounded-lg shadow p-4 flex flex-col">
-        <div className="mb-4">
-          <h2 className="text-xl font-bold text-gray-800">Daily Work Plan</h2>
-          <select className="w-full mt-2 p-2 border border-gray-300 rounded-md">
-            <option>Heat Press M/C #1</option>
-            <option>Embroidery M/C #5</option>
-            <option>Bonding Station #2</option>
-          </select>
-        </div>
-        <div className="flex-grow overflow-y-auto space-y-3 pr-2">
+      <Card className="lg:col-span-1 flex flex-col">
+        <CardHeader>
+          <CardTitle>Daily Work Plan</CardTitle>
+          <Select defaultValue="machine-1">
+            <SelectTrigger>
+              <SelectValue placeholder="Select a machine..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="machine-1">Heat Press M/C #1</SelectItem>
+              <SelectItem value="machine-2">Embroidery M/C #5</SelectItem>
+              <SelectItem value="machine-3">Bonding Station #2</SelectItem>
+            </SelectContent>
+          </Select>
+        </CardHeader>
+        <CardContent className="flex-grow overflow-y-auto space-y-3 pr-2">
           {jobs.map((job) => (
             <div
               key={job.id}
               onClick={() => setSelectedJob(job)}
-              className={`p-4 rounded-lg cursor-pointer border-2 ${
+              className={`p-4 rounded-lg cursor-pointer border-2 transition-colors ${
                 selectedJob.id === job.id
-                  ? "border-blue-500 bg-blue-50"
-                  : "border-gray-200 bg-white hover:bg-gray-50"
+                  ? "border-primary bg-primary-foreground"
+                  : "border-border bg-card hover:bg-muted"
               }`}
             >
               <div className="flex justify-between items-center">
-                <p className="font-bold text-gray-800">
+                <p className="font-bold text-card-foreground">
                   {job.po}{" "}
-                  <span className="font-normal text-gray-500">
+                  <span className="font-normal text-muted-foreground">
                     ({job.style})
                   </span>
                 </p>
-                <span
-                  className={`px-2 py-1 text-xs rounded-full ${
-                    job.status === "New"
-                      ? "bg-green-100 text-green-800"
-                      : "bg-gray-100 text-gray-800"
-                  }`}
-                >
+                <Badge variant={job.status === "New" ? "default" : "secondary"}>
                   {job.status}
-                </span>
+                </Badge>
               </div>
-              <p className="text-sm text-gray-600 mt-1">{job.decoration}</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                {job.decoration}
+              </p>
             </div>
           ))}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Right Panel: Job Details */}
-      <div className="lg:col-span-2 bg-white rounded-lg shadow p-6 flex flex-col">
+      <Card className="lg:col-span-2 flex flex-col">
         {selectedJob ? (
           <>
-            <div className="flex-grow">
+            <CardContent className="p-6 flex-grow">
               <h2 className="text-2xl font-bold text-gray-900">
                 {selectedJob.po} - {selectedJob.style}
               </h2>
-              <p className="text-md text-gray-500 mb-6">
+              <p className="text-md text-muted-foreground mb-6">
                 {selectedJob.decoration}
               </p>
 
@@ -142,26 +161,35 @@ const WorkPlanPage = () => {
                   </div>
                 </div>
               </div>
-            </div>
+            </CardContent>
 
-            <div className="mt-6 pt-6 border-t border-gray-200 grid grid-cols-3 gap-4">
-              <button className="flex items-center justify-center gap-2 w-full p-4 text-lg font-bold text-white bg-green-600 rounded-lg hover:bg-green-700">
-                <Zap size={20} /> Start
-              </button>
-              <button className="flex items-center justify-center gap-2 w-full p-4 text-lg font-bold text-gray-800 bg-yellow-400 rounded-lg hover:bg-yellow-500">
-                <Pause size={20} /> Pause
-              </button>
-              <button className="flex items-center justify-center gap-2 w-full p-4 text-lg font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-700">
-                <CheckCircle size={20} /> Complete
-              </button>
-            </div>
+            <CardFooter className="grid grid-cols-3 gap-4">
+              <Button
+                size="lg"
+                className="text-lg font-bold bg-green-600 hover:bg-green-700"
+              >
+                <Zap className="mr-2" size={20} /> Start
+              </Button>
+              <Button
+                size="lg"
+                className="text-lg font-bold text-gray-800 bg-yellow-400 hover:bg-yellow-500"
+              >
+                <Pause className="mr-2" size={20} /> Pause
+              </Button>
+              <Button
+                size="lg"
+                className="text-lg font-bold bg-blue-600 hover:bg-blue-700"
+              >
+                <CheckCircle className="mr-2" size={20} /> Complete
+              </Button>
+            </CardFooter>
           </>
         ) : (
-          <div className="flex items-center justify-center h-full text-gray-500">
+          <CardContent className="flex items-center justify-center h-full text-muted-foreground">
             Select a job to view details
-          </div>
+          </CardContent>
         )}
-      </div>
+      </Card>
     </div>
   );
 };

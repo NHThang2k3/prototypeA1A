@@ -1,14 +1,29 @@
 // src/pages/ToolManagementPage/ToolManagementPage.tsx
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
+import { PlusCircle, Search, Trash2, Edit, History } from "lucide-react";
+import { ColumnDef } from "@tanstack/react-table";
+
+import { CustomTable } from "@/components/ui/custom-table";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
-  PlusCircle,
-  Search,
-  SlidersHorizontal,
-  Trash2,
-  Edit,
-  History,
-} from "lucide-react";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { MoreHorizontal } from "lucide-react";
 
 // Define the data type for a tool
 type Tool = {
@@ -70,205 +85,151 @@ const mockTools: Tool[] = [
   },
 ];
 
-// Utility function to get status badge classes
-const getStatusBadgeClass = (status: Tool["status"]) => {
-  switch (status) {
-    case "Active":
-      return "bg-green-100 text-green-800";
-    case "Maintenance":
-      return "bg-yellow-100 text-yellow-800";
-    case "Decommissioned":
-      return "bg-red-100 text-red-800";
-    default:
-      return "bg-gray-100 text-gray-800";
-  }
-};
-
-// Utility function to get usage progress bar classes
-const getUsageBarClass = (usage: number, threshold: number) => {
-  const percentage = (usage / threshold) * 100;
-  if (percentage >= 90) return "bg-red-500";
-  if (percentage >= 75) return "bg-yellow-500";
-  return "bg-blue-500";
-};
-
 const ToolManagementPage: React.FC = () => {
   const [tools, setTools] = useState<Tool[]>(mockTools);
   // State for add/edit modal can be added here
   // const [isModalOpen, setIsModalOpen] = useState(false);
 
+  const columns: ColumnDef<Tool>[] = useMemo(
+    () => [
+      {
+        accessorKey: "id",
+        header: "Tool ID",
+      },
+      {
+        accessorKey: "type",
+        header: "Type",
+      },
+      {
+        accessorKey: "status",
+        header: "Status",
+        cell: ({ row }) => {
+          const status = row.original.status;
+          const variant: "default" | "secondary" | "destructive" =
+            status === "Active"
+              ? "default"
+              : status === "Maintenance"
+              ? "secondary"
+              : "destructive";
+          return <Badge variant={variant}>{status}</Badge>;
+        },
+      },
+      {
+        header: "Usage Performance",
+        cell: ({ row }) => {
+          const { currentUsage, usageThreshold } = row.original;
+          const percentage = (currentUsage / usageThreshold) * 100;
+          return (
+            <div className="flex items-center gap-2 min-w-[250px]">
+              <Progress value={percentage} className="w-[60%]" />
+              <span className="font-mono text-xs w-28 text-right">
+                {currentUsage.toLocaleString()} /{" "}
+                {usageThreshold.toLocaleString()} m
+              </span>
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: "lastMaintenance",
+        header: "Last Maintenance",
+      },
+      {
+        accessorKey: "assignedTo",
+        header: "Assigned To",
+      },
+      {
+        id: "actions",
+        cell: ({ row }) => {
+          const tool = row.original;
+          return (
+            <div className="text-right">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="h-8 w-8 p-0">
+                    <span className="sr-only">Open menu</span>
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem>
+                    <History className="mr-2 h-4 w-4" />
+                    <span>History</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <Edit className="mr-2 h-4 w-4" />
+                    <span>Edit</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="text-red-600 focus:text-red-600"
+                    onClick={() => {
+                      if (confirm(`Delete ${tool.id}?`)) {
+                        setTools((prev) =>
+                          prev.filter((t) => t.id !== tool.id)
+                        );
+                      }
+                    }}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    <span>Delete</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          );
+        },
+      },
+    ],
+    []
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Tool Management</h1>
-          <p className="mt-1 text-sm text-gray-600">
+          <h1 className="text-2xl font-bold">Tool Management</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
             Track the lifecycle and performance of cutting knives and blades.
           </p>
         </div>
-        <button
-          // onClick={() => setIsModalOpen(true)}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-        >
-          <PlusCircle className="w-5 h-5" />
-          <span>Register New Tool</span>
-        </button>
+        <Button>
+          <PlusCircle className="mr-2 h-5 w-5" />
+          Register New Tool
+        </Button>
       </div>
 
       {/* Filters and Search */}
-      <div className="p-4 bg-white rounded-lg shadow-sm">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="relative col-span-1 md:col-span-2">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search by Tool ID, Type..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-            />
+      <Card>
+        <CardContent className="p-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="relative col-span-1 md:col-span-2">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Search by Tool ID, Type..."
+                className="pl-10"
+              />
+            </div>
+            <div>
+              <Select>
+                <SelectTrigger>
+                  <SelectValue placeholder="All Statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="Active">Active</SelectItem>
+                  <SelectItem value="Maintenance">Maintenance</SelectItem>
+                  <SelectItem value="Decommissioned">Decommissioned</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {/* The filter functionality is now part of the custom-table actions column */}
           </div>
-          <div>
-            <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-white">
-              <option value="">All Statuses</option>
-              <option value="Active">Active</option>
-              <option value="Maintenance">Maintenance</option>
-              <option value="Decommissioned">Decommissioned</option>
-            </select>
-          </div>
-          <button className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-            <SlidersHorizontal className="w-5 h-5" />
-            <span>Filter</span>
-          </button>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Tools List Table */}
-      <div className="overflow-x-auto bg-white rounded-lg shadow-sm">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Tool ID
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Type
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Status
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Usage Performance
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Last Maintenance
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Assigned To
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {tools.map((tool) => (
-              <tr key={tool.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {tool.id}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {tool.type}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span
-                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(
-                      tool.status
-                    )}`}
-                  >
-                    {tool.status}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  <div className="flex items-center gap-2">
-                    <div className="w-full bg-gray-200 rounded-full h-2.5">
-                      <div
-                        className={`h-2.5 rounded-full ${getUsageBarClass(
-                          tool.currentUsage,
-                          tool.usageThreshold
-                        )}`}
-                        style={{
-                          width: `${
-                            (tool.currentUsage / tool.usageThreshold) * 100
-                          }%`,
-                        }}
-                      ></div>
-                    </div>
-                    <span className="font-mono text-xs w-28 text-right">
-                      {tool.currentUsage.toLocaleString()} /{" "}
-                      {tool.usageThreshold.toLocaleString()} m
-                    </span>
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {tool.lastMaintenance}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {tool.assignedTo}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <div className="flex items-center justify-end gap-3">
-                    <button
-                      className="text-gray-400 hover:text-gray-600"
-                      title="History"
-                    >
-                      <History className="w-5 h-5" />
-                    </button>
-                    <button
-                      className="text-blue-600 hover:text-blue-800"
-                      title="Edit"
-                    >
-                      <Edit className="w-5 h-5" />
-                    </button>
-                    <button
-                      className="text-red-600 hover:text-red-800"
-                      title="Delete"
-                      onClick={() => {
-                        if (confirm(`Delete ${tool.id}?`)) {
-                          setTools((prev) =>
-                            prev.filter((t) => t.id !== tool.id)
-                          );
-                        }
-                      }}
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <CustomTable columns={columns} data={tools} />
     </div>
   );
 };

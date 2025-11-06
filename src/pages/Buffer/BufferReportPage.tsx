@@ -2,6 +2,18 @@
 
 import React, { useState, useMemo } from "react";
 import { Search, Filter } from "lucide-react";
+import { ColumnDef } from "@tanstack/react-table";
+
+import { CustomTable } from "@/components/ui/custom-table";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Card, CardContent } from "@/components/ui/card";
 
 type BundleStatus =
   | "At Heat Press"
@@ -59,8 +71,36 @@ const mockBundles: Bundle[] = [
     color: "Red",
     status: "At Bonding",
   },
+];
 
-  //... add more data
+const columns: ColumnDef<Bundle>[] = [
+  {
+    accessorKey: "poId",
+    header: "PO ID",
+    cell: ({ row }) => (
+      <div className="font-medium text-gray-900">{row.getValue("poId")}</div>
+    ),
+  },
+  {
+    accessorKey: "bundleId",
+    header: "Bundle ID",
+  },
+  {
+    accessorKey: "styleId",
+    header: "Style ID",
+  },
+  {
+    accessorKey: "color",
+    header: "Color",
+  },
+  {
+    accessorKey: "quantity",
+    header: "Quantity",
+  },
+  {
+    accessorKey: "status",
+    header: "Current Status",
+  },
 ];
 
 const BufferReportPage: React.FC = () => {
@@ -88,80 +128,46 @@ const BufferReportPage: React.FC = () => {
         Buffer Inventory & Status Report
       </h1>
 
-      <div className="bg-white p-4 rounded-xl shadow-md mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search by Bundle, PO, Style..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500"
-            />
+      <Card className="mb-6">
+        <CardContent className="pt-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Input
+                type="text"
+                placeholder="Search by Bundle, PO, Style..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <div className="relative">
+              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full pl-10">
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {uniqueStatuses.map((status) => (
+                    <SelectItem key={status} value={status}>
+                      {status}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-          <div className="relative">
-            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border rounded-lg appearance-none focus:ring-blue-500 focus:border-blue-500"
-            >
-              {uniqueStatuses.map((status) => (
-                <option key={status} value={status}>
-                  {status}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
-      <div className="bg-white rounded-xl shadow-md overflow-x-auto">
-        <table className="w-full text-sm text-left text-gray-600">
-          <thead className="text-xs text-gray-700 uppercase bg-gray-50">
-            <tr>
-              <th scope="col" className="px-6 py-3">
-                PO ID
-              </th>
-              <th scope="col" className="px-6 py-3">
-                Bundle ID
-              </th>
-              <th scope="col" className="px-6 py-3">
-                Style ID
-              </th>
-              <th scope="col" className="px-6 py-3">
-                Color
-              </th>
-              <th scope="col" className="px-6 py-3">
-                Quantity
-              </th>
-              <th scope="col" className="px-6 py-3">
-                Current Status
-              </th>
-              {/* Cột Time in Status đã bị xóa */}
-            </tr>
-          </thead>
-          <tbody>
-            {filteredBundles.map((bundle) => (
-              <tr
-                key={bundle.bundleId}
-                className="bg-white border-b hover:bg-gray-50"
-              >
-                <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">
-                  {bundle.poId}
-                </td>
-                <td className="px-6 py-4">{bundle.bundleId}</td>
-                <td className="px-6 py-4">{bundle.styleId}</td>
-                <td className="px-6 py-4">{bundle.color}</td>
-                <td className="px-6 py-4">{bundle.quantity}</td>
-                <td className="px-6 py-4">{bundle.status}</td>
-                {/* Cột Time in Status đã bị xóa */}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <Card>
+        <CustomTable
+          columns={columns}
+          data={filteredBundles}
+          showCheckbox={false}
+          showColumnVisibility={false}
+        />
+      </Card>
     </div>
   );
 };

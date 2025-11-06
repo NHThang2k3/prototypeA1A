@@ -1,5 +1,6 @@
 import ReactECharts from "echarts-for-react";
 import { ShieldCheck, TrendingDown, ClipboardX } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 // Mock data preparation for Pareto Chart
 const defectsData = [
@@ -72,61 +73,67 @@ const QualityDashboardPage = () => {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-2xl font-bold text-gray-800">
-          Quality Statistics Dashboard
-        </h1>
-        <p className="text-sm text-gray-500">
+        <h1 className="text-2xl font-bold">Quality Statistics Dashboard</h1>
+        <p className="text-sm text-muted-foreground">
           Analyze quality trends and top defects.
         </p>
       </header>
 
       {/* Metric Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
-          <div className="flex items-center gap-4">
-            <ShieldCheck className="w-8 h-8 text-green-500" />
-            <div>
-              <p className="text-sm font-medium text-gray-500">
-                First Pass Yield (FPY)
-              </p>
-              <p className="text-3xl font-bold text-gray-800">96.8%</p>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-4">
+              <ShieldCheck className="w-8 h-8 text-green-500" />
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">
+                  First Pass Yield (FPY)
+                </p>
+                <p className="text-3xl font-bold">96.8%</p>
+              </div>
             </div>
-          </div>
-        </div>
-        <div className="p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
-          <div className="flex items-center gap-4">
-            <TrendingDown className="w-8 h-8 text-red-500" />
-            <div>
-              <p className="text-sm font-medium text-gray-500">
-                Defect Rate (DPMO)
-              </p>
-              <p className="text-3xl font-bold text-gray-800">32,000</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-4">
+              <TrendingDown className="w-8 h-8 text-red-500" />
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">
+                  Defect Rate (DPMO)
+                </p>
+                <p className="text-3xl font-bold">32,000</p>
+              </div>
             </div>
-          </div>
-        </div>
-        <div className="p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
-          <div className="flex items-center gap-4">
-            <ClipboardX className="w-8 h-8 text-orange-500" />
-            <div>
-              <p className="text-sm font-medium text-gray-500">
-                Top Defect Today
-              </p>
-              <p className="text-3xl font-bold text-gray-800">Broken Stitch</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-4">
+              <ClipboardX className="w-8 h-8 text-orange-500" />
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">
+                  Top Defect Today
+                </p>
+                <p className="text-3xl font-bold">Broken Stitch</p>
+              </div>
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Pareto Chart */}
-      <div className="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
-        <h2 className="text-lg font-semibold text-gray-700 mb-4">
-          Top Defects Analysis (Pareto)
-        </h2>
-        <ReactECharts
-          option={paretoChartOption}
-          style={{ height: "450px", width: "100%" }}
-        />
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Top Defects Analysis (Pareto)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ReactECharts
+            option={paretoChartOption}
+            style={{ height: "450px", width: "100%" }}
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 };

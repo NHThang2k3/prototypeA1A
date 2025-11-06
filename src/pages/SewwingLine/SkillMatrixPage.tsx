@@ -1,3 +1,7 @@
+import { type ColumnDef } from "@tanstack/react-table";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CustomTable } from "@/components/ui/custom-table";
+
 const workers = [
   {
     id: "W001",
@@ -31,6 +35,7 @@ const workers = [
   },
 ];
 const skills = ["Single Needle", "Overlock", "Coverstitch", "Button Attach"];
+type Worker = (typeof workers)[0];
 
 const SkillCell = ({ level }: { level: number }) => {
   const colors = [
@@ -50,65 +55,65 @@ const SkillCell = ({ level }: { level: number }) => {
   );
 };
 
+const columns: ColumnDef<Worker>[] = [
+  {
+    accessorKey: "name",
+    header: "Worker",
+  },
+  ...skills.map(
+    (skill): ColumnDef<Worker> => ({
+      id: skill,
+      header: skill,
+      cell: ({ row }) => (
+        <div className="flex justify-center">
+          <SkillCell
+            level={
+              row.original.skills[skill as keyof typeof row.original.skills] ||
+              0
+            }
+          />
+        </div>
+      ),
+      enableSorting: false,
+    })
+  ),
+];
+
 const SkillMatrixPage = () => {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-2xl font-bold text-gray-800">Skill Matrix</h1>
-        <p className="text-sm text-gray-500">
+        <h1 className="text-2xl font-bold">Skill Matrix</h1>
+        <p className="text-sm text-muted-foreground">
           Manage and visualize worker skill levels for line balancing.
         </p>
       </header>
 
-      <div className="p-4 bg-white border rounded-lg shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-center">
-            <thead className="bg-gray-50 text-xs uppercase">
-              <tr>
-                <th className="px-6 py-3 text-left">Worker</th>
-                {skills.map((skill) => (
-                  <th key={skill} className="px-6 py-3">
-                    {skill}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {workers.map((worker) => (
-                <tr key={worker.id} className="border-b hover:bg-gray-50">
-                  <td className="px-6 py-4 font-medium text-left">
-                    {worker.name}
-                  </td>
-                  {skills.map((skill) => (
-                    <td key={skill} className="px-6 py-4">
-                      <div className="flex justify-center">
-                        <SkillCell
-                          level={
-                            worker.skills[
-                              skill as keyof typeof worker.skills
-                            ] || 0
-                          }
-                        />
-                      </div>
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-      <div className="p-4 bg-white border rounded-lg shadow-sm">
-        <h3 className="font-semibold mb-2">Legend:</h3>
-        <div className="flex flex-wrap gap-4">
-          {[1, 2, 3, 4, 5].map((level) => (
-            <div key={level} className="flex items-center gap-2">
-              <SkillCell level={level} />
-              <span>Level {level}</span>
-            </div>
-          ))}
-        </div>
-      </div>
+      <Card>
+        <CardContent className="p-4">
+          <CustomTable
+            columns={columns}
+            data={workers}
+            showCheckbox={false}
+            showColumnVisibility={false}
+          />
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Legend:</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-4">
+            {[1, 2, 3, 4, 5].map((level) => (
+              <div key={level} className="flex items-center gap-2">
+                <SkillCell level={level} />
+                <span>Level {level}</span>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

@@ -4,13 +4,25 @@ import {
   ShieldAlert,
   Search,
   Download,
-  CalendarDays,
-  ChevronLeft,
-  ChevronRight,
+  Calendar as CalendarIcon,
 } from "lucide-react";
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
+import { DateRange } from "react-day-picker";
+import { format } from "date-fns";
 import * as XLSX from "xlsx";
+import { ColumnDef } from "@tanstack/react-table";
+
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { CustomTable } from "@/components/ui/custom-table";
 
 // Define the data type for an Audit Log entry
 type AuditLogEntry = {
@@ -65,18 +77,21 @@ const generateMockData = (count: number): AuditLogEntry[] => {
 const ActionBadge: React.FC<{ action: AuditLogEntry["Action"] }> = ({
   action,
 }) => {
-  const baseClasses =
-    "px-2.5 py-1 text-xs font-semibold rounded-full inline-block";
   const colorClasses = {
-    Create: "bg-green-100 text-green-800",
-    Update: "bg-blue-100 text-blue-800",
-    Delete: "bg-red-100 text-red-800",
-    Login: "bg-yellow-100 text-yellow-800",
-    Logout: "bg-gray-100 text-gray-800",
-    "Scan QR": "bg-indigo-100 text-indigo-800",
+    Create: "bg-green-100 text-green-800 hover:bg-green-100",
+    Update: "bg-blue-100 text-blue-800 hover:bg-blue-100",
+    Delete: "bg-red-100 text-red-800 hover:bg-red-100",
+    Login: "bg-yellow-100 text-yellow-800 hover:bg-yellow-100",
+    Logout: "bg-gray-100 text-gray-800 hover:bg-gray-100",
+    "Scan QR": "bg-indigo-100 text-indigo-800 hover:bg-indigo-100",
   };
   return (
-    <span className={`${baseClasses} ${colorClasses[action]}`}>{action}</span>
+    <Badge
+      variant="secondary"
+      className={cn("font-semibold", colorClasses[action])}
+    >
+      {action}
+    </Badge>
   );
 };
 
@@ -85,16 +100,11 @@ const AuditLogPage = () => {
   // State for the full dataset
   const [auditLogData] = useState<AuditLogEntry[]>(() => generateMockData(100));
 
-  // State for filtering and pagination
+  // State for filtering
   const [filteredData, setFilteredData] =
     useState<AuditLogEntry[]>(auditLogData);
   const [searchTerm, setSearchTerm] = useState("");
-  const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([
-    null,
-    null,
-  ]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
   // Effect to apply filters when search term or date range changes
   useEffect(() => {
@@ -111,7 +121,8 @@ const AuditLogPage = () => {
     }
 
     // Apply date range filter
-    const [startDate, endDate] = dateRange;
+    const startDate = dateRange?.from;
+    const endDate = dateRange?.to;
     if (startDate && endDate) {
       // Set end date to the end of the day to include all logs on that day
       const inclusiveEndDate = new Date(endDate);
@@ -123,16 +134,35 @@ const AuditLogPage = () => {
     }
 
     setFilteredData(data);
-    setCurrentPage(1); // Reset to first page on new filter
   }, [searchTerm, dateRange, auditLogData]);
 
-  // Memoized calculation for paginated data
-  const paginatedData = useMemo(() => {
-    const startIndex = (currentPage - 1) * rowsPerPage;
-    return filteredData.slice(startIndex, startIndex + rowsPerPage);
-  }, [filteredData, currentPage, rowsPerPage]);
-
-  const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+  // Columns definition for the custom table
+  const columns = useMemo<ColumnDef<AuditLogEntry>[]>(
+    () => [
+      {
+        accessorKey: "ID",
+        header: "ID",
+      },
+      {
+        accessorKey: "Action",
+        header: "Action",
+        cell: ({ row }) => <ActionBadge action={row.original.Action} />,
+      },
+      {
+        accessorKey: "Module",
+        header: "Module",
+      },
+      {
+        accessorKey: "User",
+        header: "User",
+      },
+      {
+        accessorKey: "DateTime",
+        header: "Date & Time",
+      },
+    ],
+    []
+  );
 
   // Handler for exporting data to Excel
   const handleExportToExcel = () => {
@@ -145,139 +175,90 @@ const AuditLogPage = () => {
   return (
     <div className="space-y-6">
       {/* --- Page Header --- */}
-      <div className="bg-white p-5 shadow-sm rounded-lg flex items-center gap-4 border-l-4 border-blue-600">
-        <ShieldAlert className="w-8 h-8 text-blue-600" />
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">Audit Log</h1>
-          <p className="text-gray-600 mt-1">
-            Track and record key activities within the fabric warehouse system.
-          </p>
-        </div>
-      </div>
+      <Card className="border-l-4 border-blue-600">
+        <CardHeader className="flex flex-row items-center gap-4 space-y-0">
+          <ShieldAlert className="w-8 h-8 text-blue-600" />
+          <div>
+            <CardTitle className="text-2xl">Audit Log</CardTitle>
+            <p className="text-muted-foreground mt-1">
+              Track and record key activities within the fabric warehouse
+              system.
+            </p>
+          </div>
+        </CardHeader>
+      </Card>
 
       {/* --- Filters and Actions Bar --- */}
-      <div className="bg-white p-4 shadow-sm rounded-lg space-y-4 md:space-y-0 md:flex md:items-center md:justify-between">
-        <div className="relative w-full md:max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search all fields..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          />
-        </div>
-        <div className="flex items-center gap-4 flex-wrap">
-          <div className="relative">
-            <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
-            <DatePicker
-              selectsRange={true}
-              startDate={dateRange[0]}
-              endDate={dateRange[1]}
-              onChange={(update) => setDateRange(update)}
-              isClearable={true}
-              placeholderText="Filter by date range"
-              className="pl-10 pr-4 py-2 border border-gray-300 rounded-md w-64 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+      <Card>
+        <CardContent className="p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="relative w-full md:max-w-xs">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Search all fields..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
             />
           </div>
-          <button
-            onClick={handleExportToExcel}
-            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white font-semibold rounded-md hover:bg-green-700 transition-colors"
-          >
-            <Download className="w-5 h-5" />
-            Export to Excel
-          </button>
-        </div>
-      </div>
+          <div className="flex items-center gap-4 flex-wrap">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  id="date"
+                  variant={"outline"}
+                  className={cn(
+                    "w-[300px] justify-start text-left font-normal",
+                    !dateRange && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dateRange?.from ? (
+                    dateRange.to ? (
+                      <>
+                        {format(dateRange.from, "LLL dd, y")} -{" "}
+                        {format(dateRange.to, "LLL dd, y")}
+                      </>
+                    ) : (
+                      format(dateRange.from, "LLL dd, y")
+                    )
+                  ) : (
+                    <span>Filter by date range</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <Calendar
+                  initialFocus
+                  mode="range"
+                  defaultMonth={dateRange?.from}
+                  selected={dateRange}
+                  onSelect={setDateRange}
+                  numberOfMonths={2}
+                />
+              </PopoverContent>
+            </Popover>
+            <Button
+              onClick={handleExportToExcel}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              <Download className="w-5 h-5 mr-2" />
+              Export to Excel
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* --- Data Table --- */}
-      <div className="bg-white shadow-sm rounded-lg overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm text-left text-gray-700">
-            <thead className="bg-gray-50 border-b border-gray-200 text-gray-600 uppercase">
-              <tr>
-                <th scope="col" className="px-6 py-3 font-semibold">
-                  ID
-                </th>
-                <th scope="col" className="px-6 py-3 font-semibold">
-                  Action
-                </th>
-                <th scope="col" className="px-6 py-3 font-semibold">
-                  Module
-                </th>
-                <th scope="col" className="px-6 py-3 font-semibold">
-                  User
-                </th>
-                <th scope="col" className="px-6 py-3 font-semibold">
-                  Date & Time
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {paginatedData.map((log) => (
-                <tr key={log.ID} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 font-medium text-gray-900">
-                    {log.ID}
-                  </td>
-                  <td className="px-6 py-4">
-                    <ActionBadge action={log.Action} />
-                  </td>
-                  <td className="px-6 py-4">{log.Module}</td>
-                  <td className="px-6 py-4">{log.User}</td>
-                  <td className="px-6 py-4 text-gray-500">{log.DateTime}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* --- Pagination Controls --- */}
-        <div className="flex items-center justify-between p-4 border-t border-gray-200">
-          <div className="flex items-center gap-2">
-            <label htmlFor="rows-per-page" className="text-sm text-gray-600">
-              Rows per page:
-            </label>
-            <select
-              id="rows-per-page"
-              value={rowsPerPage}
-              onChange={(e) => {
-                setRowsPerPage(Number(e.target.value));
-                setCurrentPage(1);
-              }}
-              className="border border-gray-300 rounded-md p-1.5 text-sm focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value={10}>10</option>
-              <option value={20}>20</option>
-              <option value={50}>50</option>
-              <option value={100}>100</option>
-            </select>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-600">
-              Page {totalPages > 0 ? currentPage : 0} of {totalPages}
-            </span>
-            <div className="inline-flex rounded-md shadow-sm">
-              <button
-                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
-                className="px-3 py-1.5 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-l-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() =>
-                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                }
-                disabled={currentPage === totalPages || totalPages === 0}
-                className="px-3 py-1.5 text-sm font-medium text-gray-500 bg-white border-t border-b border-r border-gray-300 rounded-r-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <Card>
+        <CardContent className="p-4">
+          <CustomTable
+            columns={columns}
+            data={filteredData}
+            showCheckbox={false}
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 };

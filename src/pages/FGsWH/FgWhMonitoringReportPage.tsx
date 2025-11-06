@@ -1,8 +1,28 @@
-import { useState } from "react";
+// src/pages/FgWhMonitoringReportPage.tsx
+
 import { Search, List, MapPin } from "lucide-react";
+import { type ColumnDef } from "@tanstack/react-table";
+
+import { CustomTable } from "@/components/ui/custom-table";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
+
+// Data type definition
+type Inventory = {
+  id: string;
+  po: string;
+  style: string;
+  color: string;
+  size: string;
+  qty: number;
+  location: string;
+  status: "QC Pass" | "Awaiting Shipment" | "Packed";
+};
 
 // Mock data
-const inventory = [
+const inventory: Inventory[] = [
   {
     id: "CARTON-001",
     po: "PO77881",
@@ -55,11 +75,43 @@ const inventory = [
   },
 ];
 
-const statusColors: { [key: string]: string } = {
-  "QC Pass": "bg-green-100 text-green-800",
-  "Awaiting Shipment": "bg-purple-100 text-purple-800",
-  Packed: "bg-blue-100 text-blue-800",
+const getStatusBadgeClass = (status: Inventory["status"]) => {
+  switch (status) {
+    case "QC Pass":
+      return "bg-green-100 text-green-800 hover:bg-green-100";
+    case "Awaiting Shipment":
+      return "bg-purple-100 text-purple-800 hover:bg-purple-100";
+    case "Packed":
+      return "bg-blue-100 text-blue-800 hover:bg-blue-100";
+    default:
+      return "bg-gray-100 text-gray-800 hover:bg-gray-100";
+  }
 };
+
+const columns: ColumnDef<Inventory>[] = [
+  { accessorKey: "id", header: "Carton ID" },
+  { accessorKey: "po", header: "PO" },
+  { accessorKey: "style", header: "Style" },
+  { accessorKey: "color", header: "Color" },
+  { accessorKey: "size", header: "Size" },
+  { accessorKey: "qty", header: "Qty" },
+  {
+    accessorKey: "location",
+    header: "Location",
+    cell: ({ row }) => (
+      <span className="font-mono text-blue-700">{row.original.location}</span>
+    ),
+  },
+  {
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row }) => (
+      <Badge className={getStatusBadgeClass(row.original.status)}>
+        {row.original.status}
+      </Badge>
+    ),
+  },
+];
 
 const WarehouseMap = () => {
   // Simplified representation of a warehouse layout
@@ -71,7 +123,7 @@ const WarehouseMap = () => {
   );
 
   return (
-    <div className="p-4 bg-gray-50 rounded-lg">
+    <div className="p-4 bg-muted rounded-lg">
       <h3 className="font-semibold mb-4 text-lg">Warehouse Visual Map</h3>
       <div className="flex gap-4 mb-4 text-sm">
         <div className="flex items-center gap-2">
@@ -97,101 +149,52 @@ const WarehouseMap = () => {
 };
 
 const FgWhMonitoringReportPage = () => {
-  const [activeTab, setActiveTab] = useState("list");
-
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-gray-800">
-        FG Warehouse Monitoring
-      </h1>
-
-      <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-        <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-6" aria-label="Tabs">
-            <button
-              onClick={() => setActiveTab("list")}
-              className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
-                activeTab === "list"
-                  ? "border-blue-500 text-blue-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              }`}
-            >
-              <List className="w-5 h-5" /> Inventory List
-            </button>
-            <button
-              onClick={() => setActiveTab("map")}
-              className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
-                activeTab === "map"
-                  ? "border-blue-500 text-blue-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              }`}
-            >
-              <MapPin className="w-5 h-5" /> Warehouse Map
-            </button>
-          </nav>
-        </div>
-
-        <div className="pt-6">
-          {activeTab === "list" && (
-            <>
-              <div className="relative mb-4">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search by Carton ID, PO, Style, Location..."
-                  className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+      <h1 className="text-3xl font-bold">FG Warehouse Monitoring</h1>
+      <Card>
+        <CardContent className="p-0">
+          <Tabs defaultValue="list" className="w-full">
+            <div className="px-6 border-b">
+              <TabsList className="bg-transparent p-0">
+                <TabsTrigger
+                  value="list"
+                  className="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 rounded-none -mb-px data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-primary data-[state=active]:text-primary"
+                >
+                  <List className="w-5 h-5" /> Inventory List
+                </TabsTrigger>
+                <TabsTrigger
+                  value="map"
+                  className="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 rounded-none -mb-px data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-primary data-[state=active]:text-primary"
+                >
+                  <MapPin className="w-5 h-5" /> Warehouse Map
+                </TabsTrigger>
+              </TabsList>
+            </div>
+            <div className="p-6">
+              <TabsContent value="list">
+                <div className="relative mb-4">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    placeholder="Search by Carton ID, PO, Style, Location..."
+                    className="w-full pl-10 py-3"
+                  />
+                </div>
+                <CustomTable
+                  columns={columns}
+                  data={inventory}
+                  showCheckbox={false}
+                  showColumnVisibility={false}
                 />
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left text-gray-600">
-                  <thead className="text-xs text-gray-700 uppercase bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3">Carton ID</th>
-                      <th className="px-6 py-3">PO</th>
-                      <th className="px-6 py-3">Style</th>
-                      <th className="px-6 py-3">Color</th>
-                      <th className="px-6 py-3">Size</th>
-                      <th className="px-6 py-3">Qty</th>
-                      <th className="px-6 py-3">Location</th>
-                      <th className="px-6 py-3">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {inventory.map((item) => (
-                      <tr
-                        key={item.id}
-                        className="bg-white border-b hover:bg-gray-50"
-                      >
-                        <td className="px-6 py-4 font-medium text-gray-900">
-                          {item.id}
-                        </td>
-                        <td className="px-6 py-4">{item.po}</td>
-                        <td className="px-6 py-4">{item.style}</td>
-                        <td className="px-6 py-4">{item.color}</td>
-                        <td className="px-6 py-4">{item.size}</td>
-                        <td className="px-6 py-4">{item.qty}</td>
-                        <td className="px-6 py-4 font-mono text-blue-700">
-                          {item.location}
-                        </td>
-                        <td className="px-6 py-4">
-                          <span
-                            className={`px-2 py-1 text-xs font-medium rounded-full ${
-                              statusColors[item.status]
-                            }`}
-                          >
-                            {item.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </>
-          )}
-          {activeTab === "map" && <WarehouseMap />}
-        </div>
-      </div>
+              </TabsContent>
+              <TabsContent value="map">
+                <WarehouseMap />
+              </TabsContent>
+            </div>
+          </Tabs>
+        </CardContent>
+      </Card>
     </div>
   );
 };

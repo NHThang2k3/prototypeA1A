@@ -2,6 +2,16 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { QrCode, CheckCircle, XCircle } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 type ScanLog = {
   id: string;
@@ -11,7 +21,6 @@ type ScanLog = {
   status: "success" | "error";
 };
 
-// ADD: Định nghĩa một type cho đối tượng bundle để thay thế cho 'any'
 type Bundle = {
   id: string;
   po: string;
@@ -21,7 +30,7 @@ type Bundle = {
   qty: number;
 };
 
-const mockBundleLookup = (bundleId: string) => {
+const mockBundleLookup = (bundleId: string): Bundle | null => {
   if (bundleId.startsWith("BNDL-")) {
     return {
       id: bundleId,
@@ -37,7 +46,6 @@ const mockBundleLookup = (bundleId: string) => {
 
 const BufferScanInPage = () => {
   const [scanInput, setScanInput] = useState("");
-  // FIX 1: Thay thế 'any' bằng type 'Bundle | null' để đảm bảo an toàn kiểu dữ liệu
   const [scannedBundle, setScannedBundle] = useState<Bundle | null>(null);
   const [scanStatus, setScanStatus] = useState<"idle" | "success" | "error">(
     "idle"
@@ -57,8 +65,6 @@ const BufferScanInPage = () => {
     if (bundle) {
       setScannedBundle(bundle);
       setScanStatus("success");
-
-      // FIX 2: Tạo một biến có kiểu ScanLog để TypeScript hiểu đúng kiểu của thuộc tính 'status'
       const newLog: ScanLog = {
         id: scanInput,
         style: bundle.style,
@@ -70,8 +76,6 @@ const BufferScanInPage = () => {
     } else {
       setScannedBundle(null);
       setScanStatus("error");
-
-      // FIX 3: Tương tự, tạo một biến có kiểu ScanLog cho trường hợp lỗi
       const newLog: ScanLog = {
         id: scanInput,
         style: "N/A",
@@ -87,122 +91,113 @@ const BufferScanInPage = () => {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl mx-auto">
-      {/* Left: Scan Interface */}
-      <div className="bg-white p-8 rounded-xl shadow-lg">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">
-          Scan-In Bundle
-        </h1>
-        <p className="text-gray-500 mb-8">
-          Scan the QR code on the fabric bundle to record its entry.
-        </p>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-3xl font-bold">Scan-In Bundle</CardTitle>
+          <CardDescription>
+            Scan the QR code on the fabric bundle to record its entry.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleScan} className="mb-6">
+            <Label htmlFor="scan-input">Bundle QR Code</Label>
+            <div className="relative mt-1">
+              <QrCode className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 text-muted-foreground" />
+              <Input
+                ref={inputRef}
+                id="scan-input"
+                type="text"
+                value={scanInput}
+                onChange={(e) => setScanInput(e.target.value)}
+                placeholder="Waiting for scan..."
+                className="pl-14 pr-4 py-7 text-lg"
+              />
+            </div>
+          </form>
 
-        <form onSubmit={handleScan}>
-          <label
-            htmlFor="scan-input"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            Bundle QR Code
-          </label>
-          <div className="relative">
-            <QrCode className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-400" />
-            <input
-              ref={inputRef}
-              id="scan-input"
-              type="text"
-              value={scanInput}
-              onChange={(e) => setScanInput(e.target.value)}
-              placeholder="Waiting for scan..."
-              className="w-full pl-14 pr-4 py-4 text-lg border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-            />
+          <div className="min-h-[180px]">
+            {scanStatus === "success" && scannedBundle && (
+              <Alert>
+                <CheckCircle className="h-4 w-4 text-green-500" />
+                <AlertTitle className="font-bold text-lg text-green-800">
+                  Scan Successful!
+                </AlertTitle>
+                <AlertDescription className="text-green-700">
+                  Bundle {scannedBundle.id} recorded.
+                </AlertDescription>
+              </Alert>
+            )}
+            {scanStatus === "error" && (
+              <Alert variant="destructive">
+                <XCircle className="h-4 w-4" />
+                <AlertTitle className="font-bold text-lg">
+                  Scan Failed!
+                </AlertTitle>
+                <AlertDescription>
+                  Bundle not found. Please try again.
+                </AlertDescription>
+              </Alert>
+            )}
+            {scanStatus === "idle" && scannedBundle && (
+              <Card className="bg-muted/40">
+                <CardHeader>
+                  <CardTitle className="text-lg">Last Scanned Bundle</CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                  <span>PO Number:</span>
+                  <span className="font-medium">{scannedBundle.po}</span>
+                  <span>Style:</span>
+                  <span className="font-medium">{scannedBundle.style}</span>
+                  <span>Color/Size:</span>
+                  <span className="font-medium">
+                    {scannedBundle.color} / {scannedBundle.size}
+                  </span>
+                  <span>Quantity:</span>
+                  <span className="font-medium">{scannedBundle.qty} pcs</span>
+                </CardContent>
+              </Card>
+            )}
           </div>
-        </form>
+        </CardContent>
+      </Card>
 
-        {/* Scan Result */}
-        <div className="mt-6 min-h-[180px]">
-          {scanStatus === "success" && scannedBundle && (
-            <div className="p-4 bg-green-50 border-l-4 border-green-500 text-green-800 rounded-r-lg">
-              <div className="flex items-center gap-3">
-                <CheckCircle size={32} />
-                <div>
-                  <h3 className="font-bold text-lg">Scan Successful!</h3>
-                  <p className="text-sm">Bundle {scannedBundle.id} recorded.</p>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-2xl">Recent Scan-In Log</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {scanLog.length === 0 && (
+              <p className="text-muted-foreground">No scans recorded yet.</p>
+            )}
+            {scanLog.map((log, index) => (
+              <div
+                key={index}
+                className={`p-3 rounded-lg flex items-center justify-between ${
+                  log.status === "success"
+                    ? "bg-background border"
+                    : "bg-red-100 dark:bg-red-900/20"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  {log.status === "success" ? (
+                    <CheckCircle className="text-green-500" />
+                  ) : (
+                    <XCircle className="text-red-500" />
+                  )}
+                  <div>
+                    <p className="font-semibold">{log.id}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {log.style} - {log.qty} pcs
+                    </p>
+                  </div>
                 </div>
+                <p className="text-sm text-muted-foreground">{log.time}</p>
               </div>
-            </div>
-          )}
-          {scanStatus === "error" && (
-            <div className="p-4 bg-red-50 border-l-4 border-red-500 text-red-800 rounded-r-lg">
-              <div className="flex items-center gap-3">
-                <XCircle size={32} />
-                <div>
-                  <h3 className="font-bold text-lg">Scan Failed!</h3>
-                  <p className="text-sm">Bundle not found. Please try again.</p>
-                </div>
-              </div>
-            </div>
-          )}
-          {scanStatus === "idle" && scannedBundle && (
-            <div className="p-6 bg-gray-50 rounded-lg border border-gray-200">
-              <h3 className="font-bold text-gray-800 text-lg mb-2">
-                Last Scanned Bundle
-              </h3>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                <span>PO Number:</span>{" "}
-                <span className="font-medium text-gray-900">
-                  {scannedBundle.po}
-                </span>
-                <span>Style:</span>{" "}
-                <span className="font-medium text-gray-900">
-                  {scannedBundle.style}
-                </span>
-                <span>Color/Size:</span>{" "}
-                <span className="font-medium text-gray-900">
-                  {scannedBundle.color} / {scannedBundle.size}
-                </span>
-                <span>Quantity:</span>{" "}
-                <span className="font-medium text-gray-900">
-                  {scannedBundle.qty} pcs
-                </span>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Right: Recent Scans */}
-      <div className="bg-gray-50 p-8 rounded-xl border border-gray-200">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">
-          Recent Scan-In Log
-        </h2>
-        <div className="space-y-3">
-          {scanLog.length === 0 && (
-            <p className="text-gray-500">No scans recorded yet.</p>
-          )}
-          {scanLog.map((log, index) => (
-            <div
-              key={index}
-              className={`p-3 rounded-lg flex items-center justify-between ${
-                log.status === "success" ? "bg-white" : "bg-red-100"
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                {log.status === "success" ? (
-                  <CheckCircle className="text-green-500" />
-                ) : (
-                  <XCircle className="text-red-500" />
-                )}
-                <div>
-                  <p className="font-semibold text-gray-800">{log.id}</p>
-                  <p className="text-xs text-gray-500">
-                    {log.style} - {log.qty} pcs
-                  </p>
-                </div>
-              </div>
-              <p className="text-sm text-gray-500">{log.time}</p>
-            </div>
-          ))}
-        </div>
-      </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

@@ -1,9 +1,38 @@
-// src/pages/BondingOutputPage/BondingOutputPage.tsx
+// src/pages/Decoration/BondingOutputPage.tsx
 
+import React from "react";
 import { Download, Calendar, Search, TrendingUp } from "lucide-react";
+import { ColumnDef } from "@tanstack/react-table";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { CustomTable } from "@/components/ui/custom-table";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 
-// Mock Data for Bonding Output
-const bondingOutputData = [
+type BondingOutput = {
+  bundleId: string;
+  po: string;
+  style: string;
+  worker: string;
+  goodQty: number;
+  defectQty: number;
+  completedAt: string;
+};
+
+const bondingOutputData: BondingOutput[] = [
   {
     bundleId: "BNDL-008",
     po: "PO12348",
@@ -42,23 +71,62 @@ const bondingOutputData = [
   },
 ];
 
-// 2. Định nghĩa kiểu cho props của KPICard
+// LỖI 1: Đã xóa từ khóa "export" ở đây
+const columns: ColumnDef<BondingOutput>[] = [
+  { accessorKey: "bundleId", header: "Bundle ID" },
+  { accessorKey: "po", header: "PO Number" },
+  { accessorKey: "style", header: "Style" },
+  { accessorKey: "worker", header: "Worker" },
+  {
+    accessorKey: "goodQty",
+    header: "Good Qty",
+    // LỖI 2 (Sửa tương tự): Thay đổi để code nhất quán và an toàn hơn
+    cell: ({ row }) => (
+      <div className="font-semibold text-green-600">{row.original.goodQty}</div>
+    ),
+  },
+  {
+    accessorKey: "defectQty",
+    header: "Defect Qty",
+    // LỖI 2: Đã sửa ở đây
+    cell: ({ row }) => (
+      <div
+        className={cn(
+          "font-semibold",
+          row.original.defectQty > 0 ? "text-red-600" : "text-muted-foreground"
+        )}
+      >
+        {row.original.defectQty}
+      </div>
+    ),
+  },
+  { accessorKey: "completedAt", header: "Completed At" },
+];
+
 type KPICardProps = {
   title: string;
   value: string | number;
-  subValue?: string; // subValue có thể có hoặc không, nên dùng '?'
+  subValue?: string;
 };
 
-// 3. Áp dụng kiểu đã định nghĩa vào component
+// Component này có thể giữ nguyên vì nó không bị export
 const KPICard = ({ title, value, subValue }: KPICardProps) => (
-  <div className="bg-white p-4 rounded-lg shadow">
-    <p className="text-sm font-medium text-gray-500">{title}</p>
-    <p className="text-2xl font-bold text-gray-800 mt-1">{value}</p>
-    {subValue && <p className="text-xs text-gray-400">{subValue}</p>}
-  </div>
+  <Card>
+    <CardHeader className="pb-2">
+      <CardDescription>{title}</CardDescription>
+      <CardTitle className="text-2xl">{value}</CardTitle>
+    </CardHeader>
+    {subValue && (
+      <CardContent>
+        <p className="text-xs text-muted-foreground">{subValue}</p>
+      </CardContent>
+    )}
+  </Card>
 );
 
 const BondingOutputPage = () => {
+  const [date, setDate] = React.useState<Date | undefined>(new Date());
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -67,18 +135,17 @@ const BondingOutputPage = () => {
             <TrendingUp size={28} />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-gray-800">Bonding Output</h1>
+            <h1 className="text-3xl font-bold">Bonding Output</h1>
             <p className="text-gray-500">
               Daily production statistics for the Bonding process.
             </p>
           </div>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg shadow-sm hover:bg-blue-700">
-          <Download size={16} /> Export
-        </button>
+        <Button>
+          <Download size={16} className="mr-2" /> Export
+        </Button>
       </div>
 
-      {/* KPI Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <KPICard
           title="Total Output Today"
@@ -93,65 +160,48 @@ const BondingOutputPage = () => {
         <KPICard title="Defect Rate" value="1.2%" subValue="15 pcs" />
       </div>
 
-      {/* Filters & Table */}
-      <div className="bg-white rounded-lg shadow p-4">
-        <div className="flex items-center gap-4 mb-4">
-          <div className="relative flex-grow">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search by PO, Style, Worker..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md"
-            />
-          </div>
-          <div className="relative">
-            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="date"
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md"
-              defaultValue={new Date().toISOString().substring(0, 10)}
-            />
-          </div>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left text-gray-600">
-            <thead className="bg-gray-50 text-xs text-gray-700 uppercase">
-              <tr>
-                <th className="px-6 py-3">Bundle ID</th>
-                <th className="px-6 py-3">PO Number</th>
-                <th className="px-6 py-3">Style</th>
-                <th className="px-6 py-3">Worker</th>
-                <th className="px-6 py-3">Good Qty</th>
-                <th className="px-6 py-3">Defect Qty</th>
-                <th className="px-6 py-3">Completed At</th>
-              </tr>
-            </thead>
-            <tbody>
-              {bondingOutputData.map((item) => (
-                <tr
-                  key={item.bundleId}
-                  className="bg-white border-b hover:bg-gray-50"
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="relative flex-grow">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Search by PO, Style, Worker..."
+                className="pl-10"
+              />
+            </div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={"outline"}
+                  className={cn(
+                    "w-[240px] justify-start text-left font-normal",
+                    !date && "text-muted-foreground"
+                  )}
                 >
-                  <td className="px-6 py-4 font-medium text-gray-900">
-                    {item.bundleId}
-                  </td>
-                  <td className="px-6 py-4">{item.po}</td>
-                  <td className="px-6 py-4">{item.style}</td>
-                  <td className="px-6 py-4">{item.worker}</td>
-                  <td className="px-6 py-4 text-green-600 font-semibold">
-                    {item.goodQty}
-                  </td>
-                  <td className="px-6 py-4 text-red-600 font-semibold">
-                    {item.defectQty}
-                  </td>
-                  <td className="px-6 py-4">{item.completedAt}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                  <Calendar className="mr-2 h-4 w-4" />
+                  {date ? format(date, "PPP") : <span>Pick a date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <CalendarComponent
+                  mode="single"
+                  selected={date}
+                  onSelect={setDate}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+          <CustomTable
+            columns={columns}
+            data={bondingOutputData}
+            showCheckbox={false}
+            showColumnVisibility={false}
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 };

@@ -1,8 +1,28 @@
 import { useState } from "react";
 import { Users, UserCheck, UserX, Save } from "lucide-react";
+import { ColumnDef } from "@tanstack/react-table";
+import { CustomTable } from "@/components/ui/custom-table";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+
+type LinePosition = {
+  id: number;
+  operation: string;
+  requiredSkill: string;
+  assignedWorkerId: string | null;
+};
 
 // Mock Data
-const linePositionsData = [
+const linePositionsData: LinePosition[] = [
   {
     id: 1,
     operation: "Sleeve Placket",
@@ -44,7 +64,8 @@ const availableWorkersData = [
 ];
 
 const ManageWorkforcePage = () => {
-  const [linePositions, setLinePositions] = useState(linePositionsData);
+  const [linePositions, setLinePositions] =
+    useState<LinePosition[]>(linePositionsData);
 
   const handleAssignmentChange = (
     positionId: number,
@@ -57,6 +78,58 @@ const ManageWorkforcePage = () => {
     );
   };
 
+  const columns: ColumnDef<LinePosition>[] = [
+    { accessorKey: "id", header: "Position #" },
+    { accessorKey: "operation", header: "Operation" },
+    {
+      accessorKey: "requiredSkill",
+      header: "Required Skill",
+      cell: ({ row }) => (
+        <Badge
+          variant="outline"
+          className="text-purple-800 border-purple-300 bg-purple-100"
+        >
+          {row.getValue("requiredSkill")}
+        </Badge>
+      ),
+    },
+    {
+      id: "assignedWorker",
+      header: "Assigned Worker",
+      cell: ({ row }) => {
+        const position = row.original;
+        const UNASSIGNED_VALUE = "unassigned"; // Dùng hằng số để code dễ đọc hơn
+
+        return (
+          <Select
+            // Sửa 2: Ánh xạ giá trị null của state sang giá trị "unassigned" của UI
+            value={position.assignedWorkerId || UNASSIGNED_VALUE}
+            onValueChange={(value) =>
+              // Sửa 3: Xử lý logic ngược lại khi người dùng chọn
+              handleAssignmentChange(
+                position.id,
+                value === UNASSIGNED_VALUE ? null : value
+              )
+            }
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="-- Unassigned --" />
+            </SelectTrigger>
+            <SelectContent>
+              {/* Sửa 1: Thay đổi giá trị từ "" thành một chuỗi không rỗng */}
+              <SelectItem value={UNASSIGNED_VALUE}>-- Unassigned --</SelectItem>
+              {availableWorkersData.map((worker) => (
+                <SelectItem key={worker.id} value={worker.id}>
+                  {worker.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        );
+      },
+    },
+  ];
+
   const assignedCount = linePositions.filter((p) => p.assignedWorkerId).length;
   const requiredCount = linePositions.length;
 
@@ -64,101 +137,81 @@ const ManageWorkforcePage = () => {
     <div className="space-y-6">
       <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">
-            Workforce Management
-          </h1>
-          <p className="text-sm text-gray-500">
+          <h1 className="text-2xl font-bold">Workforce Management</h1>
+          <p className="text-sm text-muted-foreground">
             Assign workers to sewing line positions for today.
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <select className="px-4 py-2 border border-gray-300 rounded-lg">
-            <option>Line 05</option>
-            <option>Line 06</option>
-          </select>
-          <input
+          <Select defaultValue="line5">
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Select a line" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="line5">Line 05</SelectItem>
+              <SelectItem value="line6">Line 06</SelectItem>
+            </SelectContent>
+          </Select>
+          <Input
             type="date"
             defaultValue={new Date().toISOString().substring(0, 10)}
-            className="px-4 py-2 border border-gray-300 rounded-lg"
+            className="w-[180px]"
           />
         </div>
       </header>
 
       {/* Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="p-4 bg-white border rounded-lg flex items-center gap-4">
-          <Users className="w-6 h-6 text-gray-500" />
-          <div>
-            <p className="font-bold">{requiredCount}</p>
-            <p className="text-sm text-gray-600">Positions Required</p>
-          </div>
-        </div>
-        <div className="p-4 bg-white border rounded-lg flex items-center gap-4">
-          <UserCheck className="w-6 h-6 text-green-500" />
-          <div>
-            <p className="font-bold">{assignedCount}</p>
-            <p className="text-sm text-gray-600">Workers Assigned</p>
-          </div>
-        </div>
-        <div className="p-4 bg-white border rounded-lg flex items-center gap-4">
-          <UserX className="w-6 h-6 text-red-500" />
-          <div>
-            <p className="font-bold">{requiredCount - assignedCount}</p>
-            <p className="text-sm text-gray-600">Positions Unfilled</p>
-          </div>
-        </div>
+        <Card>
+          <CardContent className="pt-6 flex items-center gap-4">
+            <Users className="w-6 h-6 text-muted-foreground" />
+            <div>
+              <p className="font-bold">{requiredCount}</p>
+              <p className="text-sm text-muted-foreground">
+                Positions Required
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6 flex items-center gap-4">
+            <UserCheck className="w-6 h-6 text-green-500" />
+            <div>
+              <p className="font-bold">{assignedCount}</p>
+              <p className="text-sm text-muted-foreground">Workers Assigned</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6 flex items-center gap-4">
+            <UserX className="w-6 h-6 text-red-500" />
+            <div>
+              <p className="font-bold">{requiredCount - assignedCount}</p>
+              <p className="text-sm text-muted-foreground">
+                Positions Unfilled
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Assignment Table */}
-      <div className="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left text-gray-600">
-            <thead className="text-xs text-gray-700 uppercase bg-gray-50">
-              <tr>
-                <th className="px-6 py-3">Position #</th>
-                <th className="px-6 py-3">Operation</th>
-                <th className="px-6 py-3">Required Skill</th>
-                <th className="px-6 py-3">Assigned Worker</th>
-              </tr>
-            </thead>
-            <tbody>
-              {linePositions.map((pos) => (
-                <tr key={pos.id} className="bg-white border-b hover:bg-gray-50">
-                  <td className="px-6 py-4 font-medium">{pos.id}</td>
-                  <td className="px-6 py-4">{pos.operation}</td>
-                  <td className="px-6 py-4">
-                    <span className="px-2 py-1 text-xs font-medium text-purple-800 bg-purple-100 rounded-full">
-                      {pos.requiredSkill}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <select
-                      value={pos.assignedWorkerId || ""}
-                      onChange={(e) =>
-                        handleAssignmentChange(pos.id, e.target.value || null)
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="">-- Unassigned --</option>
-                      {availableWorkersData.map((worker) => (
-                        <option key={worker.id} value={worker.id}>
-                          {worker.name}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div className="flex justify-end mt-6">
-          <button className="flex items-center gap-2 px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg shadow-sm hover:bg-blue-700">
-            <Save className="w-4 h-4" />
-            Save Assignments
-          </button>
-        </div>
-      </div>
+      <Card>
+        <CardContent className="pt-6">
+          <CustomTable
+            columns={columns}
+            data={linePositions}
+            showCheckbox={false}
+            showColumnVisibility={false}
+          />
+          <div className="flex justify-end mt-6">
+            <Button>
+              <Save className="w-4 h-4 mr-2" />
+              Save Assignments
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

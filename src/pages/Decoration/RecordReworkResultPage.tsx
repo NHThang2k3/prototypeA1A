@@ -5,6 +5,20 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { ArrowLeft, CheckCircle, XCircle, FileText, Save } from "lucide-react";
 import type { RepairRequest } from "./types";
 
+// UI Components
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+
 const mockRequests: RepairRequest[] = [
   {
     id: "RR-001",
@@ -48,7 +62,6 @@ const InfoField = ({
   </div>
 );
 
-// --- THAY ĐỔI 1: Thêm prop `requestIdForShowcase` vào component ---
 const RecordReworkResultPage = ({
   requestIdForShowcase,
 }: {
@@ -56,8 +69,6 @@ const RecordReworkResultPage = ({
 }) => {
   const params = useParams<{ requestId: string }>();
   const navigate = useNavigate();
-
-  // --- THAY ĐỔI 2: Ưu tiên dùng prop, nếu không có thì mới lấy từ URL ---
   const requestId = requestIdForShowcase || params.requestId;
 
   const [request, setRequest] = useState<RepairRequest | null>(null);
@@ -102,131 +113,128 @@ const RecordReworkResultPage = ({
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <Link
-        to="/decoration/productivity/display-data-list"
-        className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Back to List
-      </Link>
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white p-8 rounded-lg shadow-md border border-gray-200"
-      >
-        <h1 className="text-2xl font-bold text-gray-800 mb-2">
-          Record Rework Result: {request.id}
-        </h1>
-        <p className="text-md text-gray-500 mb-6 border-b pb-4">
-          Enter the final quantities after completing the rework.
-        </p>
-        <div className="space-y-6">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-700 mb-4">
-              Initial Request Information
-            </h2>
-            <div className="p-4 bg-gray-50 rounded-lg border">
-              <dl className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <InfoField label="PO / Job" value={request.poCode} />
-                <InfoField label="Process" value={request.process} />
-                <InfoField label="Assignee" value={request.assignee} />
-                <InfoField label="Defect Type" value={request.defectType} />
-                <InfoField
-                  label="Initial Defect Qty"
-                  value={
-                    <span className="font-bold text-lg text-red-600">
-                      {request.defectQty}
-                    </span>
-                  }
-                />
-              </dl>
-              <div className="mt-4">
-                <InfoField
-                  label="Approver's Notes"
-                  value={
-                    <span className="text-blue-700 italic">
-                      {request.approverNotes || "No specific notes."}
-                    </span>
-                  }
-                />
+      <Button variant="ghost" asChild className="pl-0">
+        <Link to="/decoration/productivity/display-data-list">
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to List
+        </Link>
+      </Button>
+      <form onSubmit={handleSubmit}>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-2xl">
+              Record Rework Result: {request.id}
+            </CardTitle>
+            <CardDescription>
+              Enter the final quantities after completing the rework.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-700 mb-4">
+                Initial Request Information
+              </h2>
+              <div className="p-4 bg-gray-50 rounded-lg border">
+                <dl className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <InfoField label="PO / Job" value={request.poCode} />
+                  <InfoField label="Process" value={request.process} />
+                  <InfoField label="Assignee" value={request.assignee} />
+                  <InfoField label="Defect Type" value={request.defectType} />
+                  <InfoField
+                    label="Initial Defect Qty"
+                    value={
+                      <span className="font-bold text-lg text-red-600">
+                        {request.defectQty}
+                      </span>
+                    }
+                  />
+                </dl>
+                <div className="mt-4">
+                  <InfoField
+                    label="Approver's Notes"
+                    value={
+                      <span className="text-blue-700 italic">
+                        {request.approverNotes || "No specific notes."}
+                      </span>
+                    }
+                  />
+                </div>
               </div>
             </div>
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold text-gray-700 mb-4">
-              Result Entry Section
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label
-                  htmlFor="repairedQty"
-                  className=" text-sm font-medium text-gray-700 mb-1 flex items-center gap-2"
+            <div>
+              <h2 className="text-lg font-semibold text-gray-700 mb-4">
+                Result Entry Section
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="repairedQty"
+                    className="flex items-center gap-2"
+                  >
+                    <CheckCircle className="w-5 h-5 text-green-500" />
+                    Successfully Repaired Qty
+                  </Label>
+                  <Input
+                    type="number"
+                    id="repairedQty"
+                    min="0"
+                    value={repairedQty}
+                    onChange={(e) =>
+                      setRepairedQty(parseInt(e.target.value) || 0)
+                    }
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="unrepairableQty"
+                    className="flex items-center gap-2"
+                  >
+                    <XCircle className="w-5 h-5 text-red-500" />
+                    Unrepairable Qty (Scrap)
+                  </Label>
+                  <Input
+                    type="number"
+                    id="unrepairableQty"
+                    min="0"
+                    value={unrepairableQty}
+                    onChange={(e) =>
+                      setUnrepairableQty(parseInt(e.target.value) || 0)
+                    }
+                    required
+                  />
+                </div>
+              </div>
+              {validationError && (
+                <p className="mt-2 text-sm text-red-600">{validationError}</p>
+              )}
+              <div className="mt-6 space-y-2">
+                <Label
+                  htmlFor="workerNotes"
+                  className="flex items-center gap-2"
                 >
-                  <CheckCircle className="w-5 h-5 text-green-500" />
-                  Successfully Repaired Qty
-                </label>
-                <input
-                  type="number"
-                  id="repairedQty"
-                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                  min="0"
-                  value={repairedQty}
-                  onChange={(e) =>
-                    setRepairedQty(parseInt(e.target.value) || 0)
-                  }
-                  required
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="unrepairableQty"
-                  className=" text-sm font-medium text-gray-700 mb-1 flex items-center gap-2"
-                >
-                  <XCircle className="w-5 h-5 text-red-500" />
-                  Unrepairable Qty (Scrap)
-                </label>
-                <input
-                  type="number"
-                  id="unrepairableQty"
-                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                  min="0"
-                  value={unrepairableQty}
-                  onChange={(e) =>
-                    setUnrepairableQty(parseInt(e.target.value) || 0)
-                  }
-                  required
+                  <FileText className="w-5 h-5 text-gray-500" />
+                  Worker's Notes
+                </Label>
+                <Textarea
+                  id="workerNotes"
+                  rows={3}
+                  placeholder="Optional: Note any difficulties or suggestions..."
                 />
               </div>
             </div>
-            {validationError && (
-              <p className="mt-2 text-sm text-red-600">{validationError}</p>
-            )}
-            <div className="mt-6">
-              <label
-                htmlFor="workerNotes"
-                className=" text-sm font-medium text-gray-700 mb-1 flex items-center gap-2"
-              >
-                <FileText className="w-5 h-5 text-gray-500" />
-                Worker's Notes
-              </label>
-              <textarea
-                id="workerNotes"
-                rows={3}
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                placeholder="Optional: Note any difficulties or suggestions..."
-              ></textarea>
-            </div>
-          </div>
-        </div>
-        <div className="mt-8 flex justify-end gap-4 border-t pt-6">
-          <button
-            type="submit"
-            disabled={!!validationError}
-            className="flex items-center gap-2 px-6 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:bg-gray-400"
-          >
-            <Save className="w-4 h-4" />
-            Complete & Save Result
-          </button>
-        </div>
+          </CardContent>
+          <CardFooter className="flex justify-end">
+            <Button
+              type="submit"
+              disabled={!!validationError}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              <Save className="w-4 h-4 mr-2" />
+              Complete & Save Result
+            </Button>
+          </CardFooter>
+        </Card>
       </form>
     </div>
   );

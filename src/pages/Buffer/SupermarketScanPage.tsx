@@ -8,6 +8,17 @@ import {
   AlertTriangle,
   Send,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
 
 type KanbanRequest = { poId: string; sewingLine: string; totalBundles: number };
 type BundleChecklistItem = { id: string; scanned: boolean };
@@ -65,24 +76,28 @@ const SupermarketScanPage: React.FC = () => {
 
   if (!selectedRequest) {
     return (
-      <div className="p-4">
-        <h1 className="text-3xl font-bold text-gray-800 mb-6">
+      <div className="p-4 md:p-6">
+        <h1 className="text-3xl font-bold mb-6">
           Select a Kanban Request to Process
         </h1>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {mockRequests.map((req) => (
-            <div
+            <Card
               key={req.poId}
-              className="bg-white p-5 rounded-lg shadow hover:shadow-lg transition-shadow cursor-pointer"
+              className="hover:shadow-lg transition-shadow cursor-pointer"
               onClick={() => handleSelectRequest(req)}
             >
-              <h2 className="font-bold text-xl text-blue-600">{req.poId}</h2>
-              <p className="text-gray-600">Sewing Line: {req.sewingLine}</p>
-              <p className="text-gray-600 mt-2">
-                Total Bundles:{" "}
-                <span className="font-semibold">{req.totalBundles}</span>
-              </p>
-            </div>
+              <CardHeader>
+                <CardTitle className="text-blue-600">{req.poId}</CardTitle>
+                <CardDescription>Destination: {req.sewingLine}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p>
+                  Total Bundles:{" "}
+                  <span className="font-semibold">{req.totalBundles}</span>
+                </p>
+              </CardContent>
+            </Card>
           ))}
         </div>
       </div>
@@ -90,90 +105,98 @@ const SupermarketScanPage: React.FC = () => {
   }
 
   return (
-    <div className="p-4">
-      <button
+    <div className="p-4 md:p-6">
+      <Button
+        variant="link"
         onClick={() => setSelectedRequest(null)}
-        className="mb-4 text-blue-600 hover:underline"
+        className="mb-4 p-0 h-auto"
       >
         &larr; Back to request selection
-      </button>
-      <h1 className="text-3xl font-bold text-gray-800 mb-2">
+      </Button>
+      <h1 className="text-3xl font-bold mb-2">
         Supermarket Dispatch for PO: {selectedRequest.poId}
       </h1>
-      <p className="text-gray-600 mb-6">
+      <p className="text-muted-foreground mb-6">
         Destination: {selectedRequest.sewingLine}
       </p>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-md">
-          <h2 className="text-xl font-bold flex items-center mb-4">
-            <ClipboardList className="mr-2" /> Bundle Checklist
-          </h2>
-          <div className="max-h-96 overflow-y-auto pr-2 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            {bundleChecklist.map((item) => (
-              <div
-                key={item.id}
-                className={`p-2 border rounded-md flex items-center transition-colors ${
-                  item.scanned ? "bg-green-100 border-green-300" : "bg-gray-50"
-                }`}
-              >
-                {item.scanned && (
-                  <Check className="w-5 h-5 text-green-600 mr-2" />
-                )}
-                <span
-                  className={`font-mono text-sm ${
-                    item.scanned ? "text-green-800" : "text-gray-700"
-                  }`}
-                >
-                  {item.id}
-                </span>
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <ClipboardList className="mr-2 h-5 w-5" /> Bundle Checklist
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ScrollArea className="h-96 pr-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {bundleChecklist.map((item) => (
+                  <Badge
+                    key={item.id}
+                    variant={item.scanned ? "default" : "secondary"}
+                    className={`p-2 flex items-center justify-center transition-colors h-10 ${
+                      item.scanned
+                        ? "bg-green-600 hover:bg-green-600"
+                        : "bg-secondary"
+                    }`}
+                  >
+                    {item.scanned && (
+                      <Check className="w-4 h-4 text-white mr-2" />
+                    )}
+                    <span className="font-mono text-sm">{item.id}</span>
+                  </Badge>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
 
         <div className="space-y-6">
-          <div className="bg-white p-6 rounded-xl shadow-md">
-            <h2 className="text-xl font-bold flex items-center mb-4">
-              <QrCode className="mr-2" /> Scan Bundle
-            </h2>
-            <form onSubmit={handleScan} className="flex items-center gap-2">
-              <input
-                type="text"
-                value={scannedCode}
-                onChange={(e) => setScannedCode(e.target.value)}
-                placeholder="Bundle code..."
-                className="w-full px-3 py-2 border rounded-lg"
-              />
-              <button
-                type="submit"
-                className="bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700"
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <QrCode className="mr-2 h-5 w-5" /> Scan Bundle
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleScan} className="flex items-center gap-2">
+                <Input
+                  type="text"
+                  value={scannedCode}
+                  onChange={(e) => setScannedCode(e.target.value)}
+                  placeholder="Bundle code..."
+                  className="w-full"
+                />
+                <Button type="submit" size="icon">
+                  <Check className="w-5 h-5" />
+                </Button>
+              </form>
+              <div className="mt-4 text-center">
+                <p className="text-2xl font-bold">
+                  {scannedCount} / {selectedRequest.totalBundles}
+                </p>
+                <p className="text-sm text-muted-foreground">Scanned</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4 space-y-3">
+              <Button
+                onClick={handleRecordMissing}
+                variant="secondary"
+                className="w-full flex items-center justify-center gap-2 py-6 bg-yellow-400 text-yellow-900 font-semibold hover:bg-yellow-500"
               >
-                <Check className="w-5 h-5" />
-              </button>
-            </form>
-            <div className="mt-4 text-center">
-              <p className="text-2xl font-bold text-gray-800">
-                {scannedCount} / {selectedRequest.totalBundles}
-              </p>
-              <p className="text-sm text-gray-500">Scanned</p>
-            </div>
-          </div>
-          <div className="bg-white p-6 rounded-xl shadow-md space-y-3">
-            <button
-              onClick={handleRecordMissing}
-              className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-yellow-400 text-yellow-900 font-semibold rounded-lg hover:bg-yellow-500 transition"
-            >
-              <AlertTriangle className="w-5 h-5" /> Record Missing
-            </button>
-            <button
-              onClick={handleComplete}
-              className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-600 transition disabled:bg-gray-300"
-              disabled={scannedCount !== selectedRequest.totalBundles}
-            >
-              <Send className="w-5 h-5" /> Complete Dispatch
-            </button>
-          </div>
+                <AlertTriangle className="w-5 h-5" /> Record Missing
+              </Button>
+              <Button
+                onClick={handleComplete}
+                className="w-full flex items-center justify-center gap-2 py-6 bg-green-500 hover:bg-green-600"
+                disabled={scannedCount !== selectedRequest.totalBundles}
+              >
+                <Send className="w-5 h-5" /> Complete Dispatch
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

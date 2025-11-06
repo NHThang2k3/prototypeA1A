@@ -9,6 +9,19 @@ import {
   ListChecks,
   QrCode,
 } from "lucide-react";
+import { ColumnDef } from "@tanstack/react-table";
+
+import { CustomTable } from "@/components/ui/custom-table";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 type RequestStatus =
   | "New"
@@ -116,6 +129,87 @@ const statusConfig: Record<
   },
 };
 
+const columns: ColumnDef<KanbanRequest>[] = [
+  {
+    accessorKey: "sewingLine",
+    header: "Sewing Line",
+    cell: ({ row }) => (
+      <div className="font-bold text-lg text-gray-900">
+        {row.getValue("sewingLine")}
+      </div>
+    ),
+  },
+  {
+    accessorKey: "jobNo",
+    header: "Job No",
+  },
+  {
+    accessorKey: "poId",
+    header: "PO ID",
+  },
+  {
+    accessorKey: "quantity",
+    header: "Quantity",
+  },
+  {
+    accessorKey: "requestTime",
+    header: "Request Time",
+  },
+  {
+    accessorKey: "wipHours",
+    header: "WIP (Hours)",
+    cell: ({ row }) => {
+      const request = row.original;
+      const isDelivered = request.status === "Delivered";
+      const wipText = isDelivered ? "N/A" : request.wipHours.toFixed(1);
+      const isLowWip = !isDelivered && request.wipHours < 1;
+      return (
+        <div
+          className={`font-bold ${isLowWip ? "text-red-600" : "text-gray-800"}`}
+        >
+          {wipText}
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row }) => {
+      const status = row.getValue("status") as RequestStatus;
+      const config = statusConfig[status];
+      return (
+        <Badge
+          variant="outline"
+          className={`gap-x-1.5 border-none ${config.color}`}
+        >
+          {config.icon}
+          {status}
+        </Badge>
+      );
+    },
+  },
+  {
+    id: "actions",
+    header: "Action",
+    cell: ({ row }) => {
+      const request = row.original;
+      return (
+        <div className="text-center">
+          <Button
+            onClick={() => alert(`Scanning out Job No: ${request.jobNo}`)}
+            disabled={request.status === "Delivered"}
+            size="sm"
+          >
+            <QrCode className="w-4 h-4 mr-2" />
+            Scan Out
+          </Button>
+        </div>
+      );
+    },
+  },
+];
+
 const KanbanReportPage: React.FC = () => {
   const [requests] = useState<KanbanRequest[]>(mockRequests);
   const [searchQuery, setSearchQuery] = useState("");
@@ -168,142 +262,55 @@ const KanbanReportPage: React.FC = () => {
       </div>
 
       <div className="flex flex-wrap items-center gap-4 mb-4">
-        <input
+        <Input
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search by Line, Job No, PO ID..."
-          // Dòng này đã được thay đổi: sm:max-w-xs -> sm:max-w-md
-          className="p-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 w-full sm:max-w-md"
+          className="w-full sm:max-w-md"
         />
-        <select
+        <Select
           value={statusFilter}
-          onChange={(e) =>
-            setStatusFilter(e.target.value as RequestStatus | "All")
+          onValueChange={(value) =>
+            setStatusFilter(value as RequestStatus | "All")
           }
-          className="p-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
         >
-          <option value="All">All Statuses</option>
-          {(Object.keys(statusConfig) as RequestStatus[]).map((status) => (
-            <option key={status} value={status}>
-              {status}
-            </option>
-          ))}
-        </select>
-        <select
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="All Statuses" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="All">All Statuses</SelectItem>
+            {(Object.keys(statusConfig) as RequestStatus[]).map((status) => (
+              <SelectItem key={status} value={status}>
+                {status}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select
           value={wipFilter}
-          onChange={(e) =>
-            setWipFilter(e.target.value as "All" | "Low" | "Normal" | "High")
+          onValueChange={(value) =>
+            setWipFilter(value as "All" | "Low" | "Normal" | "High")
           }
-          className="p-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
         >
-          <option value="All">All WIP</option>
-          <option value="Low">Low (&lt; 1hr)</option>
-          <option value="Normal">Normal (1-4hr)</option>
-          <option value="High">High (&gt; 4hr)</option>
-        </select>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="All WIP" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="All">All WIP</SelectItem>
+            <SelectItem value="Low">Low (&lt; 1hr)</SelectItem>
+            <SelectItem value="Normal">Normal (1-4hr)</SelectItem>
+            <SelectItem value="High">High (&gt; 4hr)</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
-      <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
-        <table className="w-full text-sm text-left text-gray-500">
-          <thead className="text-xs text-gray-700 uppercase bg-gray-100">
-            <tr>
-              <th scope="col" className="px-6 py-3">
-                Sewing Line
-              </th>
-              <th scope="col" className="px-6 py-3">
-                Job No
-              </th>
-              <th scope="col" className="px-6 py-3">
-                PO ID
-              </th>
-              <th scope="col" className="px-6 py-3">
-                Quantity
-              </th>
-              <th scope="col" className="px-6 py-3">
-                Request Time
-              </th>
-              <th scope="col" className="px-6 py-3">
-                WIP (Hours)
-              </th>
-              <th scope="col" className="px-6 py-3">
-                Status
-              </th>
-              <th scope="col" className="px-6 py-3 text-center">
-                Action
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {sortedRequests.length > 0 ? (
-              sortedRequests.map((req) => {
-                const isDelivered = req.status === "Delivered";
-                const wipText = isDelivered ? "N/A" : req.wipHours.toFixed(1);
-                const isLowWip = !isDelivered && req.wipHours < 1;
-
-                return (
-                  <tr
-                    key={req.id}
-                    className="bg-white border-b hover:bg-gray-50"
-                  >
-                    <th
-                      scope="row"
-                      className="px-6 py-4 font-bold text-lg text-gray-900 whitespace-nowrap"
-                    >
-                      {req.sewingLine}
-                    </th>
-                    <td className="px-6 py-4 font-medium text-gray-700">
-                      {req.jobNo}
-                    </td>
-                    <td className="px-6 py-4 text-gray-700">{req.poId}</td>
-                    <td className="px-6 py-4 font-medium text-gray-800">
-                      {req.quantity}
-                    </td>
-                    <td className="px-6 py-4 text-gray-600">
-                      {req.requestTime}
-                    </td>
-                    <td
-                      className={`px-6 py-4 font-bold ${
-                        isLowWip ? "text-red-600" : "text-gray-800"
-                      }`}
-                    >
-                      {wipText}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`inline-flex items-center gap-x-1.5 py-1.5 px-3 rounded-full text-xs font-medium ${
-                          statusConfig[req.status].color
-                        }`}
-                      >
-                        {statusConfig[req.status].icon}
-                        {req.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <button
-                        onClick={() =>
-                          alert(`Scanning out Job No: ${req.jobNo}`)
-                        }
-                        disabled={isDelivered}
-                        className="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg shadow-sm hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-                      >
-                        <QrCode className="w-4 h-4 mr-2" />
-                        Scan Out
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })
-            ) : (
-              <tr>
-                <td colSpan={8} className="text-center py-10 text-gray-500">
-                  No matching requests found.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <CustomTable
+        columns={columns}
+        data={sortedRequests}
+        showCheckbox={false}
+        showColumnVisibility={false}
+      />
     </div>
   );
 };

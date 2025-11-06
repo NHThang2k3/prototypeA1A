@@ -1,5 +1,6 @@
 import ReactECharts from "echarts-for-react";
 import { Zap, Clock, CheckCircle } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const downtimeReasons = [
   { value: 45, name: "Needle Breakage" },
@@ -47,53 +48,63 @@ const TPMDashboardPage = () => {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-2xl font-bold text-gray-800">TPM Dashboard</h1>
-        <p className="text-sm text-gray-500">
+        <h1 className="text-2xl font-bold">TPM Dashboard</h1>
+        <p className="text-sm text-muted-foreground">
           Monitor Overall Equipment Effectiveness (OEE) and downtime.
         </p>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="p-6 bg-white border rounded-lg shadow-sm flex flex-col items-center">
-          <h2 className="text-xl font-semibold mb-4">
-            Overall Equipment Effectiveness (OEE)
-          </h2>
-          <ReactECharts
-            option={gaugeOption}
-            style={{ height: "300px", width: "100%" }}
-          />
-        </div>
-        <div className="p-6 bg-white border rounded-lg shadow-sm grid grid-cols-1 gap-4 content-center">
-          <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
-            <Zap className="w-8 h-8 text-yellow-500" />
-            <div>
-              <p className="font-bold text-2xl">90.2%</p>
-              <p className="text-sm text-gray-600">Performance</p>
+        <Card>
+          <CardHeader className="items-center pb-2">
+            <CardTitle className="text-xl">
+              Overall Equipment Effectiveness (OEE)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ReactECharts
+              option={gaugeOption}
+              style={{ height: "300px", width: "100%" }}
+            />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="grid grid-cols-1 gap-4 content-center p-6">
+            <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-lg">
+              <Zap className="w-8 h-8 text-yellow-500" />
+              <div>
+                <p className="font-bold text-2xl">90.2%</p>
+                <p className="text-sm text-muted-foreground">Performance</p>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
-            <Clock className="w-8 h-8 text-blue-500" />
-            <div>
-              <p className="font-bold text-2xl">92.5%</p>
-              <p className="text-sm text-gray-600">Availability</p>
+            <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-lg">
+              <Clock className="w-8 h-8 text-blue-500" />
+              <div>
+                <p className="font-bold text-2xl">92.5%</p>
+                <p className="text-sm text-muted-foreground">Availability</p>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
-            <CheckCircle className="w-8 h-8 text-green-500" />
-            <div>
-              <p className="font-bold text-2xl">98.9%</p>
-              <p className="text-sm text-gray-600">Quality</p>
+            <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-lg">
+              <CheckCircle className="w-8 h-8 text-green-500" />
+              <div>
+                <p className="font-bold text-2xl">98.9%</p>
+                <p className="text-sm text-muted-foreground">Quality</p>
+              </div>
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
 
-      <div className="p-4 bg-white border rounded-lg shadow-sm">
-        <h2 className="text-lg font-semibold text-gray-700 mb-4">
-          Top Downtime Reasons (Last 24h)
-        </h2>
-        <ReactECharts option={barOption} style={{ height: "400px" }} />
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">
+            Top Downtime Reasons (Last 24h)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ReactECharts option={barOption} style={{ height: "400px" }} />
+        </CardContent>
+      </Card>
     </div>
   );
 };

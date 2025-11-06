@@ -9,6 +9,11 @@ import {
   Loader2,
 } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+
 // ============================================================================
 // 1. MOCK DATA & TYPES
 // ============================================================================
@@ -24,7 +29,6 @@ type Bundle = {
   status: "At Cutting" | "At Buffer" | "At Decoration";
 };
 
-// Dữ liệu giả cho các kịch bản
 const mockBundleAtCutting: Bundle = {
   id: "B-12345",
   po: "PO-2024-001",
@@ -44,11 +48,9 @@ const mockBundleAtBuffer: Bundle = {
 };
 
 // ============================================================================
-// 2. DUMB UI COMPONENTS (Components giao diện phụ)
-//    Các component này chỉ nhận props và hiển thị, không chứa logic nghiệp vụ.
+// 2. DUMB UI COMPONENTS
 // ============================================================================
 
-// --- Component hiển thị giao diện Quét QR ---
 const ScannerView: React.FC<{
   isScanning: boolean;
   onScan: () => void;
@@ -71,10 +73,11 @@ const ScannerView: React.FC<{
         <div className="absolute top-0 left-0 w-full h-1.5 bg-green-400 shadow-[0_0_20px_5px_rgba(52,211,153,0.7)] animate-scan"></div>
       )}
     </div>
-    <button
+    <Button
       onClick={onScan}
       disabled={isScanning}
-      className="mt-10 flex items-center justify-center w-64 bg-blue-600 text-white font-bold py-4 px-8 rounded-full shadow-lg hover:bg-blue-700 transition-all text-xl disabled:bg-gray-500 disabled:cursor-not-allowed"
+      className="mt-10 w-64 text-xl"
+      size="lg"
     >
       {isScanning ? (
         <>
@@ -84,11 +87,10 @@ const ScannerView: React.FC<{
       ) : (
         "Scan"
       )}
-    </button>
+    </Button>
   </div>
 );
 
-// --- Component hiển thị giao diện Chi tiết & Hành động ---
 type Feedback = { type: "success" | "error"; message: string };
 
 const DetailsView: React.FC<{
@@ -104,12 +106,13 @@ const DetailsView: React.FC<{
     if (bundle.status === "At Cutting") {
       return (
         <div className="mt-6 text-center">
-          <button
+          <Button
             onClick={onConfirmScanIn}
-            className="bg-green-500 text-white font-bold py-4 px-8 rounded-lg shadow-lg hover:bg-green-600 transition-colors text-xl"
+            className="bg-green-500 hover:bg-green-600 text-white text-xl"
+            size="lg"
           >
             Confirm Scan In to Buffer
-          </button>
+          </Button>
         </div>
       );
     }
@@ -121,24 +124,26 @@ const DetailsView: React.FC<{
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {decorationSteps.map((step) => (
-              <button
+              <Button
                 key={step}
                 onClick={() => onScanOut(step)}
-                className="flex items-center justify-center p-4 bg-white border rounded-lg shadow hover:bg-gray-50 transition-all"
+                variant="outline"
+                className="flex items-center justify-center p-4 h-auto"
               >
                 <ArrowRight className="w-5 h-5 mr-3 text-blue-500" />
                 <span className="font-semibold text-gray-800">{step}</span>
-              </button>
+              </Button>
             ))}
-            <button
+            <Button
               onClick={() => onScanOut("Temporary Warehouse")}
-              className="md:col-span-2 flex items-center justify-center p-4 bg-white border rounded-lg shadow hover:bg-gray-50 transition-all"
+              variant="outline"
+              className="md:col-span-2 flex items-center justify-center p-4 h-auto"
             >
               <Warehouse className="w-5 h-5 mr-3 text-purple-500" />
               <span className="font-semibold text-gray-800">
                 Store in Temporary Warehouse
               </span>
-            </button>
+            </Button>
           </div>
         </div>
       );
@@ -151,81 +156,92 @@ const DetailsView: React.FC<{
       <h1 className="text-3xl font-bold text-gray-800 mb-6">
         Buffer Scan In/Out
       </h1>
-      <div className="bg-white p-6 rounded-xl shadow-md">
-        {feedback && (
-          <div
-            className={`mb-4 p-3 rounded-lg flex items-center ${
-              feedback.type === "success"
-                ? "bg-green-100 text-green-800"
-                : "bg-red-100 text-red-800"
-            }`}
-          >
-            {feedback.type === "success" ? (
-              <CheckCircle className="w-5 h-5 mr-2" />
-            ) : (
-              <XCircle className="w-5 h-5 mr-2" />
-            )}
-            <span>{feedback.message}</span>
-          </div>
-        )}
+      <Card>
+        <CardContent className="pt-6">
+          {feedback && (
+            <Alert
+              variant={feedback.type === "error" ? "destructive" : "default"}
+              className="mb-4"
+            >
+              {feedback.type === "success" ? (
+                <CheckCircle className="h-4 w-4" />
+              ) : (
+                <XCircle className="h-4 w-4" />
+              )}
+              <AlertTitle>
+                {feedback.type === "success" ? "Success" : "Error"}
+              </AlertTitle>
+              <AlertDescription>{feedback.message}</AlertDescription>
+            </Alert>
+          )}
 
-        {bundle && (
-          <div>
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h2 className="text-xl font-bold text-gray-800 mb-3 flex items-center">
-                <Info className="w-6 h-6 mr-2 text-blue-500" /> Bundle
-                Information
-              </h2>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-gray-700">
-                <p>
-                  <strong className="font-semibold">Bundle ID:</strong>{" "}
-                  {bundle.id}
-                </p>
-                <p>
-                  <strong className="font-semibold">PO #:</strong> {bundle.po}
-                </p>
-                <p>
-                  <strong className="font-semibold">Style:</strong>{" "}
-                  {bundle.style}
-                </p>
-                <p>
-                  <strong className="font-semibold">Status:</strong>{" "}
-                  <span
-                    className={`px-2 py-1 text-xs font-bold rounded-full ${
-                      bundle.status === "At Buffer"
-                        ? "bg-yellow-200 text-yellow-800"
-                        : bundle.status === "At Decoration"
-                        ? "bg-purple-200 text-purple-800"
-                        : "bg-blue-200 text-blue-800"
-                    }`}
-                  >
-                    {bundle.status}
-                  </span>
-                </p>
-              </div>
+          {bundle && (
+            <div>
+              <Card className="bg-muted">
+                <CardHeader>
+                  <CardTitle className="flex items-center text-xl">
+                    <Info className="w-6 h-6 mr-2 text-blue-500" /> Bundle
+                    Information
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-foreground/80">
+                    <p>
+                      <strong className="font-semibold text-foreground">
+                        Bundle ID:
+                      </strong>{" "}
+                      {bundle.id}
+                    </p>
+                    <p>
+                      <strong className="font-semibold text-foreground">
+                        PO #:
+                      </strong>{" "}
+                      {bundle.po}
+                    </p>
+                    <p>
+                      <strong className="font-semibold text-foreground">
+                        Style:
+                      </strong>{" "}
+                      {bundle.style}
+                    </p>
+                    <div>
+                      <strong className="font-semibold text-foreground">
+                        Status:
+                      </strong>{" "}
+                      <Badge
+                        variant={
+                          bundle.status === "At Buffer"
+                            ? "secondary"
+                            : "default"
+                        }
+                      >
+                        {bundle.status}
+                      </Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              {renderActions()}
             </div>
-            {renderActions()}
-          </div>
-        )}
+          )}
 
-        {!bundle && !feedback && (
-          <p className="text-gray-500 text-center p-8">Waiting for scan...</p>
-        )}
-      </div>
-      <button onClick={onBack} className="mt-6 text-blue-600 hover:underline">
+          {!bundle && !feedback && (
+            <p className="text-gray-500 text-center p-8">Waiting for scan...</p>
+          )}
+        </CardContent>
+      </Card>
+      <Button onClick={onBack} variant="link" className="mt-4 px-0">
         &larr; Back to Scanner
-      </button>
+      </Button>
     </div>
   );
 };
 
-// Component helper để nhúng CSS animation vào trang.
-// Giữ nó bên trong file để đảm bảo tính độc lập.
 const GlobalStyles = () => (
   <style>{`
     @keyframes scan {
       0% { transform: translateY(0); }
-      100% { transform: translateY(calc(20rem - 0.375rem)); } /* 320px (h-80) - 6px (h-1.5) */
+      100% { transform: translateY(calc(20rem - 0.375rem)); }
     }
     .animate-scan {
       animation: scan 1.5s ease-in-out infinite alternate;
@@ -234,23 +250,19 @@ const GlobalStyles = () => (
 );
 
 // ============================================================================
-// 3. MAIN STATEFUL COMPONENT (Component chính của trang)
-//    Quản lý trạng thái và luồng hoạt động của toàn bộ màn hình.
+// 3. MAIN STATEFUL COMPONENT
 // ============================================================================
 
 const BufferScanPage: React.FC = () => {
-  // --- STATE MANAGEMENT ---
   const [view, setView] = useState<"scanner" | "details">("scanner");
   const [isScanning, setIsScanning] = useState(false);
   const [currentBundle, setCurrentBundle] = useState<Bundle | null>(null);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
 
-  // --- LOGIC & EVENT HANDLERS ---
   const handleScan = () => {
     const code = window.prompt(
       "SIMULATE SCAN: Enter Bundle ID (e.g., B-12345, B-67890, or anything else for an error)"
     );
-
     if (!code) return;
 
     setIsScanning(true);
@@ -306,7 +318,6 @@ const BufferScanPage: React.FC = () => {
     setFeedback(null);
   };
 
-  // --- RENDER LOGIC ---
   const renderCurrentView = () => {
     if (view === "scanner") {
       return <ScannerView isScanning={isScanning} onScan={handleScan} />;

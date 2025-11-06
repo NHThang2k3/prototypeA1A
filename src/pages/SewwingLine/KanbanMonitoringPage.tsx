@@ -1,7 +1,10 @@
-// src/pages/KanbanMonitoringPage/KanbanMonitoringPage.tsx
-
 import React from "react";
 import { Clock, CheckCircle, PlayCircle, Archive } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 // 1. Định nghĩa một interface cho cấu trúc dữ liệu của một ticket
 interface Ticket {
@@ -73,41 +76,39 @@ const KanbanCard = ({ ticket }: { ticket: Ticket }) => {
   // TypeScript giờ sẽ hiểu ticket.current có thể là undefined
   const progress = ticket.current ? (ticket.current / ticket.target) * 100 : 0;
   return (
-    <div className="p-4 mb-4 bg-white border border-gray-200 rounded-lg shadow-sm cursor-pointer hover:shadow-md transition-shadow">
-      <div className="flex justify-between items-start">
-        <span className="text-sm font-bold text-gray-800">{ticket.style}</span>
-        <span className="px-2 py-0.5 text-xs font-semibold text-indigo-800 bg-indigo-100 rounded-full">
-          {ticket.po}
-        </span>
-      </div>
-      <p className="mt-1 text-xs text-gray-500">
-        {ticket.id} | Layout: {ticket.layout}
-      </p>
-
-      {ticket.current !== undefined && (
-        <div className="mt-3">
-          <div className="flex justify-between text-xs font-medium text-gray-600">
-            <span>Progress</span>
-            <span>{progress.toFixed(0)}%</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
-            <div
-              className="bg-blue-600 h-1.5 rounded-full"
-              style={{ width: `${progress}%` }}
-            ></div>
-          </div>
-          <p className="text-right text-xs mt-1 text-gray-500">
-            {ticket.current.toLocaleString()} / {ticket.target.toLocaleString()}
-          </p>
+    <Card className="mb-4 cursor-pointer hover:shadow-md transition-shadow">
+      <CardContent className="p-4">
+        <div className="flex justify-between items-start">
+          <span className="text-sm font-bold">{ticket.style}</span>
+          <Badge variant="secondary">{ticket.po}</Badge>
         </div>
-      )}
+        <p className="mt-1 text-xs text-muted-foreground">
+          {ticket.id} | Layout: {ticket.layout}
+        </p>
 
-      {!ticket.ready && (
-        <div className="mt-3 p-2 text-xs text-center text-orange-800 bg-orange-100 rounded-md">
-          Waiting for SFG from Supermarket
-        </div>
-      )}
-    </div>
+        {ticket.current !== undefined && (
+          <div className="mt-3">
+            <div className="flex justify-between text-xs font-medium text-muted-foreground">
+              <span>Progress</span>
+              <span>{progress.toFixed(0)}%</span>
+            </div>
+            <Progress value={progress} className="h-1.5 mt-1" />
+            <p className="text-right text-xs mt-1 text-muted-foreground">
+              {ticket.current.toLocaleString()} /{" "}
+              {ticket.target.toLocaleString()}
+            </p>
+          </div>
+        )}
+
+        {!ticket.ready && (
+          <Alert className="mt-3 p-2 text-xs text-center text-orange-800 bg-orange-100 border-orange-200">
+            <AlertDescription>
+              Waiting for SFG from Supermarket
+            </AlertDescription>
+          </Alert>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 
@@ -123,24 +124,28 @@ const KanbanColumn = ({
   icon: React.ElementType;
   color: string;
 }) => (
-  <div className="flex-shrink-0 w-80 bg-gray-100 rounded-lg">
-    <div
-      className={`flex items-center justify-between p-3 rounded-t-lg ${color}`}
+  <Card className="flex-shrink-0 w-80 bg-slate-100">
+    <CardHeader
+      className={`flex flex-row items-center justify-between p-3 rounded-t-lg text-white ${color}`}
     >
       <div className="flex items-center gap-2">
-        <Icon className="w-5 h-5 text-white" />
-        <h3 className="font-semibold text-white">{title}</h3>
+        <Icon className="w-5 h-5" />
+        <CardTitle className="text-base font-semibold text-white">
+          {title}
+        </CardTitle>
       </div>
-      <span className="px-2 py-1 text-xs font-bold text-gray-700 bg-white rounded-full">
-        {tickets.length}
-      </span>
-    </div>
-    <div className="p-2 overflow-y-auto h-[calc(100vh-200px)]">
-      {tickets.map((ticket) => (
-        <KanbanCard key={ticket.id} ticket={ticket} />
-      ))}
-    </div>
-  </div>
+      <Badge variant="secondary">{tickets.length}</Badge>
+    </CardHeader>
+    <CardContent className="p-2">
+      <ScrollArea className="h-[calc(100vh-200px)]">
+        <div className="pr-4">
+          {tickets.map((ticket) => (
+            <KanbanCard key={ticket.id} ticket={ticket} />
+          ))}
+        </div>
+      </ScrollArea>
+    </CardContent>
+  </Card>
 );
 
 const KanbanMonitoringPage = () => {
@@ -174,10 +179,8 @@ const KanbanMonitoringPage = () => {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-2xl font-bold text-gray-800">
-          Sewing Line Kanban Monitoring
-        </h1>
-        <p className="text-sm text-gray-500">
+        <h1 className="text-2xl font-bold">Sewing Line Kanban Monitoring</h1>
+        <p className="text-sm text-muted-foreground">
           Drag and drop to prioritize. Click a card for details.
         </p>
       </header>

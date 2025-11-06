@@ -9,8 +9,20 @@ import {
   ChevronDown,
   ChevronRight,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
-// Định nghĩa các vị trí xử lý
 type ProcessLocation =
   | "Supermarket"
   | "Bonding"
@@ -19,28 +31,16 @@ type ProcessLocation =
   | "Thêu"
   | "Buffer";
 
-// Định nghĩa trạng thái của PO, suy ra từ các Bundle
 type POStatus = "Complete" | "Partially Complete" | "In Progress";
-
-// Cấu trúc dữ liệu cho một Bundle
 type Bundle = {
   bundleId: string;
   quantity: number;
   currentLocation: ProcessLocation;
 };
+type PO = { poId: string; styleId: string; color: string; bundles: Bundle[] };
 
-// Cấu trúc dữ liệu cho một PO, chứa danh sách các Bundle
-type PO = {
-  poId: string;
-  styleId: string;
-  color: string;
-  bundles: Bundle[];
-};
-
-// Dữ liệu giả lập đã được cập nhật
 const mockPOs: PO[] = [
   {
-    // PO này đã Hoàn thành Toàn bộ
     poId: "PO-002",
     styleId: "HOODIE-RED",
     color: "Red",
@@ -50,7 +50,6 @@ const mockPOs: PO[] = [
     ],
   },
   {
-    // PO này Hoàn thành một phần
     poId: "PO-008",
     styleId: "T-SHIRT-WHT",
     color: "White",
@@ -61,7 +60,6 @@ const mockPOs: PO[] = [
     ],
   },
   {
-    // PO này đang trong quá trình xử lý
     poId: "PO-011",
     styleId: "POLO-GRN",
     color: "Green",
@@ -80,22 +78,15 @@ const mockPOs: PO[] = [
   },
 ];
 
-// Hàm trợ giúp để tính toán trạng thái và số lượng
 const processPOData = (po: PO) => {
   const totalQuantity = po.bundles.reduce((sum, b) => sum + b.quantity, 0);
   const completedQuantity = po.bundles
     .filter((b) => b.currentLocation === "Supermarket")
     .reduce((sum, b) => sum + b.quantity, 0);
-
   let status: POStatus;
-  if (completedQuantity === 0) {
-    status = "In Progress";
-  } else if (completedQuantity < totalQuantity) {
-    status = "Partially Complete";
-  } else {
-    status = "Complete";
-  }
-
+  if (completedQuantity === 0) status = "In Progress";
+  else if (completedQuantity < totalQuantity) status = "Partially Complete";
+  else status = "Complete";
   return { ...po, totalQuantity, completedQuantity, status };
 };
 
@@ -106,7 +97,7 @@ const SupermarketReportPage: React.FC = () => {
 
   const processedPOs = useMemo(() => {
     return mockPOs
-      .map(processPOData) // Thêm dữ liệu đã tính toán (status, quantities)
+      .map(processPOData)
       .filter(
         (po) =>
           (po.poId.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -119,11 +110,8 @@ const SupermarketReportPage: React.FC = () => {
   const handleToggleExpand = (poId: string) => {
     setExpandedPOIds((prev) => {
       const newSet = new Set(prev);
-      if (newSet.has(poId)) {
-        newSet.delete(poId);
-      } else {
-        newSet.add(poId);
-      }
+      if (newSet.has(poId)) newSet.delete(poId);
+      else newSet.add(poId);
       return newSet;
     });
   };
@@ -135,171 +123,144 @@ const SupermarketReportPage: React.FC = () => {
     "In Progress",
   ];
 
+  const getStatusBadgeVariant = (
+    status: POStatus
+  ): "default" | "secondary" | "destructive" => {
+    if (status === "Complete") return "default";
+    if (status === "Partially Complete") return "secondary";
+    return "destructive";
+  };
+
   return (
-    <div className="p-4">
-      <h1 className="text-3xl font-bold text-gray-800 mb-6">
+    <div className="p-4 md:p-6">
+      <h1 className="text-3xl font-bold mb-6">
         Supermarket Inventory & Status Report
       </h1>
 
-      {/* Search and Filter UI */}
-      <div className="bg-white p-4 rounded-xl shadow-md mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
-        <div className="relative w-full md:w-1/3">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search by PO, Style, Color..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500"
-          />
+      <Card className="p-4 mb-6">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="relative w-full md:w-1/3">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Input
+              type="text"
+              placeholder="Search by PO, Style, Color..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Tabs
+            value={activeTab}
+            onValueChange={(value: string) =>
+              setActiveTab(value as "All" | POStatus)
+            }
+          >
+            <TabsList>
+              {tabs.map((tab) => (
+                <TabsTrigger key={tab} value={tab}>
+                  {tab}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
         </div>
-        <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-4">
-            {tabs.map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === tab
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
-          </nav>
-        </div>
-      </div>
+      </Card>
 
-      {/* Main Table */}
-      <div className="bg-white rounded-xl shadow-md overflow-x-auto">
-        <table className="w-full text-sm text-left text-gray-600">
-          <thead className="text-xs text-gray-700 uppercase bg-gray-50">
-            <tr>
-              <th scope="col" className="px-2 py-3 w-12"></th>
-              <th scope="col" className="px-6 py-3">
-                PO ID
-              </th>
-              <th scope="col" className="px-6 py-3">
-                Style ID
-              </th>
-              <th scope="col" className="px-6 py-3">
-                Color
-              </th>
-              <th scope="col" className="px-6 py-3">
-                Progress (Qty)
-              </th>
-              <th scope="col" className="px-6 py-3">
-                Status
-              </th>
-            </tr>
-          </thead>
-          <tbody>
+      <Card>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-12"></TableHead>
+              <TableHead>PO ID</TableHead>
+              <TableHead>Style ID</TableHead>
+              <TableHead>Color</TableHead>
+              <TableHead>Progress (Qty)</TableHead>
+              <TableHead>Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {processedPOs.map((po) => {
               const isExpanded = expandedPOIds.has(po.poId);
               return (
                 <React.Fragment key={po.poId}>
-                  {/* Hàng PO chính */}
-                  <tr className="bg-white border-b hover:bg-gray-50">
-                    <td className="px-2 py-4">
-                      <button
+                  <TableRow>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => handleToggleExpand(po.poId)}
-                        className="p-1 rounded-full hover:bg-gray-200"
                       >
                         {isExpanded ? (
                           <ChevronDown className="w-5 h-5" />
                         ) : (
                           <ChevronRight className="w-5 h-5" />
                         )}
-                      </button>
-                    </td>
-                    <td className="px-6 py-4 font-medium text-gray-900">
-                      {po.poId}
-                    </td>
-                    <td className="px-6 py-4">{po.styleId}</td>
-                    <td className="px-6 py-4">{po.color}</td>
-                    <td className="px-6 py-4 font-semibold text-center">
+                      </Button>
+                    </TableCell>
+                    <TableCell className="font-medium">{po.poId}</TableCell>
+                    <TableCell>{po.styleId}</TableCell>
+                    <TableCell>{po.color}</TableCell>
+                    <TableCell className="font-semibold">
                       {po.completedQuantity} / {po.totalQuantity}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`inline-flex items-center gap-x-1.5 py-1 px-2.5 rounded-md text-xs font-medium ${
-                          po.status === "Complete"
-                            ? "bg-green-100 text-green-800"
-                            : po.status === "Partially Complete"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : "bg-red-100 text-red-800"
-                        }`}
-                      >
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={getStatusBadgeVariant(po.status)}>
                         {po.status === "Complete" ? (
-                          <PackageCheck className="w-4 h-4" />
+                          <PackageCheck className="w-4 h-4 mr-1" />
                         ) : po.status === "Partially Complete" ? (
-                          <GitCommitHorizontal className="w-4 h-4" />
+                          <GitCommitHorizontal className="w-4 h-4 mr-1" />
                         ) : (
-                          <Clock className="w-4 h-4" />
+                          <Clock className="w-4 h-4 mr-1" />
                         )}
                         {po.status}
-                      </span>
-                    </td>
-                  </tr>
-
-                  {/* Hàng chi tiết Bundle (chỉ hiển thị khi mở rộng) */}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
                   {isExpanded && (
-                    <tr className="bg-gray-50">
-                      <td colSpan={6} className="p-0">
+                    <TableRow className="bg-muted hover:bg-muted">
+                      <TableCell colSpan={6} className="p-0">
                         <div className="px-8 py-4">
-                          <h4 className="text-md font-semibold text-gray-700 mb-2">
+                          <h4 className="text-md font-semibold mb-2">
                             Bundle Details
                           </h4>
-                          <table className="w-full text-sm">
-                            <thead className="text-xs text-gray-600">
-                              <tr>
-                                <th className="text-left py-2 px-4">
-                                  Bundle ID
-                                </th>
-                                <th className="text-left py-2 px-4">
-                                  Quantity
-                                </th>
-                                <th className="text-left py-2 px-4">
-                                  Current Location
-                                </th>
-                              </tr>
-                            </thead>
-                            <tbody>
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Bundle ID</TableHead>
+                                <TableHead>Quantity</TableHead>
+                                <TableHead>Current Location</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
                               {po.bundles.map((bundle) => (
-                                <tr key={bundle.bundleId} className="border-t">
-                                  <td className="py-2 px-4">
-                                    {bundle.bundleId}
-                                  </td>
-                                  <td className="py-2 px-4">
-                                    {bundle.quantity}
-                                  </td>
-                                  <td className="py-2 px-4">
+                                <TableRow key={bundle.bundleId}>
+                                  <TableCell>{bundle.bundleId}</TableCell>
+                                  <TableCell>{bundle.quantity}</TableCell>
+                                  <TableCell>
                                     <span
-                                      className={`font-medium ${
+                                      className={
                                         bundle.currentLocation === "Supermarket"
-                                          ? "text-green-600"
-                                          : "text-gray-600"
-                                      }`}
+                                          ? "font-medium text-green-600"
+                                          : ""
+                                      }
                                     >
                                       {bundle.currentLocation}
                                     </span>
-                                  </td>
-                                </tr>
+                                  </TableCell>
+                                </TableRow>
                               ))}
-                            </tbody>
-                          </table>
+                            </TableBody>
+                          </Table>
                         </div>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   )}
                 </React.Fragment>
               );
             })}
-          </tbody>
-        </table>
-      </div>
+          </TableBody>
+        </Table>
+      </Card>
     </div>
   );
 };

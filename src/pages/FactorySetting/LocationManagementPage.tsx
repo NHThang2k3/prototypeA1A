@@ -847,10 +847,14 @@ interface LocationTableProps {
   onSelectionChange: (newSelectedIds: Set<string>) => void;
 }
 
+// =========================================================================
+// === BẮT ĐẦU PHẦN CODE ĐÃ SỬA =============================================
+// =========================================================================
 const LocationTable: React.FC<LocationTableProps> = ({
   locations,
   onEdit,
   onDelete,
+  onViewItems,
   selectedIds,
   onSelectionChange,
 }) => {
@@ -884,10 +888,15 @@ const LocationTable: React.FC<LocationTableProps> = ({
   }, [locations]);
 
   useEffect(() => {
-    // Expand all warehouses by default whenever the locations data changes
-    const initialExpanded = new Set(
-      Object.keys(groupedData).map((w) => `wh-${w}`)
-    );
+    // Mở rộng tất cả các warehouse và shelf mặc định khi tải
+    const initialExpanded = new Set<string>();
+    Object.keys(groupedData).forEach((warehouseId) => {
+      const whKey = `wh-${warehouseId}`;
+      initialExpanded.add(whKey);
+      Object.keys(groupedData[warehouseId].shelves).forEach((shelfId) => {
+        initialExpanded.add(`${whKey}-sh-${shelfId}`);
+      });
+    });
     setExpandedRows(initialExpanded);
   }, [groupedData]);
 
@@ -937,15 +946,21 @@ const LocationTable: React.FC<LocationTableProps> = ({
 
   const renderOccupancy = (occupancy: number, capacity: number) => {
     const percentage = capacity > 0 ? (occupancy / capacity) * 100 : 0;
+    const barColor =
+      percentage > 90
+        ? "bg-red-600"
+        : percentage > 75
+        ? "bg-yellow-500"
+        : "bg-blue-600";
     return (
       <div className="flex items-center">
         <div className="w-24 bg-gray-200 rounded-full h-2.5 mr-2">
           <div
-            className="bg-blue-600 h-2.5 rounded-full"
+            className={`${barColor} h-2.5 rounded-full`}
             style={{ width: `${percentage}%` }}
           ></div>
         </div>
-        <span className="text-sm text-gray-600">
+        <span className="text-sm text-gray-600 font-medium w-28">
           {occupancy} / {capacity}
         </span>
       </div>
@@ -961,17 +976,17 @@ const LocationTable: React.FC<LocationTableProps> = ({
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50 sticky top-0 z-10">
             <tr>
-              <th className=" py-3 ">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 text-blue-600 border-gray-300 rounded"
-                  checked={isAllSelected}
-                  onChange={handleSelectAll}
-                  aria-label="Select all locations"
-                />
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">
-                Location
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-2/5">
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 text-blue-600 border-gray-300 rounded mr-4"
+                    checked={isAllSelected}
+                    onChange={handleSelectAll}
+                    aria-label="Select all locations"
+                  />
+                  Location
+                </div>
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Occupancy / Capacity
@@ -1011,33 +1026,34 @@ const LocationTable: React.FC<LocationTableProps> = ({
                 <React.Fragment key={whKey}>
                   {/* Warehouse Row */}
                   <tr className="bg-gray-100 font-bold">
-                    <td className="px-6 py-3">
-                      <input
-                        type="checkbox"
-                        className="h-4 w-4 text-blue-600 border-gray-300 rounded"
-                        ref={(el) => {
-                          if (el) el.indeterminate = isSomeInWarehouseSelected;
-                        }}
-                        checked={isAllInWarehouseSelected}
-                        onChange={() =>
-                          handleSelectGroup(
-                            warehouseLocationIds,
-                            !isAllInWarehouseSelected
-                          )
-                        }
-                      />
-                    </td>
-                    <td
-                      className="px-6 py-3 whitespace-nowrap text-sm text-gray-800 hover:bg-gray-200 cursor-pointer"
-                      onClick={() => toggleRow(whKey)}
-                    >
+                    <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-800">
                       <div className="flex items-center">
-                        {isWhExpanded ? (
-                          <ChevronDown className="h-4 w-4 mr-2" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4 mr-2" />
-                        )}
-                        Warehouse {warehouseId}
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 text-blue-600 border-gray-300 rounded mr-4"
+                          ref={(el) => {
+                            if (el)
+                              el.indeterminate = isSomeInWarehouseSelected;
+                          }}
+                          checked={isAllInWarehouseSelected}
+                          onChange={() =>
+                            handleSelectGroup(
+                              warehouseLocationIds,
+                              !isAllInWarehouseSelected
+                            )
+                          }
+                        />
+                        <div
+                          className="flex items-center cursor-pointer"
+                          onClick={() => toggleRow(whKey)}
+                        >
+                          {isWhExpanded ? (
+                            <ChevronDown className="h-4 w-4 mr-2" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4 mr-2" />
+                          )}
+                          Warehouse {warehouseId}
+                        </div>
                       </div>
                     </td>
                     <td className="px-6 py-3">
@@ -1078,34 +1094,37 @@ const LocationTable: React.FC<LocationTableProps> = ({
                           <React.Fragment key={shelfKey}>
                             {/* Shelf Row */}
                             <tr className="bg-gray-50">
-                              <td className="px-6 py-3">
-                                <input
-                                  type="checkbox"
-                                  className="h-4 w-4 text-blue-600 border-gray-300 rounded ml-6"
-                                  ref={(el) => {
-                                    if (el)
-                                      el.indeterminate = isSomeInShelfSelected;
-                                  }}
-                                  checked={isAllInShelfSelected}
-                                  onChange={() =>
-                                    handleSelectGroup(
-                                      shelfLocationIds,
-                                      !isAllInShelfSelected
-                                    )
-                                  }
-                                />
-                              </td>
-                              <td
-                                className="pl-12 pr-6 py-3 whitespace-nowrap text-sm text-gray-700 font-semibold hover:bg-gray-100 cursor-pointer"
-                                onClick={() => toggleRow(shelfKey)}
-                              >
-                                <div className="flex items-center">
-                                  {isShelfExpanded ? (
-                                    <ChevronDown className="h-4 w-4 mr-2" />
-                                  ) : (
-                                    <ChevronRight className="h-4 w-4 mr-2" />
-                                  )}
-                                  Shelf {shelfId}
+                              <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-700 font-semibold">
+                                <div className="flex items-center ">
+                                  {" "}
+                                  {/* INDENT LEVEL 1 */}
+                                  <input
+                                    type="checkbox"
+                                    className="h-4 w-4 text-blue-600 border-gray-300 rounded mr-10"
+                                    ref={(el) => {
+                                      if (el)
+                                        el.indeterminate =
+                                          isSomeInShelfSelected;
+                                    }}
+                                    checked={isAllInShelfSelected}
+                                    onChange={() =>
+                                      handleSelectGroup(
+                                        shelfLocationIds,
+                                        !isAllInShelfSelected
+                                      )
+                                    }
+                                  />
+                                  <div
+                                    className="flex items-center cursor-pointer hover:bg-gray-100"
+                                    onClick={() => toggleRow(shelfKey)}
+                                  >
+                                    {isShelfExpanded ? (
+                                      <ChevronDown className="h-4 w-4 mr-2" />
+                                    ) : (
+                                      <ChevronRight className="h-4 w-4 mr-2" />
+                                    )}
+                                    Shelf {shelfId}
+                                  </div>
                                 </div>
                               </td>
                               <td className="px-6 py-3">
@@ -1124,21 +1143,28 @@ const LocationTable: React.FC<LocationTableProps> = ({
                                   key={location.id}
                                   className="hover:bg-blue-50"
                                 >
-                                  <td className="px-6 py-3">
-                                    <input
-                                      type="checkbox"
-                                      className="h-4 w-4 text-blue-600 border-gray-300 rounded ml-12"
-                                      checked={selectedIds.has(location.id)}
-                                      onChange={(e) =>
-                                        handleSelectOne(
-                                          location.id,
-                                          e.target.checked
-                                        )
-                                      }
-                                    />
-                                  </td>
-                                  <td className="pl-20 pr-6 py-3 whitespace-nowrap text-sm font-medium text-gray-900 cursor-pointer">
-                                    {location.id}
+                                  <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                                    <div className="flex items-center ">
+                                      {" "}
+                                      {/* INDENT LEVEL 2 */}
+                                      <input
+                                        type="checkbox"
+                                        className="h-4 w-4 text-blue-600 border-gray-300 rounded mr-20"
+                                        checked={selectedIds.has(location.id)}
+                                        onChange={(e) =>
+                                          handleSelectOne(
+                                            location.id,
+                                            e.target.checked
+                                          )
+                                        }
+                                      />
+                                      <span
+                                        className="hover:text-blue-600 hover:underline cursor-pointer"
+                                        onClick={() => onViewItems(location)}
+                                      >
+                                        {location.id}
+                                      </span>
+                                    </div>
                                   </td>
                                   <td className="px-6 py-3">
                                     {renderOccupancy(
@@ -1180,7 +1206,6 @@ const LocationTable: React.FC<LocationTableProps> = ({
                                     >
                                       <Printer className="h-4 w-4" />
                                     </Button>
-
                                     <Button
                                       variant="ghost"
                                       size="icon"
@@ -1213,7 +1238,9 @@ const LocationTable: React.FC<LocationTableProps> = ({
     </div>
   );
 };
-
+// =========================================================================
+// === KẾT THÚC PHẦN CODE ĐÃ SỬA =============================================
+// =========================================================================
 // --- MAIN PAGE COMPONENT ---
 
 const TABS = {
@@ -1291,8 +1318,6 @@ const LocationManagementPage = () => {
 
   // --- Handlers for Viewing Items in a Location ---
   const handleViewItems = async (location: LocationItem) => {
-    // This feature is primarily for fabric rolls, but can be adapted.
-    // For now, we show an alert for non-fabric locations.
     if (location.purpose !== "fabric") {
       alert(
         `Item viewing is currently implemented for Fabric Warehouse locations.\nLocation ${location.id} is for ${location.purpose}.`

@@ -1,17 +1,92 @@
 import ReactECharts from "echarts-for-react";
-import { Zap, Droplets, TrendingUp, Sun, Leaf } from "lucide-react";
+import {
+  Zap,
+  Droplets,
+  Sun,
+  Leaf,
+  AlertTriangle,
+  type LucideIcon,
+} from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils"; // Giả sử bạn dùng shadcn/ui
 
-// Mock data
-const energyConsumptionData = {
-  labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-  electricity: [120, 132, 101, 134, 90, 230, 210], // kWh
-  steam: [220, 182, 191, 234, 290, 330, 310], // kg
+// -----------------------------------------------------------------------------
+// HELPER COMPONENT: StatCard (Defined within the same file)
+// -----------------------------------------------------------------------------
+
+interface StatCardProps {
+  title: string;
+  icon: LucideIcon;
+  value: string;
+  description: string;
+  unit?: string;
+  iconColor?: string;
+  descriptionClassName?: string;
+}
+
+/**
+ * Một component con để hiển thị thẻ thông tin (KPI card).
+ * Được định nghĩa ở đây để tái sử dụng trong EMSPage mà không cần tạo file riêng.
+ */
+const StatCard = ({
+  title,
+  icon: Icon,
+  value,
+  description,
+  unit,
+  iconColor = "text-muted-foreground",
+  descriptionClassName = "text-muted-foreground",
+}: StatCardProps) => {
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <Icon className={cn("h-4 w-4", iconColor)} />
+      </CardHeader>
+      <CardContent>
+        <div className="text-2xl font-bold">
+          {value}
+          {unit && (
+            <span className="ml-1 text-base font-normal text-muted-foreground">
+              {unit}
+            </span>
+          )}
+        </div>
+        <p className={cn("text-xs", descriptionClassName)}>{description}</p>
+      </CardContent>
+    </Card>
+  );
 };
 
+// -----------------------------------------------------------------------------
+// MAIN COMPONENT: EMSPage
+// -----------------------------------------------------------------------------
+
 const EMSPage = () => {
+  // --- Dữ liệu Mock ---
+  const energyConsumptionData = {
+    labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+    electricity: [120, 132, 101, 134, 90, 230, 210],
+    steam: [220, 182, 191, 234, 290, 330, 310],
+  };
+
+  // --- Dữ liệu chỉ số trong ngày ---
+  const todayElectricity = 134;
+  const todaySteam = 234;
+  const targetElectricity = 130;
+
+  // --- Logic tính toán cho thẻ điện ---
+  const electricityDiff = todayElectricity - targetElectricity;
+  const electricityDiffPercent = (electricityDiff / targetElectricity) * 100;
+  const isOverTarget = electricityDiff > 0;
+
+  // --- Cấu hình ECharts đã cải tiến ---
   const lineChartOption = {
     tooltip: { trigger: "axis" },
-    legend: { data: ["Electricity (kWh)", "Steam (kg)"] },
+    legend: {
+      data: ["Electricity (kWh)", "Steam (kg)"],
+      top: 10,
+    },
     grid: { left: "3%", right: "4%", bottom: "3%", containLabel: true },
     xAxis: {
       type: "category",
@@ -19,131 +94,103 @@ const EMSPage = () => {
       data: energyConsumptionData.labels,
     },
     yAxis: { type: "value" },
+    color: ["#f59e0b", "#3b82f6"], // Vàng cho Điện, Xanh dương cho Hơi
     series: [
       {
         name: "Electricity (kWh)",
         type: "line",
-        stack: "Total",
+        smooth: true,
         data: energyConsumptionData.electricity,
-        areaStyle: {},
+        areaStyle: { opacity: 0.3 },
       },
       {
         name: "Steam (kg)",
         type: "line",
-        stack: "Total",
+        smooth: true,
         data: energyConsumptionData.steam,
-        areaStyle: {},
+        areaStyle: { opacity: 0.3 },
       },
     ],
   };
 
-  const todayElectricity = 134;
-  const todaySteam = 234;
-  const targetElectricity = 130;
+  // --- Dữ liệu cho các thẻ StatCard ---
+  const statCardsData = [
+    {
+      title: "Điện năng hôm nay",
+      icon: isOverTarget ? AlertTriangle : Zap,
+      value: todayElectricity.toString(),
+      unit: "kWh",
+      description: `${isOverTarget ? "+" : ""}${electricityDiffPercent.toFixed(
+        1
+      )}% so với mục tiêu`,
+      iconColor: isOverTarget ? "text-red-500" : "text-yellow-500",
+      descriptionClassName: isOverTarget ? "text-red-500" : "text-green-600",
+    },
+    {
+      title: "Lượng hơi hôm nay",
+      icon: Droplets,
+      value: todaySteam.toString(),
+      unit: "kg",
+      description: "-1.5% so với hôm qua",
+      iconColor: "text-blue-500",
+    },
+    {
+      title: "Năng lượng mặt trời",
+      icon: Sun,
+      value: "Đang hoạt động",
+      description: "Cung cấp 25% tải hiện tại",
+      iconColor: "text-green-500",
+    },
+    {
+      title: "Dấu chân Carbon",
+      icon: Leaf,
+      value: "Giảm 5%",
+      description: "So với tháng trước",
+      iconColor: "text-teal-500",
+    },
+  ];
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 space-y-6 bg-gray-50/50 dark:bg-black">
       <header>
-        <h1 className="text-2xl font-bold text-gray-800">
-          Energy Management Dashboard (EMS)
+        <h1 className="text-3xl font-bold tracking-tight">
+          Bảng điều khiển Năng lượng (EMS)
         </h1>
-        <p className="text-sm text-gray-500">
-          Monitor energy consumption for sewing lines to promote sustainability.
+        <p className="text-muted-foreground">
+          Theo dõi tiêu thụ năng lượng cho các chuyền may để thúc đẩy bền vững.
         </p>
       </header>
 
-      {/* Metric Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="p-6 bg-white border rounded-lg shadow-sm">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm font-medium text-gray-500">
-                Electricity Today
-              </p>
-              <p className="text-3xl font-bold text-gray-800">
-                {todayElectricity}{" "}
-                <span className="text-lg font-normal">kWh</span>
-              </p>
-            </div>
-            <div className="p-3 bg-yellow-100 rounded-full">
-              <Zap className="w-6 h-6 text-yellow-500" />
-            </div>
-          </div>
-          <p
-            className={`mt-2 text-sm flex items-center gap-1 ${
-              todayElectricity > targetElectricity
-                ? "text-red-600"
-                : "text-green-600"
-            }`}
-          >
-            <TrendingUp className="w-4 h-4" />
-            {(
-              ((todayElectricity - targetElectricity) / targetElectricity) *
-              100
-            ).toFixed(1)}
-            % vs Target
-          </p>
-        </div>
-        <div className="p-6 bg-white border rounded-lg shadow-sm">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm font-medium text-gray-500">Steam Today</p>
-              <p className="text-3xl font-bold text-gray-800">
-                {todaySteam} <span className="text-lg font-normal">kg</span>
-              </p>
-            </div>
-            <div className="p-3 bg-blue-100 rounded-full">
-              <Droplets className="w-6 h-6 text-blue-500" />
-            </div>
-          </div>
-          <p className="mt-2 text-sm text-gray-500 flex items-center gap-1">
-            -1.5% vs Yesterday
-          </p>
-        </div>
-        <div className="p-6 bg-white border rounded-lg shadow-sm">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm font-medium text-gray-500">
-                Solar Panel Status
-              </p>
-              <p className="text-2xl font-bold text-green-600">
-                Active & Generating
-              </p>
-            </div>
-            <div className="p-3 bg-green-100 rounded-full">
-              <Sun className="w-6 h-6 text-green-500" />
-            </div>
-          </div>
-          <p className="mt-2 text-sm text-gray-500">
-            25% of current load covered
-          </p>
-        </div>
-        <div className="p-6 bg-white border rounded-lg shadow-sm">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm font-medium text-gray-500">
-                Carbon Footprint
-              </p>
-              <p className="text-2xl font-bold text-gray-800">Reduced by 5%</p>
-            </div>
-            <div className="p-3 bg-teal-100 rounded-full">
-              <Leaf className="w-6 h-6 text-teal-500" />
-            </div>
-          </div>
-          <p className="mt-2 text-sm text-gray-500">Month-over-month</p>
-        </div>
+      {/* Sử dụng map để render các StatCard một cách linh hoạt */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {statCardsData.map((card, index) => (
+          <StatCard
+            key={index}
+            title={card.title}
+            icon={card.icon}
+            value={card.value}
+            unit={card.unit}
+            description={card.description}
+            iconColor={card.iconColor}
+            descriptionClassName={card.descriptionClassName}
+          />
+        ))}
       </div>
 
-      {/* Consumption Chart */}
-      <div className="p-4 bg-white border rounded-lg shadow-sm">
-        <h2 className="text-lg font-semibold text-gray-700 mb-4">
-          Weekly Energy Consumption Trend
-        </h2>
-        <ReactECharts
-          option={lineChartOption}
-          style={{ height: "400px", width: "100%" }}
-        />
-      </div>
+      <Card className="shadow-lg">
+        <CardHeader>
+          <CardTitle className="text-xl">
+            Xu hướng tiêu thụ năng lượng hàng tuần
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ReactECharts
+            option={lineChartOption}
+            style={{ height: "400px", width: "100%" }}
+            className="w-full"
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 };

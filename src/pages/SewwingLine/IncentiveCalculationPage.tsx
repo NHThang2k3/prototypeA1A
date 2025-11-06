@@ -1,6 +1,21 @@
 import { FileDown, Filter } from "lucide-react";
+import { type ColumnDef } from "@tanstack/react-table";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import { CustomTable } from "@/components/ui/custom-table";
 
-const incentiveData = [
+type Incentive = {
+  id: string;
+  name: string;
+  efficiency: number;
+  base: number;
+  incentive: number;
+  ot: number;
+  total: number;
+};
+
+const incentiveData: Incentive[] = [
   {
     id: "W001",
     name: "Nguyen Van A",
@@ -48,71 +63,84 @@ const incentiveData = [
   },
 ];
 
+const columns: ColumnDef<Incentive>[] = [
+  {
+    accessorKey: "id",
+    header: "Worker ID",
+  },
+  {
+    accessorKey: "name",
+    header: "Name",
+  },
+  {
+    accessorKey: "efficiency",
+    header: "Efficiency (%)",
+    cell: ({ row }) => {
+      const efficiency = row.original.efficiency;
+      const color = efficiency >= 100 ? "text-green-600" : "text-yellow-600";
+      return <div className={`font-bold ${color}`}>{efficiency}%</div>;
+    },
+  },
+  {
+    accessorKey: "base",
+    header: "Base Pay ($)",
+    cell: ({ row }) => <div>{row.original.base.toFixed(2)}</div>,
+  },
+  {
+    accessorKey: "incentive",
+    header: "Incentive ($)",
+    cell: ({ row }) => (
+      <div className="font-medium text-green-600">
+        {row.original.incentive.toFixed(2)}
+      </div>
+    ),
+  },
+  {
+    accessorKey: "ot",
+    header: "OT Pay ($)",
+    cell: ({ row }) => <div>{row.original.ot.toFixed(2)}</div>,
+  },
+  {
+    accessorKey: "total",
+    header: "Total Earnings ($)",
+    cell: ({ row }) => (
+      <div className="text-base font-bold text-blue-600">
+        ${row.original.total.toFixed(2)}
+      </div>
+    ),
+  },
+];
+
 const IncentiveCalculationPage = () => (
   <div className="space-y-6">
-    <header className="flex justify-between items-center">
+    <header className="flex flex-wrap justify-between items-center gap-4">
       <div>
-        <h1 className="text-2xl font-bold text-gray-800">
-          Incentive & OT Calculation
-        </h1>
-        <p className="text-sm text-gray-500">
+        <h1 className="text-2xl font-bold">Incentive & OT Calculation</h1>
+        <p className="text-sm text-muted-foreground">
           Review automated incentive and overtime pay for workers.
         </p>
       </div>
       <div className="flex items-center gap-2">
-        <input
-          type="month"
-          defaultValue="2023-11"
-          className="px-4 py-2 border rounded-lg"
-        />
-        <button className="flex items-center gap-2 px-4 py-2 text-sm border rounded-lg">
-          <Filter className="w-4 h-4" /> Line
-        </button>
-        <button className="flex items-center gap-2 px-4 py-2 text-sm text-white bg-green-600 rounded-lg hover:bg-green-700">
-          <FileDown className="w-5 h-5" /> Export
-        </button>
+        <Input type="month" defaultValue="2023-11" className="w-auto" />
+        <Button variant="outline">
+          <Filter className="w-4 h-4 mr-2" /> Line
+        </Button>
+        <Button>
+          <FileDown className="w-5 h-5 mr-2" /> Export
+        </Button>
       </div>
     </header>
 
-    <div className="p-4 bg-white border rounded-lg shadow-sm">
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm text-left">
-          <thead className="bg-gray-50 text-xs uppercase">
-            <tr>
-              <th className="px-6 py-3">Worker ID</th>
-              <th className="px-6 py-3">Name</th>
-              <th className="px-6 py-3">Efficiency (%)</th>
-              <th className="px-6 py-3">Base Pay ($)</th>
-              <th className="px-6 py-3">Incentive ($)</th>
-              <th className="px-6 py-3">OT Pay ($)</th>
-              <th className="px-6 py-3">Total Earnings ($)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {incentiveData.map((d) => (
-              <tr key={d.id} className="border-b hover:bg-gray-50">
-                <td className="px-6 py-4 font-medium">{d.id}</td>
-                <td className="px-6 py-4">{d.name}</td>
-                <td
-                  className="px-6 py-4 font-bold"
-                  style={{ color: d.efficiency >= 100 ? "green" : "orange" }}
-                >
-                  {d.efficiency}%
-                </td>
-                <td className="px-6 py-4">{d.base.toFixed(2)}</td>
-                <td className="px-6 py-4 text-green-600 font-medium">
-                  {d.incentive.toFixed(2)}
-                </td>
-                <td className="px-6 py-4">{d.ot.toFixed(2)}</td>
-                <td className="px-6 py-4 text-blue-600 font-bold text-base">
-                  ${d.total.toFixed(2)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+    <Card>
+      <CardContent className="p-0">
+        <CustomTable
+          columns={columns}
+          data={incentiveData}
+          showCheckbox={false}
+          showColumnVisibility={false}
+        />
+      </CardContent>
+    </Card>
   </div>
 );
 export default IncentiveCalculationPage;
