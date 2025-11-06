@@ -1,9 +1,12 @@
-// src/pages/WeeklyDailyPlanPage/WeeklyDailyPlanPage.tsx
-
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, GripVertical } from "lucide-react";
+import { ChevronLeft, ChevronRight, UploadCloud, X } from "lucide-react";
+import * as XLSX from "xlsx";
 
-// ADD: Định nghĩa một type cho đối tượng Job để thay thế 'any'
+// =============================================================================
+// TYPE DEFINITIONS (ĐỊNH NGHĨA CÁC KIỂU DỮ LIỆU)
+// =============================================================================
+
+// Định nghĩa cấu trúc của một công việc
 type Job = {
   id: number;
   po: string;
@@ -12,39 +15,24 @@ type Job = {
   qty: number;
 };
 
-// FIX 1: Sử dụng type 'Job' đã định nghĩa cho prop 'job'
-const JobCard = ({ job }: { job: Job }) => (
-  <div className="p-3 mb-3 bg-white rounded-lg shadow-sm border border-gray-200 cursor-pointer hover:shadow-md transition-shadow">
-    <div className="flex justify-between items-start">
-      <p className="font-bold text-gray-800 text-sm">{job.po}</p>
-      <GripVertical className="text-gray-400" size={16} />
-    </div>
-    <p className="text-xs text-gray-500">{job.style}</p>
-    <div className="flex justify-between items-center mt-2">
-      <span className="text-xs font-semibold text-blue-600">
-        {job.decoration}
-      </span>
-      <span className="px-2 py-0.5 text-xs font-semibold text-white bg-gray-700 rounded-full">
-        {job.qty}
-      </span>
-    </div>
-  </div>
-);
+// Định nghĩa cấu trúc của một công việc đã được gán ngày
+type JobWithDay = Job & { day: string };
 
-// FIX 2: Sử dụng type 'Job[]' cho prop 'jobs'
-const KanbanColumn = ({ day, jobs }: { day: string; jobs: Job[] }) => (
-  <div className="flex-shrink-0 w-72 bg-gray-50 rounded-lg p-3">
-    <h3 className="font-bold text-gray-700 mb-3 px-1">{day}</h3>
-    <div className="space-y-2 h-[60vh] overflow-y-auto pr-1">
-      {jobs.map((job) => (
-        <JobCard key={job.id} job={job} />
-      ))}
-    </div>
-  </div>
-);
+// SỬA LỖI: Định nghĩa cấu trúc cho một dòng dữ liệu đọc từ file Excel
+// Điều này sẽ thay thế cho `any` và sửa lỗi ESLint.
+type ExcelRow = {
+  date: string;
+  po: string;
+  style: string;
+  decoration: string;
+  qty: number;
+};
 
-// (Best Practice) Thêm kiểu cho mock data để đảm bảo tính nhất quán
-const weeklyJobs: Record<string, Job[]> = {
+// =============================================================================
+// MOCK DATA (DỮ LIỆU MẪU)
+// =============================================================================
+
+const weeklyJobsData: Record<string, Job[]> = {
   "Monday, Oct 23": [
     {
       id: 1,
@@ -113,8 +101,212 @@ const weeklyJobs: Record<string, Job[]> = {
   ],
 };
 
+// =============================================================================
+// HELPER COMPONENTS (CÁC COMPONENT PHỤ)
+// =============================================================================
+
+// Component cho popup import file
+const ImportModal = ({
+  isOpen,
+  onClose,
+  onFileUpload,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onFileUpload: (file: File) => void;
+}) => {
+  const [dragging, setDragging] = useState(false);
+
+  if (!isOpen) return null;
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      onFileUpload(e.target.files[0]);
+      onClose();
+    }
+  };
+
+  const handleDragEvents = (
+    e: React.DragEvent<HTMLDivElement>,
+    isDragging: boolean
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragging(isDragging);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    handleDragEvents(e, false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      onFileUpload(e.dataTransfer.files[0]);
+      onClose();
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
+      <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md relative">
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 p-1 rounded-full hover:bg-gray-200"
+        >
+          <X size={20} />
+        </button>
+        <h2 className="text-xl font-bold mb-4">Import Daily Plan</h2>
+        <div
+          className={`border-2 border-dashed rounded-lg p-10 text-center cursor-pointer
+            ${
+              dragging
+                ? "border-blue-500 bg-blue-50"
+                : "border-gray-300 hover:border-gray-400"
+            }`}
+          onDragEnter={(e) => handleDragEvents(e, true)}
+          onDragLeave={(e) => handleDragEvents(e, false)}
+          onDragOver={(e) => handleDragEvents(e, true)}
+          onDrop={handleDrop}
+          onClick={() => document.getElementById("file-upload-input")?.click()}
+        >
+          <UploadCloud className="mx-auto text-gray-400" size={48} />
+          <p className="mt-2 text-gray-600">
+            Kéo và thả file Excel của bạn vào đây hoặc{" "}
+            <span className="font-semibold text-blue-600">
+              nhấn để chọn file
+            </span>
+            .
+          </p>
+          <input
+            id="file-upload-input"
+            type="file"
+            className="hidden"
+            accept=".xlsx, .xls"
+            onChange={handleFileChange}
+          />
+        </div>
+        <p className="text-xs text-gray-500 mt-4">
+          Chỉ hỗ trợ các định dạng .xlsx, .xls.
+        </p>
+      </div>
+    </div>
+  );
+};
+
+// Component bảng để hiển thị dữ liệu
+const JobsTable = ({ jobs }: { jobs: JobWithDay[] }) => (
+  <div className="overflow-x-auto bg-white rounded-lg shadow">
+    <table className="min-w-full divide-y divide-gray-200">
+      <thead className="bg-gray-50">
+        <tr>
+          <th
+            scope="col"
+            className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+          >
+            Day
+          </th>
+          <th
+            scope="col"
+            className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+          >
+            PO
+          </th>
+          <th
+            scope="col"
+            className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+          >
+            Style
+          </th>
+          <th
+            scope="col"
+            className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+          >
+            Decoration
+          </th>
+          <th
+            scope="col"
+            className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+          >
+            Quantity
+          </th>
+        </tr>
+      </thead>
+      <tbody className="bg-white divide-y divide-gray-200">
+        {jobs.map((job) => (
+          <tr key={job.id} className="hover:bg-gray-50">
+            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+              {job.day}
+            </td>
+            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+              {job.po}
+            </td>
+            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              {job.style}
+            </td>
+            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              {job.decoration}
+            </td>
+            <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-800">
+              {job.qty.toLocaleString()}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+);
+
+// =============================================================================
+// MAIN COMPONENT (COMPONENT CHÍNH)
+// =============================================================================
+
 const WeeklyDailyPlanPage = () => {
-  const [view, setView] = useState("weekly"); // 'weekly' or 'daily'
+  const [view, setView] = useState("weekly");
+  const [isImportModalOpen, setImportModalOpen] = useState(false);
+  const [weeklyJobs, setWeeklyJobs] = useState(weeklyJobsData);
+
+  // Hàm xử lý file Excel được tải lên
+  const handleFileUpload = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const data = e.target?.result;
+      if (data) {
+        const workbook = XLSX.read(data, { type: "array" });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+
+        // SỬA LỖI: Thay thế <any> bằng <ExcelRow> đã định nghĩa ở trên
+        const json = XLSX.utils.sheet_to_json<ExcelRow>(worksheet);
+
+        // Giả sử file excel có các cột 'date', 'po', 'style', 'decoration', 'qty'
+        const newJobs = json.reduce((acc: Record<string, Job[]>, row) => {
+          const day = row.date || "Uncategorized";
+          if (!acc[day]) {
+            acc[day] = [];
+          }
+          // Thêm một id tạm thời hoặc đảm bảo file Excel có id
+          const newJob: Job = {
+            id: Math.random(), // Hoặc một logic tạo ID tốt hơn
+            po: row.po,
+            style: row.style,
+            decoration: row.decoration,
+            qty: Number(row.qty),
+          };
+          acc[day].push(newJob);
+          return acc;
+        }, {});
+
+        setWeeklyJobs((prevJobs) => ({ ...prevJobs, ...newJobs }));
+        console.log("Dữ liệu đã import:", newJobs);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+    alert(
+      `File "${file.name}" đã được chọn. Kiểm tra console log để xem dữ liệu.`
+    );
+  };
+
+  // Chuyển đổi dữ liệu từ object sang mảng để hiển thị trong bảng
+  const flatJobs: JobWithDay[] = Object.entries(weeklyJobs).flatMap(
+    ([day, jobs]) => jobs.map((job) => ({ ...job, day }))
+  );
 
   return (
     <div className="space-y-6">
@@ -122,23 +314,31 @@ const WeeklyDailyPlanPage = () => {
         <h1 className="text-3xl font-bold text-gray-800">
           Weekly & Daily Plan
         </h1>
-        <div className="flex items-center p-1 bg-gray-200 rounded-lg">
+        <div className="flex items-center space-x-2">
           <button
-            onClick={() => setView("weekly")}
-            className={`px-3 py-1 text-sm font-medium rounded-md ${
-              view === "weekly" ? "bg-white shadow" : "text-gray-600"
-            }`}
+            onClick={() => setImportModalOpen(true)}
+            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
-            Weekly
+            Import Daily
           </button>
-          <button
-            onClick={() => setView("daily")}
-            className={`px-3 py-1 text-sm font-medium rounded-md ${
-              view === "daily" ? "bg-white shadow" : "text-gray-600"
-            }`}
-          >
-            Daily
-          </button>
+          <div className="flex items-center p-1 bg-gray-200 rounded-lg">
+            <button
+              onClick={() => setView("weekly")}
+              className={`px-3 py-1 text-sm font-medium rounded-md ${
+                view === "weekly" ? "bg-white shadow" : "text-gray-600"
+              }`}
+            >
+              Weekly
+            </button>
+            <button
+              onClick={() => setView("daily")}
+              className={`px-3 py-1 text-sm font-medium rounded-md ${
+                view === "daily" ? "bg-white shadow" : "text-gray-600"
+              }`}
+            >
+              Daily
+            </button>
+          </div>
         </div>
       </div>
 
@@ -156,11 +356,14 @@ const WeeklyDailyPlanPage = () => {
         </div>
       </div>
 
-      <div className="flex space-x-4 overflow-x-auto pb-4">
-        {Object.entries(weeklyJobs).map(([day, jobs]) => (
-          <KanbanColumn key={day} day={day} jobs={jobs} />
-        ))}
-      </div>
+      {/* Hiển thị component bảng */}
+      <JobsTable jobs={flatJobs} />
+
+      <ImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setImportModalOpen(false)}
+        onFileUpload={handleFileUpload}
+      />
     </div>
   );
 };

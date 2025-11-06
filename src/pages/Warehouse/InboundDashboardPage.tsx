@@ -10,7 +10,8 @@ interface Job {
   Fabric_Type: string;
   Quantity: number;
   UoM: "m" | "kg" | "pcs";
-  Status: "Preparation" | "Relaxation" | "Issued" | "Cutting" | "Completed";
+  // Updated status order for clarity
+  Status: "Incoming" | "Relaxation" | "Preparation" | "Cutting" | "Completed";
   Created_Timestamp: string;
   Preparation_Start_Timestamp?: string;
   Preparation_End_Timestamp?: string;
@@ -23,6 +24,28 @@ interface Job {
 }
 
 const mockJobs: Job[] = [
+  // Incoming jobs
+  {
+    JOB_NO: "J009",
+    Fabric_Type: "Denim",
+    Quantity: 2500,
+    UoM: "m",
+    Status: "Incoming",
+    Created_Timestamp: "2024-05-25T10:00:00Z",
+    Assigned_User: "Fuc Tran",
+    Planned_Completion_Date: "2024-06-05",
+  },
+  {
+    JOB_NO: "J010",
+    Fabric_Type: "Wool",
+    Quantity: 1000,
+    UoM: "m",
+    Status: "Incoming",
+    Created_Timestamp: "2024-05-26T11:30:00Z",
+    Assigned_User: "Giang Nguyen",
+    Planned_Completion_Date: "2024-06-06",
+  },
+  // Existing jobs with statuses updated for the new flow
   {
     JOB_NO: "J001",
     Fabric_Type: "Cotton",
@@ -38,7 +61,7 @@ const mockJobs: Job[] = [
     Fabric_Type: "Polyester",
     Quantity: 800,
     UoM: "m",
-    Status: "Issued",
+    Status: "Preparation",
     Created_Timestamp: "2024-05-21T09:30:00Z",
     Assigned_User: "Binh Le",
     Planned_Completion_Date: "2024-05-29",
@@ -48,7 +71,7 @@ const mockJobs: Job[] = [
     Fabric_Type: "Silk",
     Quantity: 500,
     UoM: "m",
-    Status: "Relaxation",
+    Status: "Preparation", // Was Relaxation, now Preparation
     Created_Timestamp: "2024-05-22T10:00:00Z",
     Assigned_User: "Chi Tran",
     Planned_Completion_Date: "2024-05-30",
@@ -58,7 +81,7 @@ const mockJobs: Job[] = [
     Fabric_Type: "Cotton",
     Quantity: 1500,
     UoM: "m",
-    Status: "Preparation",
+    Status: "Relaxation", // Was Preparation, now Relaxation
     Created_Timestamp: "2024-05-23T11:00:00Z",
     Assigned_User: "Dung Pham",
     Planned_Completion_Date: "2024-06-01",
@@ -68,7 +91,7 @@ const mockJobs: Job[] = [
     Fabric_Type: "Linen",
     Quantity: 750,
     UoM: "m",
-    Status: "Preparation",
+    Status: "Relaxation", // Was Preparation, now Relaxation
     Created_Timestamp: "2024-05-24T08:30:00Z",
     Assigned_User: "An Nguyen",
     Planned_Completion_Date: "2024-06-02",
@@ -115,11 +138,6 @@ const relaxationData = {
   labels: ["Mon", "Tue", "Wed", "Thu", "Fri"],
   output: [1500, 1700, 1650, 1800, 1900],
 };
-
-const issuedData = {
-  labels: ["Mon", "Tue", "Wed", "Thu", "Fri"],
-  output: [1400, 1650, 1600, 1750, 1850],
-};
 // --- END: MOCK DATA & TYPES ---
 
 // --- KPI Card Child Component ---
@@ -145,14 +163,14 @@ const InboundDashboardPage: React.FC = () => {
   // A. AREA 1: KPI OVERVIEW CALCULATIONS
   const kpiData = useMemo(() => {
     const totalJobs = jobsInProcess.length;
-    const prepJobs = jobsInProcess.filter(
-      (j) => j.Status === "Preparation"
+    const incomingJobs = jobsInProcess.filter(
+      (j) => j.Status === "Incoming"
     ).length;
     const relaxJobs = jobsInProcess.filter(
       (j) => j.Status === "Relaxation"
     ).length;
-    const issuedJobs = jobsInProcess.filter(
-      (j) => j.Status === "Issued"
+    const prepJobs = jobsInProcess.filter(
+      (j) => j.Status === "Preparation"
     ).length;
     const cuttingJobs = jobsInProcess.filter(
       (j) => j.Status === "Cutting"
@@ -162,9 +180,9 @@ const InboundDashboardPage: React.FC = () => {
 
     return {
       totalJobs,
+      incomingJobs,
       prepJobs,
       relaxJobs,
-      issuedJobs,
       cuttingJobs,
       avgPrepTime,
       onTimeCompletionRate,
@@ -203,11 +221,12 @@ const InboundDashboardPage: React.FC = () => {
     };
   }, [jobsInProcess]);
 
+  // --- WIP Chart updated with new flow order ---
   const wipAreaOption: EChartsOption = {
     title: { text: "Work in Progress (WIP) Over Time", left: "left" },
     tooltip: { trigger: "axis", axisPointer: { type: "cross" } },
     legend: {
-      data: ["Preparation", "Relaxation", "Issued", "Cutting"],
+      data: ["Incoming", "Relaxation", "Preparation", "Cutting"], // Updated order
       top: 30,
       left: "center",
       orient: "horizontal",
@@ -228,13 +247,14 @@ const InboundDashboardPage: React.FC = () => {
     ],
     yAxis: [{ type: "value" }],
     series: [
+      // Series reordered to match legend and new flow
       {
-        name: "Preparation",
+        name: "Incoming",
         type: "line",
         stack: "Total",
         areaStyle: {},
         emphasis: { focus: "series" },
-        data: [2, 3, 2, 4, 3, 5, 4],
+        data: [1, 2, 1, 3, 2, 2, 3],
       },
       {
         name: "Relaxation",
@@ -245,12 +265,12 @@ const InboundDashboardPage: React.FC = () => {
         data: [3, 2, 3, 2, 4, 3, 3],
       },
       {
-        name: "Issued",
+        name: "Preparation",
         type: "line",
         stack: "Total",
         areaStyle: {},
         emphasis: { focus: "series" },
-        data: [1, 2, 1, 3, 2, 2, 3],
+        data: [2, 3, 2, 4, 3, 5, 4],
       },
       {
         name: "Cutting",
@@ -282,14 +302,6 @@ const InboundDashboardPage: React.FC = () => {
     xAxis: { type: "category", data: relaxationData.labels },
     yAxis: { type: "value" },
     series: [{ data: relaxationData.output, type: "bar" }],
-  };
-
-  const issuedOutputOption: EChartsOption = {
-    title: { text: "Issued Output (m)" },
-    tooltip: { trigger: "axis" },
-    xAxis: { type: "category", data: issuedData.labels },
-    yAxis: { type: "value" },
-    series: [{ data: issuedData.output, type: "bar" }],
   };
 
   return (
@@ -362,6 +374,7 @@ const InboundDashboardPage: React.FC = () => {
       <main className="space-y-6">
         {/* A. AREA 1: KPI OVERVIEW */}
         <section>
+          {/* --- KPI Cards reordered to match new flow --- */}
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
             <KpiCard
               title="Total Jobs In Progress"
@@ -369,9 +382,9 @@ const InboundDashboardPage: React.FC = () => {
               description="Excludes 'Completed' jobs"
             />
             <KpiCard
-              title="Jobs in Preparation"
-              value={kpiData.prepJobs}
-              description="Preparation stage"
+              title="Jobs Incoming"
+              value={kpiData.incomingJobs}
+              description="Waiting to enter warehouse"
             />
             <KpiCard
               title="Jobs in Relaxation"
@@ -379,9 +392,9 @@ const InboundDashboardPage: React.FC = () => {
               description="Relaxation stage"
             />
             <KpiCard
-              title="Jobs Pending Issue"
-              value={kpiData.issuedJobs}
-              description="Issued stage"
+              title="Jobs in Preparation"
+              value={kpiData.prepJobs}
+              description="Preparation stage"
             />
             <KpiCard
               title="Jobs in Cutting"
@@ -411,19 +424,11 @@ const InboundDashboardPage: React.FC = () => {
                 style={{ height: 300 }}
               />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white p-4 rounded-lg shadow-md">
-                <ReactECharts
-                  option={relaxationOutputOption}
-                  style={{ height: 300 }}
-                />
-              </div>
-              <div className="bg-white p-4 rounded-lg shadow-md">
-                <ReactECharts
-                  option={issuedOutputOption}
-                  style={{ height: 300 }}
-                />
-              </div>
+            <div className="bg-white p-4 rounded-lg shadow-md">
+              <ReactECharts
+                option={relaxationOutputOption}
+                style={{ height: 300 }}
+              />
             </div>
           </section>
 
@@ -488,8 +493,8 @@ const InboundDashboardPage: React.FC = () => {
                       <span
                         className={`px-2 py-1 rounded-full text-xs font-semibold
                         ${
-                          job.Status === "Preparation"
-                            ? "bg-blue-100 text-blue-800"
+                          job.Status === "Incoming"
+                            ? "bg-gray-100 text-gray-800"
                             : ""
                         }
                         ${
@@ -498,7 +503,7 @@ const InboundDashboardPage: React.FC = () => {
                             : ""
                         }
                         ${
-                          job.Status === "Issued"
+                          job.Status === "Preparation"
                             ? "bg-yellow-100 text-yellow-800"
                             : ""
                         }
