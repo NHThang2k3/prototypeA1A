@@ -222,16 +222,14 @@ const RepairRequestListPage = () => {
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
                 <DropdownMenuItem asChild>
-                  <Link
-                    to={`/decoration/productivity/approve-data/${request.id}`}
-                  >
+                  <Link to={`/decoration/productivity/approve-data`}>
                     <Eye className="mr-2 h-4 w-4" />
                     View/Approve
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link
-                    to={`/decoration/productivity/record-result-information/${request.id}`}
+                    to={`/decoration/productivity/record-result-information`}
                   >
                     <Edit className="mr-2 h-4 w-4" />
                     Edit/Record

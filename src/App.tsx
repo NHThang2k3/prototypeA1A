@@ -222,7 +222,7 @@ function App() {
           />
         </Route>
 
-        {/* === Module Decoration (CẬP NHẬT) === */}
+        {/* === Module Decoration  === */}
         <Route path="/decoration" element={<DecorationLayout />}>
           <Route
             index
@@ -284,11 +284,11 @@ function App() {
             element={<CreateRepairRequestPage />}
           />
           <Route
-            path="productivity/approve-data/:requestId" // Thêm :requestId để lấy param
+            path="productivity/approve-data"
             element={<ApproveRepairRequestPage />}
           />
           <Route
-            path="productivity/record-result-information/:requestId" // Thêm :requestId
+            path="productivity/record-result-information"
             element={<RecordReworkResultPage />}
           />
 
@@ -314,7 +314,7 @@ function App() {
           />
         </Route>
 
-        {/* === Module Buffer & Supermarket (ĐÃ CẬP NHẬT) === */}
+        {/* === Module Buffer & Supermarket  === */}
         <Route
           path="/buffer-supermarket"
           element={<BufferAndSupermarketLayout />}
@@ -357,7 +357,7 @@ function App() {
           />
         </Route>
 
-        {/* === Module Sewing Line (MỚI) === */}
+        {/* === Module Sewing Line === */}
         <Route path="/sewing-line" element={<SewingLineLayout />}>
           <Route
             index
@@ -460,7 +460,7 @@ function App() {
           />
         </Route>
 
-        {/* === Module Kho Thành Phẩm (MỚI) === */}
+        {/* === Module Kho Thành Phẩm  === */}
         <Route
           path="/finishedgoods-warehouse"
           element={<FinishedGoodsWarehouseLayout />}

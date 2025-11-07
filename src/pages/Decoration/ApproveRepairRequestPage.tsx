@@ -1,9 +1,8 @@
 // src/pages/damaged-goods-repair/ApproveRepairRequestPage.tsx
 
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Check, X, UserPlus, MessageSquare, ArrowLeft } from "lucide-react";
-import type { RepairRequest } from "./types";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -24,6 +23,22 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
+// Định nghĩa type ngay tại đây để file có thể chạy độc lập
+export interface RepairRequest {
+  id: string;
+  creationDate: string;
+  poCode: string;
+  productCode: string;
+  process: string;
+  defectType: string;
+  defectQty: number;
+  creator: string;
+  assignee?: string;
+  status: "Pending Approval" | "In Progress" | "Completed" | "Rejected";
+  description?: string;
+  images?: string[];
+}
+
 const mockRequests: RepairRequest[] = [
   {
     id: "RR-001",
@@ -38,8 +53,8 @@ const mockRequests: RepairRequest[] = [
     status: "In Progress",
     description: "Chỉ thêu màu xanh bị lệch so với mẫu thiết kế.",
     images: [
-      "https://via.placeholder.com/150",
-      "https://via.placeholder.com/150",
+      "https://via.placeholder.com/150/818CF8/FFFFFF?Text=Img+1",
+      "https://via.placeholder.com/150/FBCFE8/FFFFFF?Text=Img+2",
     ],
   },
   {
@@ -53,7 +68,7 @@ const mockRequests: RepairRequest[] = [
     creator: "Lê Văn C",
     status: "Pending Approval",
     description: "Logo ở ngực trái bị bong tróc sau khi ép nhiệt.",
-    images: ["https://via.placeholder.com/150"],
+    images: ["https://via.placeholder.com/150/FDBA74/FFFFFF?Text=Img+3"],
   },
 ];
 
@@ -70,14 +85,10 @@ const InfoField = ({
   </div>
 );
 
-const ApproveRepairRequestPage = ({
-  requestIdForShowcase,
-}: {
-  requestIdForShowcase?: string;
-}) => {
-  const params = useParams<{ requestId: string }>();
-  const navigate = useNavigate();
-  const requestId = requestIdForShowcase || params.requestId;
+const ApproveRepairRequestPage = () => {
+  // Gán cứng requestId là "RR-002" theo yêu cầu
+  // Nếu muốn lấy từ URL, dùng: const { requestId } = useParams<{ requestId: string }>();
+  const requestId = "RR-002";
 
   const [request, setRequest] = useState<RepairRequest | null>(null);
   const [decision, setDecision] = useState<"Approve" | "Reject" | null>(null);
@@ -93,11 +104,13 @@ const ApproveRepairRequestPage = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     alert(`Request ${request.id} has been ${decision}d!`);
-    navigate("/decoration/productivity/display-data-list");
+    // Dùng console.log thay vì navigate để không gây lỗi khi review
+    console.log("Navigating to /decoration/productivity/display-data-list");
+    // navigate("/decoration/productivity/display-data-list");
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-6 p-4 bg-gray-50">
       <Button variant="link" asChild className="pl-0">
         <Link to="/decoration/productivity/display-data-list">
           <ArrowLeft className="w-4 h-4 mr-2" />
