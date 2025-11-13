@@ -166,6 +166,12 @@ const sidebarNavItems: NavItem[] = [
         icon: BellRing,
         key: "material-issue",
       },
+      {
+        title: "Relax time standard",
+        path: "/fabric-warehouse/relax-time-standard",
+        icon: Clock,
+        key: "relax-time-standard",
+      },
       { title: "Action Plan", path: "#", icon: Settings, key: "action-plan" },
     ],
   },

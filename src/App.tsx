@@ -89,6 +89,7 @@ import PackingListManagementPagePackaging from "./pages/Warehouse/PackingListMan
 import ImportPackingListFormPagePackaging from "./pages/Warehouse/ImportPackingListFormPagePackaging";
 import ScanInBufferPage from "./pages/Buffer/ScanInBufferPage";
 import ScanOutBufferPage from "./pages/Buffer/ScanOutBufferPage";
+import RelaxTimeStandardPage from "./pages/Warehouse/RelaxTimeStandardPage";
 
 function App() {
   return (
@@ -124,6 +125,10 @@ function App() {
             element={<ImportPackingListFormPage />}
           />
           <Route path="audit-log" element={<AuditLogPage />} />
+          <Route
+            path="relax-time-standard"
+            element={<RelaxTimeStandardPage />}
+          />
         </Route>
 
         {/* === Module Kho Phụ Liệu (Ví dụ) === */}
