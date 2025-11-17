@@ -3,7 +3,6 @@
 "use client";
 
 import * as React from "react";
-// BƯỚC 1: IMPORT CÁC TYPE CẦN THIẾT TỪ THƯ VIỆN
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -16,9 +15,9 @@ import {
   getSortedRowModel,
   useReactTable,
   Row,
-  HeaderContext, // Dùng cho header
-  CellContext, // Dùng cho cell
-  Column, // Dùng cho column instance
+  HeaderContext,
+  CellContext,
+  Column,
 } from "@tanstack/react-table";
 import { SlidersHorizontal } from "lucide-react";
 
@@ -61,6 +60,7 @@ interface CustomTableProps<TData, TValue> {
   showCheckbox?: boolean;
   showColumnVisibility?: boolean;
   onSelectionChange?: (selectedRows: TData[]) => void;
+  enableRowSelection?: (row: Row<TData>) => boolean;
 }
 
 // --- COMPONENT ---
@@ -71,6 +71,7 @@ export function CustomTable<TData, TValue>({
   showCheckbox = true,
   showColumnVisibility = true,
   onSelectionChange,
+  enableRowSelection,
 }: CustomTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -81,14 +82,12 @@ export function CustomTable<TData, TValue>({
   const [rowSelection, setRowSelection] = React.useState({});
 
   const tableColumns = React.useMemo(() => {
-    // BƯỚC 2: SỬ DỤNG const THAY VÌ let (Fix lỗi ESLint)
     const processedColumns = columns.map((column) => {
       if (column.id === "actions" && showColumnVisibility) {
         return {
           ...column,
           enableSorting: false,
           enableHiding: false,
-          // BƯỚC 3: CUNG CẤP TYPE CHO THAM SỐ CỦA HEADER
           header: ({ table }: HeaderContext<TData, TValue>) => (
             <div className="flex justify-end">
               <DropdownMenu>
@@ -102,7 +101,6 @@ export function CustomTable<TData, TValue>({
                   {table
                     .getAllColumns()
                     .filter((col) => col.getCanHide())
-                    // BƯỚC 4: CUNG CẤP TYPE CHO `col`
                     .map((col: Column<TData, unknown>) => (
                       <DropdownMenuCheckboxItem
                         key={col.id}
@@ -129,7 +127,6 @@ export function CustomTable<TData, TValue>({
     if (showCheckbox) {
       processedColumns.unshift({
         id: "select",
-        // BƯỚC 5: CUNG CẤP TYPE CHO HEADER VÀ CELL CỦA CHECKBOX
         header: ({ table }: HeaderContext<TData, TValue>) => (
           <Checkbox
             checked={
@@ -147,6 +144,7 @@ export function CustomTable<TData, TValue>({
             checked={row.getIsSelected()}
             onCheckedChange={(value) => row.toggleSelected(!!value)}
             aria-label="Select row"
+            disabled={!row.getCanSelect()}
           />
         ),
         enableSorting: false,
@@ -168,6 +166,11 @@ export function CustomTable<TData, TValue>({
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
+    // --- START OF CORRECTION ---
+    // The `enableRowSelection` prop itself can take a function.
+    // We remove the incorrect `getRowCanSelect` prop.
+    enableRowSelection: enableRowSelection,
+    // --- END OF CORRECTION ---
     state: {
       sorting,
       columnFilters,

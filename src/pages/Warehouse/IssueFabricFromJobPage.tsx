@@ -1,8 +1,15 @@
 // Path: src/pages/issue-fabric-from-job/IssueFabricFromJobPage.tsx
 
-import React, { useState, useEffect, useMemo, useCallback } from "react"; // 1. Thêm useCallback vào import
-import { Play, ArrowRightCircle, Trash2, PlusCircle } from "lucide-react";
-import { ColumnDef } from "@tanstack/react-table";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
+import {
+  ArrowRightCircle,
+  Trash2,
+  PlusCircle,
+  CheckCircle2,
+  FileUp,
+  Search,
+} from "lucide-react";
+import { ColumnDef, Row } from "@tanstack/react-table";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -23,7 +30,7 @@ interface CuttingPlanJob {
   ID: string;
   PlanName: string;
   Factory: string;
-  PlanDate: string; // Sử dụng string cho đơn giản, có thể dùng Date
+  PlanDate: string;
   Style: string;
   JOB: string;
   ItemCode: string;
@@ -33,6 +40,8 @@ interface CuttingPlanJob {
   Status: "Planned" | "In Progress" | "Completed";
   CreatedBy: string;
   Remarks: string;
+  erpChecked: boolean;
+  qcChecked: boolean;
 }
 
 // Dữ liệu cho một cuộn vải trong kho
@@ -46,7 +55,7 @@ interface InventoryRoll {
   Color: string;
   RollNo: string;
   LotNo: string;
-  Yards: number; // Tổng số yards ban đầu
+  Yards: number;
   NetWeightKgs: number;
   GrossWeightKgs: number;
   Width: string;
@@ -59,7 +68,7 @@ interface InventoryRoll {
   QCBy: string;
   Comment: string;
   Printed: boolean;
-  BalanceYards: number; // Số yards còn lại
+  BalanceYards: number;
   HourStandard: number;
   HourRelax: number;
   RelaxDate: string;
@@ -70,7 +79,7 @@ interface InventoryRoll {
 
 // Dữ liệu cho một cuộn vải đã được chọn để xuất
 interface SelectedInventoryRoll extends InventoryRoll {
-  issuedYards: number; // Số yards người dùng nhập để xuất
+  issuedYards: number;
 }
 
 // --- END OF INLINED FILE: src/pages/issue-fabric-form/types.ts ---
@@ -79,7 +88,6 @@ interface SelectedInventoryRoll extends InventoryRoll {
 
 // --- DỮ LIỆU GIẢ CHO CUTTING PLAN ---
 const MOCK_CUTTING_PLAN_JOBS: CuttingPlanJob[] = [
-  // ... (dữ liệu cũ không đổi)
   {
     ID: "CP001",
     PlanName: "Kế hoạch cắt áo T-Shirt đợt 1",
@@ -94,6 +102,8 @@ const MOCK_CUTTING_PLAN_JOBS: CuttingPlanJob[] = [
     Status: "Planned",
     CreatedBy: "an.nguyen",
     Remarks: "Ưu tiên cắt trước.",
+    erpChecked: true,
+    qcChecked: true,
   },
   {
     ID: "CP002",
@@ -109,6 +119,8 @@ const MOCK_CUTTING_PLAN_JOBS: CuttingPlanJob[] = [
     Status: "Planned",
     CreatedBy: "an.nguyen",
     Remarks: "Vải denim cần kiểm tra độ co rút.",
+    erpChecked: true,
+    qcChecked: false,
   },
   {
     ID: "CP003",
@@ -124,6 +136,8 @@ const MOCK_CUTTING_PLAN_JOBS: CuttingPlanJob[] = [
     Status: "In Progress",
     CreatedBy: "bao.tran",
     Remarks: "Đã nhận đủ vải.",
+    erpChecked: false,
+    qcChecked: true,
   },
   {
     ID: "CP004",
@@ -139,27 +153,14 @@ const MOCK_CUTTING_PLAN_JOBS: CuttingPlanJob[] = [
     Status: "Planned",
     CreatedBy: "chi.le",
     Remarks: "Yêu cầu kiểm tra sơ đồ cắt.",
-  },
-  {
-    ID: "CP005",
-    PlanName: "Kế hoạch cắt áo khoác bomber",
-    Factory: "F3",
-    PlanDate: "2025-10-25",
-    Style: "JCK-005",
-    JOB: "JOB-105",
-    ItemCode: "NYL-007",
-    Color: "Đen",
-    RequestQuantity: 150,
-    IssuedQuantity: 150,
-    Status: "Completed",
-    CreatedBy: "bao.tran",
-    Remarks: "Đã hoàn thành, chờ chuyển sang may.",
+    erpChecked: true,
+    qcChecked: true,
   },
 ];
 
 // --- DỮ LIỆU GIẢ CHO INVENTORY ---
 const MOCK_INVENTORY_ROLLS: InventoryRoll[] = [
-  // Vải cho JOB-102 (DNM-003, Xanh đậm) - cố tình để số lượng ít để tạo ra thiếu hụt
+  // ... (dữ liệu kho không đổi)
   {
     PONumber: "POPU0018251",
     ItemCode: "DNM-003",
@@ -195,61 +196,6 @@ const MOCK_INVENTORY_ROLLS: InventoryRoll[] = [
     DateInHouse: "2023-06-08",
   },
   {
-    PONumber: "POPU0018253",
-    ItemCode: "DNM-003",
-    Factory: "Factory A",
-    Supplier: "Supplier Y",
-    InvoiceNo: "INV-016",
-    ColorCode: "CC-003",
-    Color: "Xanh đậm",
-    RollNo: "3",
-    LotNo: "225628095",
-    Yards: 150,
-    BalanceYards: 150,
-    Location: "A1-03",
-    QCStatus: "Passed",
-    QRCode: "QR-33962",
-    DateInHouse: "2023-06-10",
-  },
-
-  // Dữ liệu mới: Vải cùng ItemCode DNM-003 nhưng khác màu để test chức năng chọn bổ sung
-  {
-    PONumber: "POPU0018255",
-    ItemCode: "DNM-003",
-    Factory: "Factory A",
-    Supplier: "Supplier Y",
-    InvoiceNo: "INV-020",
-    ColorCode: "CC-004",
-    Color: "Xanh nhạt",
-    RollNo: "10",
-    LotNo: "225628100",
-    Yards: 200,
-    BalanceYards: 200,
-    Location: "B2-05",
-    QCStatus: "Passed",
-    QRCode: "QR-33970",
-    DateInHouse: "2023-07-15",
-  },
-  {
-    PONumber: "POPU0018256",
-    ItemCode: "DNM-003",
-    Factory: "Factory A",
-    Supplier: "Supplier Y",
-    InvoiceNo: "INV-020",
-    ColorCode: "CC-005",
-    Color: "Đen",
-    RollNo: "11",
-    LotNo: "225628101",
-    Yards: 180,
-    BalanceYards: 180,
-    Location: "B2-06",
-    QCStatus: "Passed",
-    QRCode: "QR-33971",
-    DateInHouse: "2023-07-15",
-  },
-
-  // Vải cho JOB-101 (CTN-005, Trắng) - đủ số lượng VÀ CÓ DƯ
-  {
     PONumber: "SSPU0002939",
     ItemCode: "CTN-005",
     Factory: "Factory C",
@@ -284,76 +230,22 @@ const MOCK_INVENTORY_ROLLS: InventoryRoll[] = [
     DateInHouse: "2023-05-05",
   },
   {
-    PONumber: "SSPU0002941",
-    ItemCode: "CTN-005",
-    Factory: "Factory C",
-    Supplier: "Supplier Y",
-    InvoiceNo: "INV-010",
-    ColorCode: "CC-002",
-    Color: "Trắng",
-    RollNo: "3",
-    LotNo: "225628093",
-    Yards: 115.5,
-    BalanceYards: 115.5,
-    Location: "C3-13",
-    QCStatus: "Passed",
-    QRCode: "QR-16814",
-    DateInHouse: "2023-05-05",
-  },
-  {
     PONumber: "SSPU0002942",
-    ItemCode: "CTN-005",
+    ItemCode: "POP-002",
     Factory: "Factory C",
     Supplier: "Supplier Y",
     InvoiceNo: "INV-010",
     ColorCode: "CC-002",
-    Color: "Trắng",
+    Color: "Xanh nhạt",
     RollNo: "4",
     LotNo: "225628093",
-    Yards: 300,
-    BalanceYards: 300,
+    Yards: 500,
+    BalanceYards: 500,
     Location: "C4-01",
     QCStatus: "Passed",
     QRCode: "QR-16815",
     DateInHouse: "2023-05-06",
   },
-  // *** NEW DATA ADDED TO CREATE A SURPLUS FOR DEMONSTRATION ***
-  {
-    PONumber: "SSPU0002950",
-    ItemCode: "CTN-005",
-    Factory: "Factory C",
-    Supplier: "Supplier Z",
-    InvoiceNo: "INV-015",
-    ColorCode: "CC-002",
-    Color: "Trắng",
-    RollNo: "5",
-    LotNo: "225628099",
-    Yards: 150,
-    BalanceYards: 150,
-    Location: "C4-02",
-    QCStatus: "Passed",
-    QRCode: "QR-16816",
-    DateInHouse: "2023-05-10",
-  },
-  {
-    PONumber: "SSPU0002951",
-    ItemCode: "CTN-005",
-    Factory: "Factory C",
-    Supplier: "Supplier Z",
-    InvoiceNo: "INV-015",
-    ColorCode: "CC-002",
-    Color: "Trắng",
-    RollNo: "6",
-    LotNo: "225628099",
-    Yards: 250,
-    BalanceYards: 250,
-    Location: "C4-03",
-    QCStatus: "Passed",
-    QRCode: "QR-16817",
-    DateInHouse: "2023-05-10",
-  },
-
-  // ... (phần còn lại của dữ liệu giả)
 ].map((roll) => ({
   ...roll,
   Printed: true,
@@ -376,12 +268,12 @@ const MOCK_INVENTORY_ROLLS: InventoryRoll[] = [
   ColorCode: roll.ColorCode || "N/A",
 })) as InventoryRoll[];
 
-// --- CÁC HÀM API GIẢ ---
-
 const getCuttingPlanJobs = (): Promise<CuttingPlanJob[]> => {
   return new Promise((resolve) => {
     setTimeout(() => {
-      resolve(MOCK_CUTTING_PLAN_JOBS);
+      resolve(
+        MOCK_CUTTING_PLAN_JOBS.filter((job) => job.Status !== "Completed")
+      );
     }, 500);
   });
 };
@@ -404,7 +296,6 @@ const getInventoryByItem = (
   });
 };
 
-// Lấy danh sách cuộn vải trong kho chỉ theo Item Code (bất kể màu)
 const getInventoryByItemCode = (itemCode: string): Promise<InventoryRoll[]> => {
   return new Promise((resolve) => {
     setTimeout(() => {
@@ -423,9 +314,10 @@ const getInventoryByItemCode = (itemCode: string): Promise<InventoryRoll[]> => {
 
 // --- MAIN COMPONENT: IssueFabricFromJobPage.tsx ---
 const IssueFabricFromJobPage: React.FC = () => {
-  // --- STATE MANAGEMENT ---
+  const [isIssuing, setIsIssuing] = useState(false);
   const [allJobs, setAllJobs] = useState<CuttingPlanJob[]>([]);
   const [selectedJobIds, setSelectedJobIds] = useState<Set<string>>(new Set());
+  const [jobSearchTerm, setJobSearchTerm] = useState("");
   const [selectedRolls, setSelectedRolls] = useState<SelectedInventoryRoll[]>(
     []
   );
@@ -437,11 +329,23 @@ const IssueFabricFromJobPage: React.FC = () => {
     color: string;
     shortageYards: number;
   } | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  const [isFinishing, setIsFinishing] = useState(false); // State cho nút Finish
+  const [isLoading, setIsLoading] = useState(true); // Loading for initial job list
+  const [isSearchingInventory, setIsSearchingInventory] = useState(false); // Specific loading for inventory search
+  const [isFinishing, setIsFinishing] = useState(false);
 
-  // --- DERIVED STATE & CALCULATIONS (useMemo for optimization) ---
+  useEffect(() => {
+    getCuttingPlanJobs().then((data) => {
+      setAllJobs(data);
+      setIsLoading(false);
+    });
+  }, []);
+
+  const filteredJobs = useMemo(() => {
+    if (!jobSearchTerm) return allJobs;
+    return allJobs.filter((job) =>
+      job.JOB.toLowerCase().includes(jobSearchTerm.toLowerCase())
+    );
+  }, [allJobs, jobSearchTerm]);
 
   const selectedJobs = useMemo(() => {
     return allJobs.filter((job) => selectedJobIds.has(job.ID));
@@ -476,79 +380,102 @@ const IssueFabricFromJobPage: React.FC = () => {
     return fabricRequirements.reduce((sum, req) => sum + req.requiredYards, 0);
   }, [fabricRequirements]);
 
-  // --- LOGIC & SIDE EFFECTS (useEffect) ---
-
   useEffect(() => {
-    if (fabricRequirements.length === 0) {
-      setSelectedRolls([]);
-      setAvailableInventoryRolls([]);
-      setShortageInfo(null);
-      return;
+    if (isIssuing && fabricRequirements.length > 0) {
+      const processFabricRequest = async () => {
+        setIsSearchingInventory(true);
+        setShortageInfo(null);
+        setSelectedRolls([]);
+        setAvailableInventoryRolls([]);
+
+        const mainRequirement = fabricRequirements[0];
+        if (!mainRequirement) {
+          setIsSearchingInventory(false);
+          return;
+        }
+
+        const { itemCode, color } = mainRequirement;
+        const requiredYards = totalRequiredYards;
+
+        const allMatchingRolls = await getInventoryByItem(itemCode, color);
+        const sortedRolls = [...allMatchingRolls].sort(
+          (a, b) => a.BalanceYards - b.BalanceYards
+        );
+
+        const autoSelected: SelectedInventoryRoll[] = [];
+        let yardsToFulfill = requiredYards;
+        for (const roll of sortedRolls) {
+          if (yardsToFulfill <= 0) break;
+          const yardsToIssue = Math.min(roll.BalanceYards, yardsToFulfill);
+          autoSelected.push({ ...roll, issuedYards: yardsToIssue });
+          yardsToFulfill -= yardsToIssue;
+        }
+        setSelectedRolls(autoSelected);
+
+        const selectedQRCodes = new Set(autoSelected.map((r) => r.QRCode));
+        let availableRolls = allMatchingRolls.filter(
+          (r) => !selectedQRCodes.has(r.QRCode)
+        );
+
+        if (yardsToFulfill > 0) {
+          setShortageInfo({ itemCode, color, shortageYards: yardsToFulfill });
+          const allItemRolls = await getInventoryByItemCode(itemCode);
+          const currentQRCodes = new Set(allMatchingRolls.map((r) => r.QRCode));
+          const substituteRolls = allItemRolls.filter(
+            (r) => !currentQRCodes.has(r.QRCode)
+          );
+          availableRolls = [...availableRolls, ...substituteRolls];
+        }
+
+        setAvailableInventoryRolls(availableRolls);
+        setIsSearchingInventory(false);
+      };
+
+      processFabricRequest();
     }
+  }, [isIssuing, fabricRequirements, totalRequiredYards]);
 
-    const processFabricRequest = async () => {
-      setIsLoading(true);
-      setShortageInfo(null);
+  const handleSimulateImport = useCallback(
+    (jobId: string, type: "erp" | "qc") => {
+      alert(
+        `Đã import thành công dữ liệu ${type.toUpperCase()} cho JOB: ${jobId}.`
+      );
+      setAllJobs((prevJobs) =>
+        prevJobs.map((job) =>
+          job.ID === jobId ? { ...job, [`${type}Checked`]: true } : job
+        )
+      );
+    },
+    []
+  );
 
-      const mainRequirement = fabricRequirements[0];
-      if (!mainRequirement) {
-        setIsLoading(false);
+  const handleProceedToIssue = useCallback(() => {
+    if (selectedJobIds.size > 0) {
+      const firstSelectedJob = selectedJobs[0];
+      const allSameFabric = selectedJobs.every(
+        (job) =>
+          job.ItemCode === firstSelectedJob.ItemCode &&
+          job.Color === firstSelectedJob.Color
+      );
+
+      if (!allSameFabric) {
+        alert(
+          "Lỗi: Vui lòng chỉ chọn các JOB có cùng Mã Vải (Item Code) và Màu (Color) trong một lần cấp phát."
+        );
         return;
       }
 
-      const { itemCode, color, requiredYards } = mainRequirement;
-      const allMatchingRolls = await getInventoryByItem(itemCode, color);
-      const sortedRolls = [...allMatchingRolls].sort(
-        (a, b) => a.BalanceYards - b.BalanceYards
-      );
-
-      const autoSelected: SelectedInventoryRoll[] = [];
-      let yardsToFulfill = requiredYards;
-      for (const roll of sortedRolls) {
-        if (yardsToFulfill <= 0) break;
-        const yardsToIssue = Math.min(roll.BalanceYards, yardsToFulfill);
-        autoSelected.push({ ...roll, issuedYards: yardsToIssue });
-        yardsToFulfill -= yardsToIssue;
-      }
-      setSelectedRolls(autoSelected);
-
-      const selectedQRCodes = new Set(autoSelected.map((r) => r.QRCode));
-      let availableRolls = allMatchingRolls.filter(
-        (r) => !selectedQRCodes.has(r.QRCode)
-      );
-
-      if (yardsToFulfill > 0) {
-        setShortageInfo({ itemCode, color, shortageYards: yardsToFulfill });
-        const allItemRolls = await getInventoryByItemCode(itemCode);
-        const currentQRCodes = new Set(allMatchingRolls.map((r) => r.QRCode));
-        const substituteRolls = allItemRolls.filter(
-          (r) => !currentQRCodes.has(r.QRCode)
-        );
-        availableRolls = [...availableRolls, ...substituteRolls];
-      }
-
-      setAvailableInventoryRolls(availableRolls);
-      setIsLoading(false);
-    };
-
-    processFabricRequest();
-  }, [fabricRequirements]);
-
-  // --- HANDLER FUNCTIONS ---
-
-  // 2. Bọc các hàm xử lý trong useCallback
-  const handleUploadKanban = useCallback(() => {
-    setIsUploading(true);
-    setSelectedJobIds(new Set());
-    getCuttingPlanJobs().then((data) => {
-      setAllJobs(data.filter((job) => job.Status !== "Completed"));
-      setIsUploading(false);
-    });
-  }, []); // Mảng dependencies rỗng vì hàm này không phụ thuộc vào props/state nào
+      setIsIssuing(true);
+    }
+  }, [selectedJobIds, selectedJobs]);
 
   const handleJobSelectionChange = useCallback(
     (selectedItems: CuttingPlanJob[]) => {
       setSelectedJobIds(new Set(selectedItems.map((item) => item.ID)));
+      // Nếu người dùng bỏ chọn hết, ẩn Step 2
+      if (selectedItems.length === 0) {
+        setIsIssuing(false);
+      }
     },
     []
   );
@@ -586,8 +513,8 @@ const IssueFabricFromJobPage: React.FC = () => {
       setSelectedRolls((prev) =>
         prev.filter((r) => r.QRCode !== rollToRemove.QRCode)
       );
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { issuedYards, ...originalRoll } = rollToRemove;
+      void issuedYards;
       setAvailableInventoryRolls((prev) =>
         [...prev, originalRoll].sort((a, b) => a.RollNo.localeCompare(b.RollNo))
       );
@@ -605,46 +532,81 @@ const IssueFabricFromJobPage: React.FC = () => {
           })} yds.\nBạn có chắc chắn muốn tiếp tục?`
         )
       ) {
-        return; // User nhấn Cancel
+        return;
       }
     }
 
     setIsFinishing(true);
     console.log("--- BẮT ĐẦU QUÁ TRÌNH CẤP PHÁT ---");
-    console.log("Các JOB được chọn:", selectedJobs);
+    console.log("Các JOB được xử lý:", selectedJobs);
     console.log("Các cuộn vải được cấp phát:", selectedRolls);
     console.log("Tổng yêu cầu:", totalRequiredYards);
     console.log("Tổng cấp phát:", totalIssuedYards);
 
-    // Mô phỏng API call mất 2 giây
     setTimeout(() => {
       alert("Cấp phát vải thành công!");
-
-      // Reset state để chuẩn bị cho lần làm việc tiếp theo
-      setAllJobs([]);
-      setSelectedJobIds(new Set());
-      setSelectedRolls([]);
-      setAvailableInventoryRolls([]);
-      setShortageInfo(null);
       setIsFinishing(false);
+      setAllJobs((prev) => prev.filter((j) => !selectedJobIds.has(j.ID)));
+      setSelectedJobIds(new Set());
+      setIsIssuing(false);
     }, 2000);
-  }, [selectedJobs, selectedRolls, totalIssuedYards, totalRequiredYards]); // Thêm dependencies mà hàm này sử dụng
+  }, [
+    selectedJobs,
+    selectedRolls,
+    totalIssuedYards,
+    totalRequiredYards,
+    selectedJobIds,
+  ]);
 
-  // 3. Bọc các mảng định nghĩa cột trong useMemo
-  const cuttingPlanJobColumns = useMemo<ColumnDef<CuttingPlanJob>[]>(
+  const jobStatusColumns = useMemo<ColumnDef<CuttingPlanJob>[]>(
     () => [
       { accessorKey: "JOB", header: "JOB" },
       { accessorKey: "ItemCode", header: "Item Code" },
       { accessorKey: "Color", header: "Color" },
-      {
-        accessorKey: "RequestQuantity",
-        header: "Required Qty",
-        cell: ({ row }) =>
-          `${row.original.RequestQuantity.toLocaleString()} yds`,
-      },
+      { accessorKey: "RequestQuantity", header: "Required Qty" },
       { accessorKey: "Style", header: "Style" },
+      {
+        accessorKey: "erpChecked",
+        header: () => <div className="text-center">ERP Check</div>,
+        cell: ({ row }) => (
+          <div className="flex  justify-center">
+            {row.original.erpChecked ? (
+              <CheckCircle2 className="h-6 w-6 text-green-600" />
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleSimulateImport(row.original.ID, "erp")}
+              >
+                <FileUp className="h-4 w-4 mr-2" />
+                Import
+              </Button>
+            )}
+          </div>
+        ),
+      },
+      {
+        accessorKey: "qcChecked",
+        header: () => <div className="text-center">QC Check</div>,
+        cell: ({ row }) => (
+          <div className="flex justify-center">
+            {row.original.qcChecked ? (
+              <CheckCircle2 className="h-6 w-6 text-green-600" />
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleSimulateImport(row.original.ID, "qc")}
+              >
+                <FileUp className="h-4 w-4 mr-2" />
+                Import
+              </Button>
+            )}
+          </div>
+        ),
+      },
     ],
-    []
+    [handleSimulateImport]
   );
 
   const selectedRollsColumns = useMemo<ColumnDef<SelectedInventoryRoll>[]>(
@@ -687,7 +649,7 @@ const IssueFabricFromJobPage: React.FC = () => {
       },
     ],
     [handleIssuedYardsChange, handleRemoveSelectedRoll]
-  ); // Thêm các hàm đã memoize vào dependencies
+  );
 
   const availableInventoryColumns = useMemo<ColumnDef<InventoryRoll>[]>(
     () => [
@@ -729,55 +691,63 @@ const IssueFabricFromJobPage: React.FC = () => {
       },
     ],
     [fabricRequirements, handleAddRollFromInventory]
-  ); // Thêm dependencies
+  );
 
   return (
     <div className="p-4 md:p-6 bg-gray-50 min-h-screen font-sans space-y-6">
-      <header>
-        <h1 className="text-3xl font-bold text-gray-800">
-          Issue Fabric From JOB
-        </h1>
-        <p className="text-gray-600">
-          Upload a Kanban file, select JOBs, and the system will automatically
-          propose fabric from inventory.
-        </p>
-      </header>
-      <Separator />
-
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>Step 1: Select JOBs to Issue Fabric</CardTitle>
-            <CardDescription>
-              Load the Kanban and select the JOBs you want to process.
-            </CardDescription>
-          </div>
-          <Button onClick={handleUploadKanban} disabled={isUploading}>
-            <Play className="h-4 w-4 mr-2" />
-            {isUploading ? "Uploading..." : "Upload Kanban from Excel"}
-          </Button>
+        <CardHeader>
+          <CardTitle>Step 1: Select JOBs to Process</CardTitle>
+          <CardDescription>
+            Import data for ERP/QC checks. You can select multiple valid JOBs to
+            issue at once.
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          {allJobs.length > 0 ? (
+          <div className="flex justify-between items-center mb-4">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by JOB..."
+                value={jobSearchTerm}
+                onChange={(e) => setJobSearchTerm(e.target.value)}
+                className="pl-8 w-full md:w-64"
+              />
+            </div>
+            <Button
+              onClick={handleProceedToIssue}
+              disabled={selectedJobIds.size === 0 || isIssuing}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              Issue Fabric for ({selectedJobIds.size}) JOBs
+              <ArrowRightCircle className="h-4 w-4 ml-2" />
+            </Button>
+          </div>
+          {isLoading ? (
+            <p className="text-center text-gray-500 py-4">Loading jobs...</p>
+          ) : (
             <CustomTable
-              columns={cuttingPlanJobColumns}
-              data={allJobs}
+              columns={jobStatusColumns}
+              data={filteredJobs}
               onSelectionChange={handleJobSelectionChange}
               showColumnVisibility={false}
+              enableRowSelection={(row: Row<CuttingPlanJob>) =>
+                row.original.erpChecked && row.original.qcChecked
+              }
             />
-          ) : (
-            <p className="text-center text-gray-500 py-4">
-              Please upload a Kanban file to start.
-            </p>
           )}
         </CardContent>
       </Card>
 
-      {selectedJobIds.size > 0 && (
+      {isIssuing && (
         <>
-          <Card className="sticky top-4 z-10">
+          <Separator />
+          <Card>
             <CardHeader>
-              <CardTitle>Step 2: Review and Issue Fabric</CardTitle>
+              <CardTitle>
+                Step 2: Review and Confirm Fabric Issuance for (
+                {selectedJobs.length}) JOBs
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
@@ -828,16 +798,17 @@ const IssueFabricFromJobPage: React.FC = () => {
                           : "text-green-900"
                       }`}
                     >
-                      {(totalRequiredYards - totalIssuedYards).toLocaleString(
-                        undefined,
-                        { maximumFractionDigits: 2 }
-                      )}{" "}
+                      {Math.abs(
+                        totalRequiredYards - totalIssuedYards
+                      ).toLocaleString(undefined, {
+                        maximumFractionDigits: 2,
+                      })}{" "}
                       yds
                     </p>
                   </CardHeader>
                 </Card>
               </div>
-              {isLoading && (
+              {isSearchingInventory && (
                 <p className="text-center text-blue-600 mt-4">
                   Searching inventory...
                 </p>

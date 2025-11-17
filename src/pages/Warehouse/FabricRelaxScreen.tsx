@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Camera, Play, Pause, Trash2, CheckCircle, QrCode } from "lucide-react";
+import { Camera, CheckCircle, QrCode } from "lucide-react";
 
 // Shadcn UI Imports
 import { Button } from "@/components/ui/button";
@@ -18,22 +18,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 
 //================================================================================
 // 1. TYPE DEFINITIONS & HELPERS (Unchanged)
 //================================================================================
 
-type StationStatus = "Empty" | "Ready" | "InProgress" | "Complete";
+type StationStatus = "Empty" | "InProgress" | "Complete";
 
 interface RelaxStation {
   id: number;
@@ -115,7 +105,7 @@ const ScanScreen: React.FC<ScanScreenProps> = ({
     if (!scannedMachineId) return;
     const randomFabricId = `FAB-${Math.floor(1000 + Math.random() * 9000)}`;
     setMessage({
-      text: `Fabric "${randomFabricId}" Scanned!`,
+      text: `Fabric "${randomFabricId}" Scanned! Starting timer...`,
       type: "success",
     });
     setTimeout(() => {
@@ -166,17 +156,11 @@ const ScanScreen: React.FC<ScanScreenProps> = ({
 
 interface RelaxStationCardProps {
   station: RelaxStation;
-  onStart: (id: number) => void;
-  onInterrupt: (id: number) => void;
-  onRemove: (id: number) => void;
   onAcknowledgeComplete: (id: number) => void;
 }
 
 const RelaxStationCard: React.FC<RelaxStationCardProps> = ({
   station,
-  onStart,
-  onInterrupt,
-  onRemove,
   onAcknowledgeComplete,
 }) => {
   const { id, machineName, status, fabricId, elapsedTime, totalTime } = station;
@@ -188,15 +172,13 @@ const RelaxStationCard: React.FC<RelaxStationCardProps> = ({
     { text: string; variant: "default" | "secondary" | "outline" }
   > = {
     Empty: { text: "Empty", variant: "secondary" },
-    Ready: { text: "Ready", variant: "default" },
     InProgress: { text: "In Progress", variant: "outline" },
-    Complete: { text: "Complete", variant: "default" },
+    Complete: { text: "Finish", variant: "default" },
   };
   const currentStatus = statusConfig[status];
   const variantClasses = {
     secondary: "bg-gray-200 text-gray-800",
-    default:
-      status === "Ready" ? "bg-blue-500 text-white" : "bg-green-500 text-white",
+    default: "bg-green-500 text-white",
     outline: "bg-yellow-500 text-white",
   };
 
@@ -231,38 +213,17 @@ const RelaxStationCard: React.FC<RelaxStationCardProps> = ({
             Scan QR to assign fabric
           </p>
         )}
-        {status === "Ready" && (
-          <div className="flex gap-2 w-full">
-            <Button
-              onClick={() => onStart(id)}
-              className="w-full bg-green-500 hover:bg-green-600"
-            >
-              <Play className="mr-2" size={18} /> Start
-            </Button>
-            <Button
-              onClick={() => onRemove(id)}
-              variant="secondary"
-              className="w-full"
-            >
-              <Trash2 className="mr-2" size={18} /> Remove
-            </Button>
-          </div>
-        )}
         {status === "InProgress" && (
-          <Button
-            onClick={() => onInterrupt(id)}
-            variant="destructive"
-            className="w-full"
-          >
-            <Pause className="mr-2" size={18} /> Interrupt
-          </Button>
+          <p className="text-center w-full text-muted-foreground italic">
+            Relaxation in progress...
+          </p>
         )}
         {status === "Complete" && (
           <Button
             onClick={() => onAcknowledgeComplete(id)}
             className="w-full bg-green-600 hover:bg-green-700"
           >
-            <CheckCircle className="mr-2" size={18} /> Acknowledge & Clear
+            <CheckCircle className="mr-2" size={18} /> Finish
           </Button>
         )}
       </CardFooter>
@@ -288,10 +249,6 @@ const initialStations: RelaxStation[] = Array.from({ length: 8 }, (_, i) => ({
 const FabricRelaxScreen: React.FC = () => {
   const [stations, setStations] = useState<RelaxStation[]>(initialStations);
   const [isScanning, setIsScanning] = useState(false);
-  const [showInterruptModal, setShowInterruptModal] = useState(false);
-  const [stationToInterrupt, setStationToInterrupt] = useState<number | null>(
-    null
-  );
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -318,43 +275,20 @@ const FabricRelaxScreen: React.FC = () => {
     (machineId: number, fabricId: string) => {
       setStations((prev) =>
         prev.map((s) =>
-          s.id === machineId ? { ...s, status: "Ready", fabricId } : s
+          s.id === machineId
+            ? {
+                ...s,
+                status: "InProgress", // Directly start the process
+                fabricId,
+                startTime: Date.now(), // Set start time immediately
+              }
+            : s
         )
       );
       setIsScanning(false);
     },
     []
   );
-
-  const handleStart = useCallback((id: number) => {
-    setStations((prev) =>
-      prev.map((s) =>
-        s.id === id ? { ...s, status: "InProgress", startTime: Date.now() } : s
-      )
-    );
-  }, []);
-
-  const handleInterrupt = useCallback((id: number) => {
-    setStationToInterrupt(id);
-    setShowInterruptModal(true);
-  }, []);
-
-  const handleConfirmInterrupt = useCallback(() => {
-    if (stationToInterrupt === null) return;
-    setStations((prev) =>
-      prev.map((s) =>
-        s.id === stationToInterrupt
-          ? { ...s, status: "Ready", startTime: null, elapsedTime: 0 }
-          : s
-      )
-    );
-    setStationToInterrupt(null);
-  }, [stationToInterrupt]);
-
-  const handleRemove = useCallback((id: number) => {
-    const originalState = initialStations.find((is) => is.id === id)!;
-    setStations((prev) => prev.map((s) => (s.id === id ? originalState : s)));
-  }, []);
 
   const handleAcknowledgeComplete = useCallback((id: number) => {
     const originalState = initialStations.find((is) => is.id === id)!;
@@ -369,28 +303,6 @@ const FabricRelaxScreen: React.FC = () => {
         stations={stations}
         onScanComplete={handleScanComplete}
       />
-      <AlertDialog
-        open={showInterruptModal}
-        onOpenChange={setShowInterruptModal}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Interruption</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to interrupt the relaxation process? This
-              will reset the timer.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setStationToInterrupt(null)}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmInterrupt}>
-              Confirm
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       <div className="bg-gray-100 min-h-screen p-4 sm:p-6 lg:p-8">
         <div className="max-w-7xl mx-auto">
@@ -415,9 +327,6 @@ const FabricRelaxScreen: React.FC = () => {
               <RelaxStationCard
                 key={station.id}
                 station={station}
-                onStart={handleStart}
-                onInterrupt={handleInterrupt}
-                onRemove={handleRemove}
                 onAcknowledgeComplete={handleAcknowledgeComplete}
               />
             ))}
