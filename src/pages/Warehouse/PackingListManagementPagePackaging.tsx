@@ -3,7 +3,6 @@
 import { useState, useMemo, type FC } from "react";
 import { v4 as uuidv4 } from "uuid";
 import {
-  Plus,
   Search,
   QrCode,
   Undo2,
@@ -169,9 +168,6 @@ const StatusBadge: FC<{ status: PrintStatus }> = ({ status }) => {
 const PageHeader: FC = () => (
   <div className="flex justify-between items-center mb-6">
     <h1 className="text-3xl font-bold">Packaging Management</h1>
-    <Button>
-      <Plus className="mr-2 h-5 w-5" /> Import Packaging List
-    </Button>
   </div>
 );
 

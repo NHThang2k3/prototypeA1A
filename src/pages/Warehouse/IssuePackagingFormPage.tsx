@@ -1,7 +1,15 @@
 // Path: src/pages/issue-packaging-form/IssuePackagingFormPage.tsx
 
-import React, { useState, useEffect, useMemo, useCallback } from "react"; // 1. Thêm useCallback
-import { Play, ArrowRightCircle, Trash2, PlusCircle } from "lucide-react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
+import {
+  Play,
+  ArrowRightCircle,
+  Search,
+  Package,
+  AlertCircle,
+  CheckSquare,
+  Square,
+} from "lucide-react";
 import { ColumnDef } from "@tanstack/react-table";
 
 import { Button } from "@/components/ui/button";
@@ -12,28 +20,27 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { CustomTable } from "@/components/ui/custom-table";
+import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 
-// --- TYPES: Define data structures for the packaging issuance process ---
+// --- TYPES ---
 
-// Data for a packaging request
 interface PackagingRequest {
-  ID: string; // Request ID
+  ID: string;
   JOB: string;
   Style: string;
-  PackagingLine: string; // e.g., Packing Line 1, Packing Line 2
+  PackagingLine: string; // Thay FactoryLine thành PackagingLine
   DateRequired: string;
   Status: "Pending" | "In Progress" | "Completed";
-  ItemNumber: string; // Packaging item code (e.g., CARTON-M, POLYBAG-S)
-  MaterialName: string; // Packaging item name
-  Description: string; // e.g., "Size M, Brown", "Self-sealing"
+  ItemNumber: string;
+  MaterialName: string;
+  Description: string; // Packaging thường dùng Description thay vì Color
   RequestQuantity: number;
-  Unit: string; // e.g., pcs, box, roll
+  Unit: string;
 }
 
-// Data for a packaging item in inventory
 interface InventoryPackaging {
   QRCode: string;
   PONumber: string;
@@ -41,21 +48,27 @@ interface InventoryPackaging {
   MaterialName: string;
   Supplier: string;
   Description: string;
-  BalanceQty: number; // Remaining quantity
+  BalanceQty: number; // Current Stock
   Unit: string;
-  Location: string;
+  Location: string; // Warehouse Location
   DateInHouse: string;
   QCStatus: "Passed" | "Failed" | "Pending";
 }
 
-// Data for a packaging item selected for issuance
 interface SelectedInventoryPackaging extends InventoryPackaging {
-  issueQty: number; // Quantity entered by the user for issuance
+  issueQty: number; // Calculated quantity to issue
 }
 
-// --- MOCK DATA & API: Mock data and simulated API functions ---
+interface JobSummary {
+  JOB: string;
+  Style: string;
+  PackagingLine: string;
+  DateRequired: string;
+  TotalItems: number;
+}
 
-// Mock data for pending packaging requests
+// --- MOCK DATA & API ---
+
 const MOCK_PACKAGING_REQUESTS: PackagingRequest[] = [
   {
     ID: "PR-001",
@@ -72,15 +85,15 @@ const MOCK_PACKAGING_REQUESTS: PackagingRequest[] = [
   },
   {
     ID: "PR-002",
-    JOB: "JOB-202",
-    Style: "TEE-W-WHT",
-    PackagingLine: "Packing Line B",
-    DateRequired: "2025-11-02",
+    JOB: "JOB-201",
+    Style: "POLO-M-NVY",
+    PackagingLine: "Packing Line A",
+    DateRequired: "2025-11-01",
     Status: "Pending",
     ItemNumber: "POLYBAG-S",
     MaterialName: "Poly Bag",
     Description: "Size S, Self-sealing",
-    RequestQuantity: 1200,
+    RequestQuantity: 500,
     Unit: "pcs",
   },
   {
@@ -90,9 +103,9 @@ const MOCK_PACKAGING_REQUESTS: PackagingRequest[] = [
     PackagingLine: "Packing Line B",
     DateRequired: "2025-11-02",
     Status: "Pending",
-    ItemNumber: "HANGTAG-STD",
-    MaterialName: "Hang Tag",
-    Description: "Standard Brand Tag",
+    ItemNumber: "POLYBAG-S",
+    MaterialName: "Poly Bag",
+    Description: "Size S, Self-sealing",
     RequestQuantity: 1200,
     Unit: "pcs",
   },
@@ -107,13 +120,12 @@ const MOCK_PACKAGING_REQUESTS: PackagingRequest[] = [
     MaterialName: "Carton Box",
     Description: "Size L, Brown",
     RequestQuantity: 300,
-    Unit: "pcs", // This will have a shortage
+    Unit: "pcs",
   },
 ];
 
-// Mock data for packaging inventory
 const MOCK_INVENTORY_PACKAGING: InventoryPackaging[] = [
-  // Carton Box M (CARTON-M) - Sufficient
+  // Carton Box M
   {
     QRCode: "PKG-QR-001",
     PONumber: "PO-P01",
@@ -140,7 +152,7 @@ const MOCK_INVENTORY_PACKAGING: InventoryPackaging[] = [
     DateInHouse: "2025-10-10",
     QCStatus: "Passed",
   },
-  // Poly Bag S (POLYBAG-S) - Surplus
+  // Poly Bag S
   {
     QRCode: "PKG-QR-003",
     PONumber: "PO-P02",
@@ -154,21 +166,7 @@ const MOCK_INVENTORY_PACKAGING: InventoryPackaging[] = [
     DateInHouse: "2025-10-15",
     QCStatus: "Passed",
   },
-  // Hang Tag (HANGTAG-STD) - Sufficient
-  {
-    QRCode: "PKG-QR-004",
-    PONumber: "PO-P03",
-    ItemNumber: "HANGTAG-STD",
-    MaterialName: "Hang Tag",
-    Supplier: "SuppPrint",
-    Description: "Standard Brand Tag",
-    BalanceQty: 2000,
-    Unit: "pcs",
-    Location: "P2-C3-05",
-    DateInHouse: "2025-10-12",
-    QCStatus: "Passed",
-  },
-  // Carton Box L (CARTON-L) - Insufficient
+  // Carton Box L (Shortage scenario example)
   {
     QRCode: "PKG-QR-005",
     PONumber: "PO-P04",
@@ -176,532 +174,421 @@ const MOCK_INVENTORY_PACKAGING: InventoryPackaging[] = [
     MaterialName: "Carton Box",
     Supplier: "SuppPack",
     Description: "Size L, Brown",
-    BalanceQty: 250,
+    BalanceQty: 150, // Only 150 available, request is 300
     Unit: "pcs",
     Location: "P1-A2-01",
     DateInHouse: "2025-10-20",
     QCStatus: "Passed",
   },
-  // Substitute for Carton Box L (same item number, different description)
-  {
-    QRCode: "PKG-QR-006",
-    PONumber: "PO-P05",
-    ItemNumber: "CARTON-L",
-    MaterialName: "Carton Box",
-    Supplier: "SuppPackEco",
-    Description: "Size L, White, Recycled",
-    BalanceQty: 500,
-    Unit: "pcs",
-    Location: "P1-A2-02",
-    DateInHouse: "2025-10-22",
-    QCStatus: "Passed",
-  },
 ];
 
-// Mock API function to get the list of packaging requests
 const getPackagingRequests = (): Promise<PackagingRequest[]> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(
-        MOCK_PACKAGING_REQUESTS.filter((req) => req.Status === "Pending")
-      );
-    }, 500);
-  });
+  return new Promise((resolve) =>
+    setTimeout(() => resolve(MOCK_PACKAGING_REQUESTS), 500)
+  );
 };
 
-// Mock API function to get packaging from inventory by item number
-const getPackagingByItemNumber = (
+// Simulated API: Get inventory
+const getInventoryByPackaging = (
   itemNumber: string
 ): Promise<InventoryPackaging[]> => {
   return new Promise((resolve) => {
     setTimeout(() => {
-      const items = MOCK_INVENTORY_PACKAGING.filter(
-        (item) =>
+      // Deep copy to simulate fetching fresh data
+      const items = JSON.parse(JSON.stringify(MOCK_INVENTORY_PACKAGING)).filter(
+        (item: InventoryPackaging) =>
           item.ItemNumber === itemNumber &&
           item.BalanceQty > 0 &&
           item.QCStatus === "Passed"
       );
       resolve(items);
-    }, 800);
+    }, 400);
   });
 };
 
-// --- MAIN COMPONENT: IssuePackagingFormPage.tsx ---
+// --- MAIN COMPONENT ---
 
 const IssuePackagingFormPage: React.FC = () => {
-  // --- STATE MANAGEMENT ---
   const [allRequests, setAllRequests] = useState<PackagingRequest[]>([]);
-  const [selectedRequestIds, setSelectedRequestIds] = useState<Set<string>>(
-    new Set()
-  );
-  const [selectedPackaging, setSelectedPackaging] = useState<
+
+  // Multi-select JOBs state
+  const [selectedJobIds, setSelectedJobIds] = useState<Set<string>>(new Set());
+
+  const [jobSearchTerm, setJobSearchTerm] = useState("");
+  const [selectedPackagingItems, setSelectedPackagingItems] = useState<
     SelectedInventoryPackaging[]
   >([]);
-  const [availableInventory, setAvailableInventory] = useState<
-    InventoryPackaging[]
-  >([]);
-  const [shortageInfo, setShortageInfo] = useState<{
-    itemNumber: string;
-    shortageQty: number;
-  } | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+
+  const [isLoadingInventory, setIsLoadingInventory] = useState(false);
   const [isLoadingRequests, setIsLoadingRequests] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false);
 
-  // --- DERIVED STATE & CALCULATIONS ---
-  const packagingRequirements = useMemo(() => {
-    const requirements = new Map<
-      string,
-      {
-        itemNumber: string;
-        requiredQty: number;
-        unit: string;
-      }
-    >();
-    const selectedRequests = allRequests.filter((req) =>
-      selectedRequestIds.has(req.ID)
-    );
-    selectedRequests.forEach((req) => {
-      const key = req.ItemNumber; // Group by ItemNumber only for packaging
-      const existing = requirements.get(key) || {
-        itemNumber: req.ItemNumber,
-        requiredQty: 0,
-        unit: req.Unit,
-      };
-      existing.requiredQty += req.RequestQuantity;
-      requirements.set(key, existing);
-    });
-    return Array.from(requirements.values());
-  }, [allRequests, selectedRequestIds]);
-
-  const totalIssuedQty = useMemo(() => {
-    return selectedPackaging.reduce(
-      (sum, item) => sum + (item.issueQty || 0),
-      0
-    );
-  }, [selectedPackaging]);
-
-  const totalRequiredQty = useMemo(() => {
-    return packagingRequirements.reduce((sum, req) => sum + req.requiredQty, 0);
-  }, [packagingRequirements]);
-
-  const displayUnit = useMemo(() => {
-    return packagingRequirements.length > 0
-      ? packagingRequirements[0].unit
-      : "";
-  }, [packagingRequirements]);
-
-  // --- LOGIC & SIDE EFFECTS ---
-  useEffect(() => {
-    if (packagingRequirements.length === 0) {
-      setSelectedPackaging([]);
-      setAvailableInventory([]);
-      setShortageInfo(null);
-      return;
-    }
-
-    const processPackagingRequest = async () => {
-      setIsLoading(true);
-      setShortageInfo(null);
-      const mainRequirement = packagingRequirements[0];
-      const { itemNumber, requiredQty } = mainRequirement;
-
-      const allMatchingItems = await getPackagingByItemNumber(itemNumber);
-      const sortedItems = [...allMatchingItems].sort((a, b) =>
-        a.DateInHouse.localeCompare(b.DateInHouse)
-      ); // FIFO logic
-
-      const autoSelected: SelectedInventoryPackaging[] = [];
-      let qtyToFulfill = requiredQty;
-      for (const item of sortedItems) {
-        if (qtyToFulfill <= 0) break;
-        const qtyToIssue = Math.min(item.BalanceQty, qtyToFulfill);
-        autoSelected.push({ ...item, issueQty: qtyToIssue });
-        qtyToFulfill -= qtyToIssue;
-      }
-      setSelectedPackaging(autoSelected);
-
-      const selectedQRCodes = new Set(autoSelected.map((i) => i.QRCode));
-      const availableItems = allMatchingItems.filter(
-        (i) => !selectedQRCodes.has(i.QRCode)
-      );
-      setAvailableInventory(availableItems);
-
-      if (qtyToFulfill > 0) {
-        setShortageInfo({ itemNumber, shortageQty: qtyToFulfill });
-      }
-      setIsLoading(false);
-    };
-
-    processPackagingRequest();
-  }, [packagingRequirements]);
-
-  // --- HANDLER FUNCTIONS ---
-  // 2. Bọc các hàm xử lý sự kiện trong useCallback
+  // --- 1. LOGIC: Load & Group JOBs ---
   const handleLoadRequests = useCallback(() => {
     setIsLoadingRequests(true);
-    setSelectedRequestIds(new Set());
+    setSelectedJobIds(new Set()); // Clear selection
     getPackagingRequests().then((data) => {
-      setAllRequests(data);
+      setAllRequests(data.filter((req) => req.Status === "Pending"));
       setIsLoadingRequests(false);
     });
   }, []);
 
-  const handleRequestSelectionChange = useCallback(
-    (selectedItems: PackagingRequest[]) => {
-      setSelectedRequestIds(new Set(selectedItems.map((item) => item.ID)));
-    },
-    []
-  );
+  const uniqueJobs = useMemo(() => {
+    const jobMap = new Map<string, JobSummary>();
+    allRequests.forEach((req) => {
+      if (
+        jobSearchTerm &&
+        !req.JOB.toLowerCase().includes(jobSearchTerm.toLowerCase())
+      )
+        return;
+      if (!jobMap.has(req.JOB)) {
+        jobMap.set(req.JOB, {
+          JOB: req.JOB,
+          Style: req.Style,
+          PackagingLine: req.PackagingLine,
+          DateRequired: req.DateRequired,
+          TotalItems: 0,
+        });
+      }
+      jobMap.get(req.JOB)!.TotalItems += 1;
+    });
+    return Array.from(jobMap.values());
+  }, [allRequests, jobSearchTerm]);
 
-  const handleIssueQtyChange = useCallback((qrCode: string, newQty: number) => {
-    setSelectedPackaging((prevItems) =>
-      prevItems.map((item) => {
-        if (item.QRCode === qrCode) {
-          const validatedQty = Math.max(0, Math.min(newQty, item.BalanceQty));
-          return { ...item, issueQty: validatedQty };
-        }
-        return item;
-      })
-    );
+  // Get all requests belonging to ANY of the selected JOBs
+  const selectedRequests = useMemo(() => {
+    if (selectedJobIds.size === 0) return [];
+    return allRequests.filter((req) => selectedJobIds.has(req.JOB));
+  }, [allRequests, selectedJobIds]);
+
+  // --- 2. LOGIC: Toggle Selection & Auto Allocate ---
+
+  const toggleJobSelection = useCallback((jobId: string) => {
+    setSelectedJobIds((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(jobId)) {
+        newSet.delete(jobId);
+      } else {
+        newSet.add(jobId);
+      }
+      return newSet;
+    });
   }, []);
 
-  const handleAddPackagingFromInventory = useCallback(
-    (itemToAdd: InventoryPackaging) => {
-      setSelectedPackaging((prev) => [
-        ...prev,
-        { ...itemToAdd, issueQty: itemToAdd.BalanceQty },
-      ]);
-      setAvailableInventory((prev) =>
-        prev.filter((i) => i.QRCode !== itemToAdd.QRCode)
-      );
-    },
-    []
-  );
+  // Main Allocation Logic (Auto-calculate from inventory)
+  useEffect(() => {
+    if (selectedRequests.length === 0) {
+      setSelectedPackagingItems([]);
+      return;
+    }
 
-  const handleRemoveSelectedPackaging = useCallback(
-    (itemToRemove: SelectedInventoryPackaging) => {
-      setSelectedPackaging((prev) =>
-        prev.filter((i) => i.QRCode !== itemToRemove.QRCode)
-      );
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { issueQty, ...originalItem } = itemToRemove;
-      setAvailableInventory((prev) =>
-        [...prev, originalItem].sort((a, b) => a.QRCode.localeCompare(b.QRCode))
-      );
-    },
-    []
-  );
+    const autoAllocate = async () => {
+      setIsLoadingInventory(true);
+
+      // Map to Aggregate usage of the same Inventory Batch (QRCode) across multiple requests
+      // Key: QRCode, Value: SelectedInventoryPackaging
+      const allocationMap = new Map<string, SelectedInventoryPackaging>();
+
+      // Create a temporary inventory map to track "remaining balance" during this calculation
+      // so we don't double-book the same item if multiple JOBs need it.
+      const tempInventoryUsage = new Map<string, number>(); // Key: QRCode, Value: UsedQty
+
+      // Process each request
+      for (const req of selectedRequests) {
+        const { ItemNumber, RequestQuantity } = req;
+
+        // Fetch fresh inventory by ItemNumber
+        const inventoryItems = await getInventoryByPackaging(ItemNumber);
+
+        // Sort FIFO (Oldest DateInHouse first) or by Qty
+        const sortedInventory = [...inventoryItems].sort((a, b) =>
+          a.DateInHouse.localeCompare(b.DateInHouse)
+        );
+
+        let remainingReq = RequestQuantity;
+
+        for (const invItem of sortedInventory) {
+          if (remainingReq <= 0) break;
+
+          // Calculate effective balance for this session calculation
+          const usedSoFar = tempInventoryUsage.get(invItem.QRCode) || 0;
+          const effectiveBalance = invItem.BalanceQty - usedSoFar;
+
+          if (effectiveBalance <= 0) continue; // This batch is exhausted in this session
+
+          const qtyToTake = Math.min(effectiveBalance, remainingReq);
+
+          // Update temp usage tracker
+          tempInventoryUsage.set(invItem.QRCode, usedSoFar + qtyToTake);
+
+          // Update Final Display Map
+          if (allocationMap.has(invItem.QRCode)) {
+            const existing = allocationMap.get(invItem.QRCode)!;
+            existing.issueQty += qtyToTake; // Add to existing usage
+          } else {
+            allocationMap.set(invItem.QRCode, {
+              ...invItem,
+              issueQty: qtyToTake,
+            });
+          }
+
+          remainingReq -= qtyToTake;
+        }
+      }
+
+      // Convert Map to Array for Table
+      const finalAllocationList = Array.from(allocationMap.values());
+      setSelectedPackagingItems(finalAllocationList);
+      setIsLoadingInventory(false);
+    };
+
+    const timer = setTimeout(() => {
+      autoAllocate();
+    }, 500); // Debounce
+
+    return () => clearTimeout(timer);
+  }, [selectedRequests]);
 
   const handleFinishIssuance = useCallback(() => {
-    const shortage = totalRequiredQty - totalIssuedQty;
-    if (shortage > 0) {
-      if (
-        !window.confirm(
-          `Warning: You are issuing with a shortage of ${shortage.toLocaleString()} ${displayUnit}.\nDo you want to proceed?`
-        )
-      ) {
-        return;
-      }
-    }
     setIsFinishing(true);
-    console.log("--- STARTING PACKAGING ISSUANCE PROCESS ---");
-    console.log(
-      "Selected Requests:",
-      allRequests.filter((r) => selectedRequestIds.has(r.ID))
-    );
-    console.log("Issued Packaging:", selectedPackaging);
-    console.log("Total Required:", totalRequiredQty, displayUnit);
-    console.log("Total Issued:", totalIssuedQty, displayUnit);
-
     setTimeout(() => {
-      alert("Packaging issuance completed successfully!");
-      setAllRequests([]);
-      setSelectedRequestIds(new Set());
-      setSelectedPackaging([]);
-      setAvailableInventory([]);
-      setShortageInfo(null);
-      setIsFinishing(false);
-    }, 2000);
-  }, [
-    totalRequiredQty,
-    totalIssuedQty,
-    displayUnit,
-    allRequests,
-    selectedRequestIds,
-    selectedPackaging,
-  ]);
+      const jobsArray = Array.from(selectedJobIds).join(", ");
+      alert(`Packaging Issuance confirmed for JOBs: ${jobsArray}`);
 
-  // 3. Bọc các mảng định nghĩa cột trong useMemo
-  const packagingRequestColumns = useMemo<ColumnDef<PackagingRequest>[]>(
+      // Clean up processed jobs locally
+      setAllRequests((prev) =>
+        prev.filter((req) => !selectedJobIds.has(req.JOB))
+      );
+      setSelectedJobIds(new Set());
+      setSelectedPackagingItems([]);
+      setIsFinishing(false);
+    }, 1000);
+  }, [selectedJobIds]);
+
+  // --- 3. TABLE COLUMNS ---
+
+  // Step 1: JOB List with Checkbox
+  const jobListColumns = useMemo<ColumnDef<JobSummary>[]>(
     () => [
-      { accessorKey: "ID", header: "Request ID" },
-      { accessorKey: "JOB", header: "JOB" },
-      { accessorKey: "ItemNumber", header: "Item Number" },
-      { accessorKey: "Description", header: "Description" },
       {
-        accessorKey: "RequestQuantity",
-        header: "Required Qty",
-        cell: ({ row }) =>
-          `${row.original.RequestQuantity.toLocaleString()} ${
-            row.original.Unit
-          }`,
+        id: "select",
+        header: "Select",
+        cell: ({ row }) => {
+          const isSelected = selectedJobIds.has(row.original.JOB);
+          return (
+            <div
+              className="cursor-pointer"
+              onClick={() => toggleJobSelection(row.original.JOB)}
+            >
+              {isSelected ? (
+                <CheckSquare className="h-5 w-5 text-blue-600" />
+              ) : (
+                <Square className="h-5 w-5 text-gray-400" />
+              )}
+            </div>
+          );
+        },
       },
-      { accessorKey: "PackagingLine", header: "Packaging Line" },
+      {
+        accessorKey: "JOB",
+        header: "JOB Number",
+        cell: ({ row }) => (
+          <span className="font-bold">{row.original.JOB}</span>
+        ),
+      },
+      { accessorKey: "Style", header: "Style" },
+      { accessorKey: "PackagingLine", header: "Pkg Line" },
+      {
+        accessorKey: "TotalItems",
+        header: "Items Req",
+        cell: ({ row }) => (
+          <Badge variant="secondary">{row.original.TotalItems}</Badge>
+        ),
+      },
+      { accessorKey: "DateRequired", header: "Date Required" },
     ],
-    []
+    [selectedJobIds, toggleJobSelection]
   );
 
-  const selectedPackagingColumns = useMemo<
-    ColumnDef<SelectedInventoryPackaging>[]
-  >(
+  // Step 2: Allocation Table (Read-only)
+  const issueTableColumns = useMemo<ColumnDef<SelectedInventoryPackaging>[]>(
     () => [
-      { accessorKey: "QRCode", header: "QR Code" },
-      { accessorKey: "Description", header: "Description" },
+      {
+        accessorKey: "ItemNumber",
+        header: "Item Code",
+        cell: ({ row }) => (
+          <span className="font-medium">{row.original.ItemNumber}</span>
+        ),
+      },
+      {
+        accessorKey: "MaterialName",
+        header: "Item Name",
+        cell: ({ row }) => (
+          <div className="flex flex-col">
+            <span>{row.original.MaterialName}</span>
+            <span className="text-xs text-gray-500">
+              {row.original.Description}
+            </span>
+          </div>
+        ),
+      },
+      {
+        accessorKey: "Location",
+        header: "Location",
+        cell: ({ row }) => (
+          <Badge
+            variant="outline"
+            className="bg-blue-50 text-blue-700 border-blue-200 text-sm"
+          >
+            {row.original.Location}
+          </Badge>
+        ),
+      },
       {
         accessorKey: "BalanceQty",
         header: "Balance Qty",
-        cell: ({ row }) =>
-          `${row.original.BalanceQty.toLocaleString()} ${row.original.Unit}`,
-      },
-      {
-        accessorKey: "issueQty",
-        header: "Issue Qty",
         cell: ({ row }) => (
-          <Input
-            type="number"
-            value={row.original.issueQty}
-            onChange={(e) =>
-              handleIssueQtyChange(
-                row.original.QRCode,
-                parseFloat(e.target.value) || 0
-              )
-            }
-            className="w-24"
-            max={row.original.BalanceQty}
-            step="1"
-          />
-        ),
-      },
-      {
-        id: "actions",
-        cell: ({ row }) => (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => handleRemoveSelectedPackaging(row.original)}
-            className="text-red-500 hover:text-red-700"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        ),
-      },
-    ],
-    [handleIssueQtyChange, handleRemoveSelectedPackaging]
-  );
-
-  const availableInventoryColumns = useMemo<ColumnDef<InventoryPackaging>[]>(
-    () => [
-      { accessorKey: "QRCode", header: "QR Code" },
-      {
-        accessorKey: "Description",
-        header: "Description",
-        cell: ({ row }) => (
-          <span className="text-orange-600 font-semibold">
-            {row.original.Description}
+          <span className="text-gray-500">
+            {row.original.BalanceQty.toLocaleString()} {row.original.Unit}
           </span>
         ),
       },
-      { accessorKey: "Location", header: "Location" },
       {
-        accessorKey: "BalanceQty",
-        header: "Available Qty",
-        cell: ({ row }) =>
-          `${row.original.BalanceQty.toLocaleString()} ${row.original.Unit}`,
-      },
-      {
-        id: "actions",
+        accessorKey: "issueQty",
+        header: "Issue Qty", // Read-only
         cell: ({ row }) => (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => handleAddPackagingFromInventory(row.original)}
-            className="text-green-600 hover:text-green-800"
-          >
-            <PlusCircle className="h-5 w-5" />
-          </Button>
+          <div className="font-bold text-lg text-green-700">
+            {row.original.issueQty.toLocaleString()}{" "}
+            <span className="text-sm font-normal text-gray-500">
+              {row.original.Unit}
+            </span>
+          </div>
         ),
       },
     ],
-    [handleAddPackagingFromInventory]
+    []
   );
 
   return (
     <div className="p-4 md:p-6 bg-gray-50 min-h-screen font-sans space-y-6">
       <header>
         <h1 className="text-3xl font-bold text-gray-800">
-          Issue Packaging Materials
+          Issue Packaging From Request
         </h1>
         <p className="text-gray-600">
-          Issue packaging materials (cartons, bags, labels) based on requests.
+          Multi-select JOBs to auto-allocate packaging materials from warehouse.
         </p>
       </header>
       <Separator />
 
+      {/* STEP 1: SELECT JOBS (MULTI) */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>Step 1: Load and Select Requests</CardTitle>
-            <CardDescription>
-              Load the list of pending requests and select items to issue.
-            </CardDescription>
+        <CardHeader className="pb-3">
+          <div className="flex justify-between items-center">
+            <CardTitle>Step 1: Select JOBs</CardTitle>
+            <Button
+              onClick={handleLoadRequests}
+              disabled={isLoadingRequests}
+              variant="ghost"
+              size="sm"
+            >
+              <Play className="h-4 w-4 mr-2" /> Refresh Data
+            </Button>
           </div>
-          <Button onClick={handleLoadRequests} disabled={isLoadingRequests}>
-            <Play className="h-4 w-4 mr-2" />
-            {isLoadingRequests ? "Loading..." : "Load Request List"}
-          </Button>
+          <div className="flex items-center space-x-2 max-w-md mt-2">
+            <Search className="h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="Search JOB Number..."
+              value={jobSearchTerm}
+              onChange={(e) => setJobSearchTerm(e.target.value)}
+            />
+          </div>
         </CardHeader>
         <CardContent>
-          {allRequests.length > 0 ? (
-            <CustomTable
-              columns={packagingRequestColumns}
-              data={allRequests}
-              onSelectionChange={handleRequestSelectionChange}
-              showColumnVisibility={false}
-            />
-          ) : (
-            <p className="text-center text-gray-500 py-4">
-              Please load the request list to begin.
-            </p>
+          <CustomTable
+            columns={jobListColumns}
+            data={uniqueJobs}
+            showCheckbox={false} // Custom checkbox inside column
+            showColumnVisibility={false}
+          />
+          {uniqueJobs.length === 0 && !isLoadingRequests && (
+            <div className="text-center py-6 text-gray-500">
+              No pending requests found. Click Refresh.
+            </div>
           )}
         </CardContent>
       </Card>
 
-      {selectedRequestIds.size > 0 && (
-        <>
-          <Card className="sticky top-4 z-10">
-            <CardHeader>
-              <CardTitle>Step 2: Review and Issue</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-                <Card>
-                  <CardHeader>
-                    <p className="text-sm text-blue-800 font-medium">
-                      Total Required
-                    </p>
-                    <p className="text-2xl font-bold text-blue-900">
-                      {totalRequiredQty.toLocaleString()} {displayUnit}
-                    </p>
-                  </CardHeader>
-                </Card>
-                <Card>
-                  <CardHeader>
-                    <p className="text-sm text-green-800 font-medium">
-                      Total Selected
-                    </p>
-                    <p className="text-2xl font-bold text-green-900">
-                      {totalIssuedQty.toLocaleString(undefined, {
-                        maximumFractionDigits: 2,
-                      })}{" "}
-                      {displayUnit}
-                    </p>
-                  </CardHeader>
-                </Card>
-                <Card
-                  className={
-                    totalIssuedQty < totalRequiredQty ? "bg-red-50" : ""
-                  }
-                >
-                  <CardHeader>
-                    <p
-                      className={`text-sm font-medium ${
-                        totalIssuedQty < totalRequiredQty
-                          ? "text-red-800"
-                          : "text-green-800"
-                      }`}
-                    >
-                      {totalIssuedQty < totalRequiredQty
-                        ? "Shortage"
-                        : "Surplus"}
-                    </p>
-                    <p
-                      className={`text-2xl font-bold ${
-                        totalIssuedQty < totalRequiredQty
-                          ? "text-red-900"
-                          : "text-green-900"
-                      }`}
-                    >
-                      {(totalRequiredQty - totalIssuedQty).toLocaleString(
-                        undefined,
-                        { maximumFractionDigits: 2 }
-                      )}{" "}
-                      {displayUnit}
-                    </p>
-                  </CardHeader>
-                </Card>
-              </div>
-              {isLoading && (
-                <p className="text-center text-blue-600 mt-4">
-                  Searching inventory...
-                </p>
-              )}
-              <div className="mt-6 flex justify-end">
-                <Button
-                  onClick={handleFinishIssuance}
-                  disabled={selectedPackaging.length === 0 || isFinishing}
-                  size="lg"
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  <ArrowRightCircle className="h-5 w-5 mr-2" />
-                  {isFinishing ? "Processing..." : "Finish Issuance"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <Card>
-              <CardHeader>
-                <CardTitle>Selected Packaging for Issuance</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CustomTable
-                  columns={selectedPackagingColumns}
-                  data={selectedPackaging}
-                  showCheckbox={false}
-                  showColumnVisibility={false}
-                />
-              </CardContent>
-            </Card>
-
-            <Card
-              className={
-                shortageInfo ? "border-2 border-dashed border-orange-400" : ""
-              }
-            >
-              <CardHeader>
-                <CardTitle
-                  className={shortageInfo ? "text-orange-800" : "text-gray-800"}
-                >
-                  {shortageInfo
-                    ? `Shortage! Select Substitute (Item: ${shortageInfo.itemNumber})`
-                    : `Available Inventory (Item: ${
-                        packagingRequirements[0]?.itemNumber || "N/A"
-                      })`}
+      {/* STEP 2: CONSOLIDATED ISSUANCE TABLE */}
+      {selectedJobIds.size > 0 && (
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <Card className="border-blue-200 shadow-md">
+            <CardHeader className="bg-blue-50/50 border-b border-blue-100 flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-blue-800">
+                  <Package className="h-5 w-5" /> Packaging Issuance Plan
                 </CardTitle>
-              </CardHeader>
-              <CardContent>
+                <CardDescription>
+                  Allocating for <strong>{selectedJobIds.size}</strong> selected
+                  JOB(s).
+                </CardDescription>
+              </div>
+              <Button
+                className="bg-green-600 hover:bg-green-700"
+                disabled={isFinishing || selectedPackagingItems.length === 0}
+                onClick={handleFinishIssuance}
+                size="lg"
+              >
+                {isFinishing ? "Processing..." : "Confirm & Issue"}{" "}
+                <ArrowRightCircle className="ml-2 h-4 w-4" />
+              </Button>
+            </CardHeader>
+
+            <CardContent className="p-0">
+              {isLoadingInventory ? (
+                <div className="p-10 text-center text-blue-600 flex flex-col items-center gap-3">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  <p>Calculating optimal inventory allocation...</p>
+                </div>
+              ) : selectedPackagingItems.length > 0 ? (
                 <CustomTable
-                  columns={availableInventoryColumns}
-                  data={availableInventory}
+                  columns={issueTableColumns}
+                  data={selectedPackagingItems}
                   showCheckbox={false}
-                  showColumnVisibility={false}
                 />
-              </CardContent>
-            </Card>
-          </div>
-        </>
+              ) : (
+                <div className="p-10 text-center text-red-500 flex flex-col items-center gap-2">
+                  <AlertCircle className="h-8 w-8" />
+                  <span className="font-medium">Insufficient Inventory</span>
+                  <p className="text-sm text-gray-500">
+                    Could not find matching packaging items in stock for the
+                    selected JOBs.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+
+            {/* Footer Summary */}
+            {selectedPackagingItems.length > 0 && (
+              <div className="bg-gray-50 p-4 border-t flex justify-end gap-8 text-sm">
+                <div className="text-gray-600">
+                  Total Locations:{" "}
+                  <span className="font-bold text-gray-900">
+                    {selectedPackagingItems.length}
+                  </span>
+                </div>
+                <div className="text-gray-600">
+                  Total Packaging to Issue:{" "}
+                  <span className="font-bold text-green-700 text-lg">
+                    {selectedPackagingItems
+                      .reduce((sum, i) => sum + i.issueQty, 0)
+                      .toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            )}
+          </Card>
+        </div>
       )}
     </div>
   );

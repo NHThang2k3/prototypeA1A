@@ -1,7 +1,15 @@
 // Path: src/pages/issue-accessory-form/IssueAccessoryFormPage.tsx
 
-import React, { useState, useEffect, useMemo, useCallback } from "react"; // 1. Thêm useCallback
-import { Play, ArrowRightCircle, Trash2, PlusCircle } from "lucide-react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
+import {
+  Play,
+  ArrowRightCircle,
+  Search,
+  Package,
+  AlertCircle,
+  CheckSquare,
+  Square,
+} from "lucide-react";
 import { ColumnDef } from "@tanstack/react-table";
 
 import { Button } from "@/components/ui/button";
@@ -12,28 +20,27 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { CustomTable } from "@/components/ui/custom-table";
+import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 
-// --- TYPES: Define data structures for the accessory issuance process ---
+// --- TYPES ---
 
-// Data for an accessory request from a sewing line
 interface AccessoryRequest {
-  ID: string; // Request ID
+  ID: string;
   JOB: string;
   Style: string;
   FactoryLine: string;
   DateRequired: string;
   Status: "Pending" | "In Progress" | "Completed";
-  ItemNumber: string; // Accessory item code
-  MaterialName: string; // Accessory name
+  ItemNumber: string;
+  MaterialName: string;
   Color: string;
   RequestQuantity: number;
-  Unit: string; // e.g., pcs, set, kg...
+  Unit: string;
 }
 
-// Data for an accessory batch/item in inventory
 interface InventoryAccessory {
   QRCode: string;
   PONumber: string;
@@ -41,21 +48,27 @@ interface InventoryAccessory {
   MaterialName: string;
   Supplier: string;
   Color: string;
-  BalanceQty: number; // Remaining quantity
+  BalanceQty: number; // Current Stock
   Unit: string;
-  Location: string;
+  Location: string; // Warehouse Location
   DateInHouse: string;
   QCStatus: "Passed" | "Failed" | "Pending";
 }
 
-// Data for an accessory batch/item selected for issuance
 interface SelectedInventoryAccessory extends InventoryAccessory {
-  issueQty: number; // Quantity entered by the user for issuance
+  issueQty: number; // Calculated quantity to issue
 }
 
-// --- MOCK DATA & API: Mock data and simulated API functions ---
+interface JobSummary {
+  JOB: string;
+  Style: string;
+  FactoryLine: string;
+  DateRequired: string;
+  TotalItems: number;
+}
 
-// Mock data for pending accessory requests
+// --- MOCK DATA & API ---
+
 const MOCK_ACCESSORY_REQUESTS: AccessoryRequest[] = [
   {
     ID: "AR-001",
@@ -68,6 +81,19 @@ const MOCK_ACCESSORY_REQUESTS: AccessoryRequest[] = [
     MaterialName: "Jean Button",
     Color: "Antique Brass",
     RequestQuantity: 5000,
+    Unit: "pcs",
+  },
+  {
+    ID: "AR-004",
+    JOB: "JOB-102",
+    Style: "JEA-002",
+    FactoryLine: "Line 5",
+    DateRequired: "2025-10-23",
+    Status: "Pending",
+    ItemNumber: "RIV-003",
+    MaterialName: "Rivet",
+    Color: "Antique Brass",
+    RequestQuantity: 15000,
     Unit: "pcs",
   },
   {
@@ -84,36 +110,21 @@ const MOCK_ACCESSORY_REQUESTS: AccessoryRequest[] = [
     Unit: "pcs",
   },
   {
-    ID: "AR-003",
-    JOB: "JOB-101",
-    Style: "TSH-001",
-    FactoryLine: "Line 1",
-    DateRequired: "2025-10-21",
-    Status: "In Progress",
-    ItemNumber: "LBL-002",
-    MaterialName: "Neck Label",
-    Color: "N/A",
-    RequestQuantity: 1200,
-    Unit: "pcs",
-  },
-  {
-    ID: "AR-004",
-    JOB: "JOB-102",
-    Style: "JEA-002",
-    FactoryLine: "Line 5",
-    DateRequired: "2025-10-23",
+    ID: "AR-005",
+    JOB: "JOB-105",
+    Style: "SHT-003",
+    FactoryLine: "Line 3",
+    DateRequired: "2025-10-25",
     Status: "Pending",
-    ItemNumber: "RIV-003",
-    MaterialName: "Rivet",
-    Color: "Antique Brass",
-    RequestQuantity: 15000,
+    ItemNumber: "ZIP-005",
+    MaterialName: "Zipper",
+    Color: "White",
+    RequestQuantity: 200,
     Unit: "pcs",
   },
 ];
 
-// Mock data for accessory inventory
 const MOCK_INVENTORY_ACCESSORIES: InventoryAccessory[] = [
-  // Jean Buttons (BTN-001, Antique Brass) - Sufficient quantity
   {
     QRCode: "ACC-QR-001",
     PONumber: "PO-A01",
@@ -134,13 +145,12 @@ const MOCK_INVENTORY_ACCESSORIES: InventoryAccessory[] = [
     MaterialName: "Jean Button",
     Supplier: "SuppA",
     Color: "Antique Brass",
-    BalanceQty: 2500,
+    BalanceQty: 6000,
     Unit: "pcs",
     Location: "K1-A1-02",
     DateInHouse: "2025-09-10",
     QCStatus: "Passed",
   },
-  // Zippers (ZIP-005, White) - Insufficient quantity
   {
     QRCode: "ACC-QR-003",
     PONumber: "PO-B02",
@@ -154,34 +164,19 @@ const MOCK_INVENTORY_ACCESSORIES: InventoryAccessory[] = [
     DateInHouse: "2025-09-15",
     QCStatus: "Passed",
   },
-  // Zippers (ZIP-005) but in different colors for substitution
   {
     QRCode: "ACC-QR-004",
     PONumber: "PO-B03",
     ItemNumber: "ZIP-005",
     MaterialName: "Zipper",
     Supplier: "SuppB",
-    Color: "Black",
+    Color: "White",
     BalanceQty: 1000,
     Unit: "pcs",
     Location: "K2-B3-06",
     DateInHouse: "2025-09-20",
     QCStatus: "Passed",
   },
-  {
-    QRCode: "ACC-QR-005",
-    PONumber: "PO-B04",
-    ItemNumber: "ZIP-005",
-    MaterialName: "Zipper",
-    Supplier: "SuppB",
-    Color: "Navy Blue",
-    BalanceQty: 750,
-    Unit: "pcs",
-    Location: "K2-B4-01",
-    DateInHouse: "2025-09-21",
-    QCStatus: "Passed",
-  },
-  // Rivets (RIV-003, Antique Brass)
   {
     QRCode: "ACC-QR-006",
     PONumber: "PO-C05",
@@ -210,382 +205,291 @@ const MOCK_INVENTORY_ACCESSORIES: InventoryAccessory[] = [
   },
 ];
 
-// Mock API function to get the list of accessory requests
 const getAccessoryRequests = (): Promise<AccessoryRequest[]> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(MOCK_ACCESSORY_REQUESTS);
-    }, 500);
-  });
+  return new Promise((resolve) =>
+    setTimeout(() => resolve(MOCK_ACCESSORY_REQUESTS), 500)
+  );
 };
 
-// Mock API function to get accessories from inventory by item number and color
+// Simulated API: Get inventory, ensuring we get fresh "BalanceQty" reference
 const getInventoryByAccessory = (
   itemNumber: string,
   color: string
 ): Promise<InventoryAccessory[]> => {
   return new Promise((resolve) => {
     setTimeout(() => {
-      const items = MOCK_INVENTORY_ACCESSORIES.filter(
-        (item) =>
+      // Deep copy to simulate fetching fresh data so we don't mutate the MOCK directly during calculation in this demo
+      const items = JSON.parse(
+        JSON.stringify(MOCK_INVENTORY_ACCESSORIES)
+      ).filter(
+        (item: InventoryAccessory) =>
           item.ItemNumber === itemNumber &&
           item.Color === color &&
           item.BalanceQty > 0 &&
           item.QCStatus === "Passed"
       );
       resolve(items);
-    }, 800);
+    }, 400);
   });
 };
 
-// Mock API function to get accessories from inventory by item number (regardless of color)
-const getInventoryByItemNumber = (
-  itemNumber: string
-): Promise<InventoryAccessory[]> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const items = MOCK_INVENTORY_ACCESSORIES.filter(
-        (item) =>
-          item.ItemNumber === itemNumber &&
-          item.BalanceQty > 0 &&
-          item.QCStatus === "Passed"
-      );
-      resolve(items);
-    }, 800);
-  });
-};
-
-// --- MAIN COMPONENT: IssueAccessoryFormPage.tsx ---
+// --- MAIN COMPONENT ---
 
 const IssueAccessoryFormPage: React.FC = () => {
-  // --- STATE MANAGEMENT ---
   const [allRequests, setAllRequests] = useState<AccessoryRequest[]>([]);
-  const [selectedRequestIds, setSelectedRequestIds] = useState<Set<string>>(
-    new Set()
-  );
+
+  // Changed: Use Set for Multi-select JOBs
+  const [selectedJobIds, setSelectedJobIds] = useState<Set<string>>(new Set());
+
+  const [jobSearchTerm, setJobSearchTerm] = useState("");
   const [selectedAccessories, setSelectedAccessories] = useState<
     SelectedInventoryAccessory[]
   >([]);
-  const [availableInventory, setAvailableInventory] = useState<
-    InventoryAccessory[]
-  >([]);
-  const [shortageInfo, setShortageInfo] = useState<{
-    itemNumber: string;
-    color: string;
-    shortageQty: number;
-  } | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+
+  const [isLoadingInventory, setIsLoadingInventory] = useState(false);
   const [isLoadingRequests, setIsLoadingRequests] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false);
 
-  // --- DERIVED STATE & CALCULATIONS (useMemo for optimization) ---
-
-  const selectedRequests = useMemo(() => {
-    return allRequests.filter((req) => selectedRequestIds.has(req.ID));
-  }, [allRequests, selectedRequestIds]);
-
-  const accessoryRequirements = useMemo(() => {
-    const requirements = new Map<
-      string,
-      {
-        itemNumber: string;
-        color: string;
-        requiredQty: number;
-        unit: string;
-      }
-    >();
-    selectedRequests.forEach((req) => {
-      const key = `${req.ItemNumber}-${req.Color}`;
-      const existing = requirements.get(key) || {
-        itemNumber: req.ItemNumber,
-        color: req.Color,
-        requiredQty: 0,
-        unit: req.Unit,
-      };
-      existing.requiredQty += req.RequestQuantity;
-      requirements.set(key, existing);
-    });
-    return Array.from(requirements.values());
-  }, [selectedRequests]);
-
-  const totalIssuedQty = useMemo(() => {
-    return selectedAccessories.reduce(
-      (sum, acc) => sum + (acc.issueQty || 0),
-      0
-    );
-  }, [selectedAccessories]);
-
-  const totalRequiredQty = useMemo(() => {
-    return accessoryRequirements.reduce((sum, req) => sum + req.requiredQty, 0);
-  }, [accessoryRequirements]);
-
-  const displayUnit = useMemo(() => {
-    return accessoryRequirements.length > 0
-      ? accessoryRequirements[0].unit
-      : "";
-  }, [accessoryRequirements]);
-
-  // --- LOGIC & SIDE EFFECTS (useEffect) ---
-
-  useEffect(() => {
-    if (accessoryRequirements.length === 0) {
-      setSelectedAccessories([]);
-      setAvailableInventory([]);
-      setShortageInfo(null);
-      return;
-    }
-
-    const processAccessoryRequest = async () => {
-      setIsLoading(true);
-      setShortageInfo(null);
-
-      const mainRequirement = accessoryRequirements[0];
-      if (!mainRequirement) {
-        setIsLoading(false);
-        return;
-      }
-
-      const { itemNumber, color, requiredQty } = mainRequirement;
-      const allMatchingItems = await getInventoryByAccessory(itemNumber, color);
-      const sortedItems = [...allMatchingItems].sort(
-        (a, b) => a.BalanceQty - b.BalanceQty
-      );
-
-      const autoSelected: SelectedInventoryAccessory[] = [];
-      let qtyToFulfill = requiredQty;
-      for (const item of sortedItems) {
-        if (qtyToFulfill <= 0) break;
-        const qtyToIssue = Math.min(item.BalanceQty, qtyToFulfill);
-        autoSelected.push({ ...item, issueQty: qtyToIssue });
-        qtyToFulfill -= qtyToIssue;
-      }
-      setSelectedAccessories(autoSelected);
-
-      const selectedQRCodes = new Set(autoSelected.map((i) => i.QRCode));
-      let availableItems = allMatchingItems.filter(
-        (i) => !selectedQRCodes.has(i.QRCode)
-      );
-
-      if (qtyToFulfill > 0) {
-        setShortageInfo({ itemNumber, color, shortageQty: qtyToFulfill });
-        const allItemInventory = await getInventoryByItemNumber(itemNumber);
-        const currentQRCodes = new Set(allMatchingItems.map((i) => i.QRCode));
-        const substituteItems = allItemInventory.filter(
-          (i) => !currentQRCodes.has(i.QRCode)
-        );
-        availableItems = [...availableItems, ...substituteItems];
-      }
-
-      setAvailableInventory(availableItems);
-      setIsLoading(false);
-    };
-
-    processAccessoryRequest();
-  }, [accessoryRequirements]);
-
-  // --- HANDLER FUNCTIONS ---
-  // 2. Bọc các hàm xử lý sự kiện trong useCallback
+  // --- 1. LOGIC: Load & Group JOBs ---
   const handleLoadRequests = useCallback(() => {
     setIsLoadingRequests(true);
-    setSelectedRequestIds(new Set());
+    setSelectedJobIds(new Set()); // Clear selection
     getAccessoryRequests().then((data) => {
       setAllRequests(data.filter((req) => req.Status === "Pending"));
       setIsLoadingRequests(false);
     });
   }, []);
 
-  const handleRequestSelectionChange = useCallback(
-    (selectedItems: AccessoryRequest[]) => {
-      setSelectedRequestIds(new Set(selectedItems.map((item) => item.ID)));
-    },
-    []
-  );
+  const uniqueJobs = useMemo(() => {
+    const jobMap = new Map<string, JobSummary>();
+    allRequests.forEach((req) => {
+      if (
+        jobSearchTerm &&
+        !req.JOB.toLowerCase().includes(jobSearchTerm.toLowerCase())
+      )
+        return;
+      if (!jobMap.has(req.JOB)) {
+        jobMap.set(req.JOB, {
+          JOB: req.JOB,
+          Style: req.Style,
+          FactoryLine: req.FactoryLine,
+          DateRequired: req.DateRequired,
+          TotalItems: 0,
+        });
+      }
+      jobMap.get(req.JOB)!.TotalItems += 1;
+    });
+    return Array.from(jobMap.values());
+  }, [allRequests, jobSearchTerm]);
 
-  const handleIssueQtyChange = useCallback((qrCode: string, newQty: number) => {
-    setSelectedAccessories((prevItems) =>
-      prevItems.map((item) => {
-        if (item.QRCode === qrCode) {
-          const validatedQty = Math.max(0, Math.min(newQty, item.BalanceQty));
-          return { ...item, issueQty: validatedQty };
-        }
-        return item;
-      })
-    );
+  // Get all requests belonging to ANY of the selected JOBs
+  const selectedRequests = useMemo(() => {
+    if (selectedJobIds.size === 0) return [];
+    return allRequests.filter((req) => selectedJobIds.has(req.JOB));
+  }, [allRequests, selectedJobIds]);
+
+  // --- 2. LOGIC: Toggle Selection & Auto Allocate ---
+
+  const toggleJobSelection = useCallback((jobId: string) => {
+    setSelectedJobIds((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(jobId)) {
+        newSet.delete(jobId);
+      } else {
+        newSet.add(jobId);
+      }
+      return newSet;
+    });
   }, []);
 
-  const handleAddAccessoryFromInventory = useCallback(
-    (itemToAdd: InventoryAccessory) => {
-      setSelectedAccessories((prev) => [
-        ...prev,
-        { ...itemToAdd, issueQty: itemToAdd.BalanceQty },
-      ]);
-      setAvailableInventory((prev) =>
-        prev.filter((i) => i.QRCode !== itemToAdd.QRCode)
-      );
-    },
-    []
-  );
-
-  const handleRemoveSelectedAccessory = useCallback(
-    (itemToRemove: SelectedInventoryAccessory) => {
-      setSelectedAccessories((prev) =>
-        prev.filter((i) => i.QRCode !== itemToRemove.QRCode)
-      );
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { issueQty, ...originalItem } = itemToRemove;
-      setAvailableInventory((prev) =>
-        [...prev, originalItem].sort((a, b) => a.QRCode.localeCompare(b.QRCode))
-      );
-    },
-    []
-  );
-
-  const handleFinishIssuance = useCallback(() => {
-    const shortage = totalRequiredQty - totalIssuedQty;
-    if (shortage > 0) {
-      if (
-        !window.confirm(
-          `Warning: You are issuing with a shortage of ${shortage.toLocaleString()} ${displayUnit}.\nDo you want to proceed?`
-        )
-      ) {
-        return;
-      }
+  // Main Allocation Logic
+  useEffect(() => {
+    if (selectedRequests.length === 0) {
+      setSelectedAccessories([]);
+      return;
     }
 
+    const autoAllocate = async () => {
+      setIsLoadingInventory(true);
+
+      // Map to Aggregate usage of the same Inventory Batch (QRCode) across multiple requests
+      // Key: QRCode, Value: SelectedInventoryAccessory
+      const allocationMap = new Map<string, SelectedInventoryAccessory>();
+
+      // Create a temporary inventory map to track "remaining balance" during this calculation
+      // so we don't double-book the same item if multiple JOBs need it.
+      const tempInventoryUsage = new Map<string, number>(); // Key: QRCode, Value: UsedQty
+
+      // Process each request
+      for (const req of selectedRequests) {
+        const { ItemNumber, Color, RequestQuantity } = req;
+
+        // Fetch fresh inventory
+        const inventoryItems = await getInventoryByAccessory(ItemNumber, Color);
+        const sortedInventory = [...inventoryItems].sort(
+          (a, b) => a.BalanceQty - b.BalanceQty
+        );
+
+        let remainingReq = RequestQuantity;
+
+        for (const invItem of sortedInventory) {
+          if (remainingReq <= 0) break;
+
+          // Calculate effective balance for this session calculation
+          const usedSoFar = tempInventoryUsage.get(invItem.QRCode) || 0;
+          const effectiveBalance = invItem.BalanceQty - usedSoFar;
+
+          if (effectiveBalance <= 0) continue; // This batch is exhausted in this session
+
+          const qtyToTake = Math.min(effectiveBalance, remainingReq);
+
+          // Update temp usage tracker
+          tempInventoryUsage.set(invItem.QRCode, usedSoFar + qtyToTake);
+
+          // Update Final Display Map
+          if (allocationMap.has(invItem.QRCode)) {
+            const existing = allocationMap.get(invItem.QRCode)!;
+            existing.issueQty += qtyToTake; // Add to existing usage
+          } else {
+            allocationMap.set(invItem.QRCode, {
+              ...invItem,
+              issueQty: qtyToTake,
+            });
+          }
+
+          remainingReq -= qtyToTake;
+        }
+      }
+
+      // Convert Map to Array for Table
+      const finalAllocationList = Array.from(allocationMap.values());
+      setSelectedAccessories(finalAllocationList);
+      setIsLoadingInventory(false);
+    };
+
+    const timer = setTimeout(() => {
+      autoAllocate();
+    }, 500); // Debounce slightly to avoid rapid fires if user clicks checkboxes fast
+
+    return () => clearTimeout(timer);
+  }, [selectedRequests]);
+
+  const handleFinishIssuance = useCallback(() => {
     setIsFinishing(true);
-    console.log("--- STARTING ACCESSORY ISSUANCE PROCESS ---");
-    console.log("Selected Requests:", selectedRequests);
-    console.log("Issued Accessories:", selectedAccessories);
-    console.log("Total Required:", totalRequiredQty, displayUnit);
-    console.log("Total Issued:", totalIssuedQty, displayUnit);
-
     setTimeout(() => {
-      alert("Accessory issuance completed successfully!");
-      setAllRequests([]);
-      setSelectedRequestIds(new Set());
-      setSelectedAccessories([]);
-      setAvailableInventory([]);
-      setShortageInfo(null);
-      setIsFinishing(false);
-    }, 2000);
-  }, [
-    totalRequiredQty,
-    totalIssuedQty,
-    displayUnit,
-    selectedRequests,
-    selectedAccessories,
-  ]);
+      const jobsArray = Array.from(selectedJobIds).join(", ");
+      alert(`Issuance confirmed for JOBs: ${jobsArray}`);
 
-  // 3. Bọc các mảng định nghĩa cột trong useMemo
-  const accessoryRequestColumns = useMemo<ColumnDef<AccessoryRequest>[]>(
+      // Clean up processed jobs locally
+      setAllRequests((prev) =>
+        prev.filter((req) => !selectedJobIds.has(req.JOB))
+      );
+      setSelectedJobIds(new Set());
+      setSelectedAccessories([]);
+      setIsFinishing(false);
+    }, 1000);
+  }, [selectedJobIds]);
+
+  // --- 3. TABLE COLUMNS ---
+
+  // Step 1: JOB List with Checkbox
+  const jobListColumns = useMemo<ColumnDef<JobSummary>[]>(
     () => [
-      { accessorKey: "ID", header: "Request ID" },
-      { accessorKey: "JOB", header: "JOB" },
-      { accessorKey: "ItemNumber", header: "Item Number" },
-      { accessorKey: "Color", header: "Color" },
       {
-        accessorKey: "RequestQuantity",
-        header: "Required Qty",
-        cell: ({ row }) =>
-          `${row.original.RequestQuantity.toLocaleString()} ${
-            row.original.Unit
-          }`,
+        id: "select",
+        header: "Select",
+        cell: ({ row }) => {
+          const isSelected = selectedJobIds.has(row.original.JOB);
+          return (
+            <div
+              className="cursor-pointer"
+              onClick={() => toggleJobSelection(row.original.JOB)}
+            >
+              {isSelected ? (
+                <CheckSquare className="h-5 w-5 text-blue-600" />
+              ) : (
+                <Square className="h-5 w-5 text-gray-400" />
+              )}
+            </div>
+          );
+        },
       },
-      { accessorKey: "FactoryLine", header: "Factory Line" },
+      {
+        accessorKey: "JOB",
+        header: "JOB Number",
+        cell: ({ row }) => (
+          <span className="font-bold">{row.original.JOB}</span>
+        ),
+      },
+      { accessorKey: "Style", header: "Style" },
+      { accessorKey: "FactoryLine", header: "Line" },
+      {
+        accessorKey: "TotalItems",
+        header: "Items Req",
+        cell: ({ row }) => (
+          <Badge variant="secondary">{row.original.TotalItems}</Badge>
+        ),
+      },
       { accessorKey: "DateRequired", header: "Date Required" },
     ],
-    []
+    [selectedJobIds, toggleJobSelection]
   );
 
-  const selectedAccessoriesColumns = useMemo<
-    ColumnDef<SelectedInventoryAccessory>[]
-  >(
+  // Step 2: Allocation Table (Read-only, No Delete)
+  const issueTableColumns = useMemo<ColumnDef<SelectedInventoryAccessory>[]>(
     () => [
-      { accessorKey: "QRCode", header: "QR Code" },
-      { accessorKey: "MaterialName", header: "Material Name" },
-      { accessorKey: "Color", header: "Color" },
+      {
+        accessorKey: "ItemNumber",
+        header: "Item Code",
+        cell: ({ row }) => (
+          <span className="font-medium">{row.original.ItemNumber}</span>
+        ),
+      },
+      {
+        accessorKey: "MaterialName",
+        header: "Item Name",
+        cell: ({ row }) => (
+          <div className="flex flex-col">
+            <span>{row.original.MaterialName}</span>
+            <span className="text-xs text-gray-500">{row.original.Color}</span>
+          </div>
+        ),
+      },
+      {
+        accessorKey: "Location",
+        header: "Location",
+        cell: ({ row }) => (
+          <Badge
+            variant="outline"
+            className="bg-blue-50 text-blue-700 border-blue-200 text-sm"
+          >
+            {row.original.Location}
+          </Badge>
+        ),
+      },
       {
         accessorKey: "BalanceQty",
         header: "Balance Qty",
-        cell: ({ row }) =>
-          `${row.original.BalanceQty.toLocaleString()} ${row.original.Unit}`,
-      },
-      {
-        accessorKey: "issueQty",
-        header: "Issue Qty",
         cell: ({ row }) => (
-          <Input
-            type="number"
-            value={row.original.issueQty}
-            onChange={(e) =>
-              handleIssueQtyChange(
-                row.original.QRCode,
-                parseFloat(e.target.value) || 0
-              )
-            }
-            className="w-24"
-            max={row.original.BalanceQty}
-            step="1"
-          />
-        ),
-      },
-      {
-        id: "actions",
-        cell: ({ row }) => (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => handleRemoveSelectedAccessory(row.original)}
-            className="text-red-500 hover:text-red-700"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        ),
-      },
-    ],
-    [handleIssueQtyChange, handleRemoveSelectedAccessory]
-  );
-
-  const availableInventoryColumns = useMemo<ColumnDef<InventoryAccessory>[]>(
-    () => [
-      { accessorKey: "QRCode", header: "QR Code" },
-      {
-        accessorKey: "Color",
-        header: "Color",
-        cell: ({ row }) => (
-          <span
-            className={
-              row.original.Color !== accessoryRequirements[0]?.color
-                ? "text-orange-600 font-semibold"
-                : ""
-            }
-          >
-            {row.original.Color}
+          <span className="text-gray-500">
+            {row.original.BalanceQty.toLocaleString()} {row.original.Unit}
           </span>
         ),
       },
-      { accessorKey: "Location", header: "Location" },
       {
-        accessorKey: "BalanceQty",
-        header: "Available Qty",
-        cell: ({ row }) =>
-          `${row.original.BalanceQty.toLocaleString()} ${row.original.Unit}`,
-      },
-      {
-        id: "actions",
+        accessorKey: "issueQty",
+        header: "Issue Qty", // Read-only
         cell: ({ row }) => (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => handleAddAccessoryFromInventory(row.original)}
-            className="text-green-600 hover:text-green-800"
-          >
-            <PlusCircle className="h-5 w-5" />
-          </Button>
+          <div className="font-bold text-lg text-green-700">
+            {row.original.issueQty.toLocaleString()}{" "}
+            <span className="text-sm font-normal text-gray-500">
+              {row.original.Unit}
+            </span>
+          </div>
         ),
       },
     ],
-    [accessoryRequirements, handleAddAccessoryFromInventory]
+    []
   );
 
   return (
@@ -595,165 +499,119 @@ const IssueAccessoryFormPage: React.FC = () => {
           Issue Accessories From Request
         </h1>
         <p className="text-gray-600">
-          Issue accessories based on requests from sewing lines.
+          Multi-select JOBs to auto-allocate items from warehouse locations.
         </p>
       </header>
       <Separator />
 
+      {/* STEP 1: SELECT JOBS (MULTI) */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>Step 1: Load and Select Requests</CardTitle>
-            <CardDescription>
-              Load the list of pending accessory requests.
-            </CardDescription>
+        <CardHeader className="pb-3">
+          <div className="flex justify-between items-center">
+            <CardTitle>Step 1: Select JOBs</CardTitle>
+            <Button
+              onClick={handleLoadRequests}
+              disabled={isLoadingRequests}
+              variant="ghost"
+              size="sm"
+            >
+              <Play className="h-4 w-4 mr-2" /> Refresh Data
+            </Button>
           </div>
-          <Button onClick={handleLoadRequests} disabled={isLoadingRequests}>
-            <Play className="h-4 w-4 mr-2" />
-            {isLoadingRequests ? "Loading..." : "Load Request List"}
-          </Button>
+          <div className="flex items-center space-x-2 max-w-md mt-2">
+            <Search className="h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="Search JOB Number..."
+              value={jobSearchTerm}
+              onChange={(e) => setJobSearchTerm(e.target.value)}
+            />
+          </div>
         </CardHeader>
         <CardContent>
-          {allRequests.length > 0 ? (
-            <CustomTable
-              columns={accessoryRequestColumns}
-              data={allRequests}
-              onSelectionChange={handleRequestSelectionChange}
-              showColumnVisibility={false}
-            />
-          ) : (
-            <p className="text-center text-gray-500 py-4">
-              Please load the request list to begin.
-            </p>
+          <CustomTable
+            columns={jobListColumns}
+            data={uniqueJobs}
+            showCheckbox={false} // Custom checkbox inside column
+            showColumnVisibility={false}
+          />
+          {uniqueJobs.length === 0 && !isLoadingRequests && (
+            <div className="text-center py-6 text-gray-500">
+              No pending requests found. Click Refresh.
+            </div>
           )}
         </CardContent>
       </Card>
 
-      {selectedRequestIds.size > 0 && (
-        <>
-          <Card className="sticky top-4 z-10">
-            <CardHeader>
-              <CardTitle>Step 2: Review and Issue</CardTitle>
+      {/* STEP 2: CONSOLIDATED ISSUANCE TABLE */}
+      {selectedJobIds.size > 0 && (
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <Card className="border-blue-200 shadow-md">
+            <CardHeader className="bg-blue-50/50 border-b border-blue-100 flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-blue-800">
+                  <Package className="h-5 w-5" /> Issuance Plan
+                </CardTitle>
+                <CardDescription>
+                  Allocating for <strong>{selectedJobIds.size}</strong> selected
+                  JOB(s).
+                </CardDescription>
+              </div>
+              <Button
+                className="bg-green-600 hover:bg-green-700"
+                disabled={isFinishing || selectedAccessories.length === 0}
+                onClick={handleFinishIssuance}
+                size="lg"
+              >
+                {isFinishing ? "Processing..." : "Confirm & Issue"}{" "}
+                <ArrowRightCircle className="ml-2 h-4 w-4" />
+              </Button>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-                <Card>
-                  <CardHeader>
-                    <p className="text-sm text-blue-800 font-medium">
-                      Total Required
-                    </p>
-                    <p className="text-2xl font-bold text-blue-900">
-                      {totalRequiredQty.toLocaleString()} {displayUnit}
-                    </p>
-                  </CardHeader>
-                </Card>
-                <Card>
-                  <CardHeader>
-                    <p className="text-sm text-green-800 font-medium">
-                      Total Selected
-                    </p>
-                    <p className="text-2xl font-bold text-green-900">
-                      {totalIssuedQty.toLocaleString(undefined, {
-                        maximumFractionDigits: 2,
-                      })}{" "}
-                      {displayUnit}
-                    </p>
-                  </CardHeader>
-                </Card>
-                <Card
-                  className={
-                    totalIssuedQty < totalRequiredQty ? "bg-red-50" : ""
-                  }
-                >
-                  <CardHeader>
-                    <p
-                      className={`text-sm font-medium ${
-                        totalIssuedQty < totalRequiredQty
-                          ? "text-red-800"
-                          : "text-green-800"
-                      }`}
-                    >
-                      {totalIssuedQty < totalRequiredQty
-                        ? "Shortage"
-                        : "Surplus"}
-                    </p>
-                    <p
-                      className={`text-2xl font-bold ${
-                        totalIssuedQty < totalRequiredQty
-                          ? "text-red-900"
-                          : "text-green-900"
-                      }`}
-                    >
-                      {(totalRequiredQty - totalIssuedQty).toLocaleString(
-                        undefined,
-                        { maximumFractionDigits: 2 }
-                      )}{" "}
-                      {displayUnit}
-                    </p>
-                  </CardHeader>
-                </Card>
-              </div>
-              {isLoading && (
-                <p className="text-center text-blue-600 mt-4">
-                  Searching inventory...
-                </p>
-              )}
-              <div className="mt-6 flex justify-end">
-                <Button
-                  onClick={handleFinishIssuance}
-                  disabled={selectedAccessories.length === 0 || isFinishing}
-                  size="lg"
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  <ArrowRightCircle className="h-5 w-5 mr-2" />
-                  {isFinishing ? "Processing..." : "Finish Issuance"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <Card>
-              <CardHeader>
-                <CardTitle>Selected Accessories for Issuance</CardTitle>
-              </CardHeader>
-              <CardContent>
+            <CardContent className="p-0">
+              {isLoadingInventory ? (
+                <div className="p-10 text-center text-blue-600 flex flex-col items-center gap-3">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  <p>Calculating optimal inventory allocation...</p>
+                </div>
+              ) : selectedAccessories.length > 0 ? (
                 <CustomTable
-                  columns={selectedAccessoriesColumns}
+                  columns={issueTableColumns}
                   data={selectedAccessories}
                   showCheckbox={false}
-                  showColumnVisibility={false}
                 />
-              </CardContent>
-            </Card>
+              ) : (
+                <div className="p-10 text-center text-red-500 flex flex-col items-center gap-2">
+                  <AlertCircle className="h-8 w-8" />
+                  <span className="font-medium">Insufficient Inventory</span>
+                  <p className="text-sm text-gray-500">
+                    Could not find matching items in stock for the selected
+                    JOBs.
+                  </p>
+                </div>
+              )}
+            </CardContent>
 
-            <Card
-              className={
-                shortageInfo ? "border-2 border-dashed border-orange-400" : ""
-              }
-            >
-              <CardHeader>
-                <CardTitle
-                  className={shortageInfo ? "text-orange-800" : "text-gray-800"}
-                >
-                  {shortageInfo
-                    ? `Shortage! Select Substitute (Item: ${shortageInfo.itemNumber})`
-                    : `Available Inventory (Item: ${
-                        accessoryRequirements[0]?.itemNumber || "N/A"
-                      })`}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CustomTable
-                  columns={availableInventoryColumns}
-                  data={availableInventory}
-                  showCheckbox={false}
-                  showColumnVisibility={false}
-                />
-              </CardContent>
-            </Card>
-          </div>
-        </>
+            {/* Footer Summary */}
+            {selectedAccessories.length > 0 && (
+              <div className="bg-gray-50 p-4 border-t flex justify-end gap-8 text-sm">
+                <div className="text-gray-600">
+                  Total Locations:{" "}
+                  <span className="font-bold text-gray-900">
+                    {selectedAccessories.length}
+                  </span>
+                </div>
+                <div className="text-gray-600">
+                  Total Items to Issue:{" "}
+                  <span className="font-bold text-green-700 text-lg">
+                    {selectedAccessories
+                      .reduce((sum, i) => sum + i.issueQty, 0)
+                      .toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            )}
+          </Card>
+        </div>
       )}
     </div>
   );
