@@ -16,7 +16,7 @@ import {
   Column,
   RowSelectionState,
 } from "@tanstack/react-table";
-import { SlidersHorizontal, Pencil, Trash2, PlusCircle } from "lucide-react";
+import { SlidersHorizontal, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -71,7 +71,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 //================================================================================
-// CUSTOM TABLE COMPONENT (MODIFIED TO ACCEPT CONTROLLED SELECTION)
+// CUSTOM TABLE COMPONENT
 //================================================================================
 
 interface CustomTableProps<TData, TValue> {
@@ -82,6 +82,8 @@ interface CustomTableProps<TData, TValue> {
   onSelectionChange?: (selectedRows: TData[]) => void;
   rowSelection?: RowSelectionState;
   setRowSelection?: React.Dispatch<React.SetStateAction<RowSelectionState>>;
+  // Callback for adding a new row
+  onAddRow?: (newRow: Partial<TData>) => void;
 }
 
 export function CustomTable<TData, TValue>({
@@ -92,6 +94,7 @@ export function CustomTable<TData, TValue>({
   onSelectionChange,
   rowSelection: controlledRowSelection,
   setRowSelection: setControlledRowSelection,
+  onAddRow,
 }: CustomTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -104,7 +107,9 @@ export function CustomTable<TData, TValue>({
   const [internalRowSelection, setInternalRowSelection] =
     React.useState<RowSelectionState>({});
 
-  // Determine if the component is in controlled mode for row selection
+  // State for the new input row
+  const [newRowData, setNewRowData] = useState<Partial<TData>>({});
+
   const isControlled =
     controlledRowSelection !== undefined &&
     setControlledRowSelection !== undefined;
@@ -215,6 +220,17 @@ export function CustomTable<TData, TValue>({
     }
   }, [rowSelection, onSelectionChange, table]);
 
+  // Handle Enter key press in the input row
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault(); // Prevent default form submission if any
+      if (onAddRow && Object.keys(newRowData).length > 0) {
+        onAddRow(newRowData);
+        setNewRowData({}); // Clear inputs after adding
+      }
+    }
+  };
+
   return (
     <div className="w-full space-y-4">
       <div className="rounded-md border">
@@ -236,6 +252,7 @@ export function CustomTable<TData, TValue>({
             ))}
           </TableHeader>
           <TableBody>
+            {/* Existing Data Rows */}
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow
@@ -262,9 +279,56 @@ export function CustomTable<TData, TValue>({
                 </TableCell>
               </TableRow>
             )}
+
+            {/* NEW: Input Row at the bottom */}
+            {onAddRow && (
+              <TableRow className="bg-muted/20 hover:bg-muted/30">
+                {table.getVisibleLeafColumns().map((column) => {
+                  // Access the key (e.g., 'fabricType') from the column definition
+                  // Note: This assumes columns are defined with accessorKey
+                  const accessorKey = (
+                    column.columnDef as { accessorKey?: string }
+                  ).accessorKey;
+                  const headerTitle =
+                    typeof column.columnDef.header === "string"
+                      ? column.columnDef.header
+                      : "";
+
+                  return (
+                    <TableCell key={column.id} className="p-2">
+                      {accessorKey ? (
+                        <Input
+                          placeholder={
+                            headerTitle ? `New ${headerTitle}...` : "Type..."
+                          }
+                          value={String(
+                            (newRowData as Partial<Record<string, unknown>>)[
+                              accessorKey
+                            ] ?? ""
+                          )}
+                          onChange={(e) =>
+                            setNewRowData((prev) => ({
+                              ...prev,
+                              [accessorKey]: e.target.value,
+                            }))
+                          }
+                          onKeyDown={handleKeyDown}
+                          className="h-8"
+                        />
+                      ) : (
+                        // Render empty cell for Select/Action columns
+                        <div className="h-8" />
+                      )}
+                    </TableCell>
+                  );
+                })}
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </div>
+
+      {/* Pagination */}
       <div className="flex items-center justify-between space-x-2 p-4">
         {showCheckbox && (
           <div className="flex-1 text-sm text-muted-foreground">
@@ -390,11 +454,6 @@ const RelaxTimeStandardPage: React.FC<RelaxTimeStandardPageProps> = () => {
     RelaxTimeStandard[]
   >([]);
 
-  const handleAddNew = () => {
-    setCurrentStandard({});
-    setIsDialogOpen(true);
-  };
-
   const handleEdit = useCallback((standard: RelaxTimeStandard) => {
     setCurrentStandard(standard);
     setIsDialogOpen(true);
@@ -412,7 +471,21 @@ const RelaxTimeStandardPage: React.FC<RelaxTimeStandardPageProps> = () => {
     setRowSelection({}); // Clear selection after deletion
   };
 
-  const handleSave = () => {
+  // Function to handle adding new row via Table Input
+  const handleInlineAdd = (newRow: Partial<RelaxTimeStandard>) => {
+    if (!newRow.fabricType) return; // Basic validation
+
+    const newItem: RelaxTimeStandard = {
+      id: Date.now(),
+      fabricType: newRow.fabricType,
+      relaxTime: Number(newRow.relaxTime) || 0, // Convert string input to number
+    };
+
+    setStandards((prev) => [...prev, newItem]);
+  };
+
+  // Save function for Editing (via Dialog) only
+  const handleEditSave = () => {
     if (
       !currentStandard ||
       !currentStandard.fabricType ||
@@ -430,12 +503,6 @@ const RelaxTimeStandardPage: React.FC<RelaxTimeStandardPageProps> = () => {
             : s
         )
       );
-    } else {
-      const newStandard: RelaxTimeStandard = {
-        ...currentStandard,
-        id: Date.now(),
-      } as RelaxTimeStandard;
-      setStandards((prev) => [...prev, newStandard]);
     }
     setIsDialogOpen(false);
     setCurrentStandard(null);
@@ -558,10 +625,7 @@ const RelaxTimeStandardPage: React.FC<RelaxTimeStandardPageProps> = () => {
               </AlertDialogContent>
             </AlertDialog>
           )}
-          <Button onClick={handleAddNew}>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Add New Standard
-          </Button>
+          {/* Removed the "Add New" Button as requested */}
         </div>
       </div>
       <div className="border rounded-lg">
@@ -571,18 +635,17 @@ const RelaxTimeStandardPage: React.FC<RelaxTimeStandardPageProps> = () => {
           rowSelection={rowSelection}
           setRowSelection={setRowSelection}
           onSelectionChange={setSelectedStandards}
+          onAddRow={handleInlineAdd} // Pass the function to enable the bottom input row
         />
       </div>
+
+      {/* Dialog for Editing Only */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>
-              {currentStandard?.id ? "Edit Standard" : "Add New Standard"}
-            </DialogTitle>
+            <DialogTitle>Edit Standard</DialogTitle>
             <DialogDescription>
-              {currentStandard?.id
-                ? "Make changes to the existing standard."
-                : "Add a new fabric relax time standard to the system."}
+              Make changes to the existing standard.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -596,7 +659,7 @@ const RelaxTimeStandardPage: React.FC<RelaxTimeStandardPageProps> = () => {
                 value={currentStandard?.fabricType || ""}
                 onChange={handleFormChange}
                 className="col-span-3"
-                disabled={!!currentStandard?.id}
+                disabled // Typically primary key/name might be disabled in edit, enable if needed
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
@@ -620,8 +683,8 @@ const RelaxTimeStandardPage: React.FC<RelaxTimeStandardPageProps> = () => {
                 Cancel
               </Button>
             </DialogClose>
-            <Button type="submit" onClick={handleSave}>
-              Save
+            <Button type="submit" onClick={handleEditSave}>
+              Save Changes
             </Button>
           </DialogFooter>
         </DialogContent>

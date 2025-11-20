@@ -473,6 +473,8 @@ export const InventoryHeader = ({
   );
 };
 
+// ... các import giữ nguyên
+
 export const InventoryFilters = () => {
   return (
     <Accordion
@@ -533,6 +535,17 @@ export const InventoryFilters = () => {
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {/* --- PHẦN ĐƯỢC THÊM VÀO: RELAX DATE FROM - TO --- */}
+                  <div className="space-y-2">
+                    <Label htmlFor="relaxDateFrom">Relax Date From</Label>
+                    <Input id="relaxDateFrom" type="date" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="relaxDateTo">Relax Date To</Label>
+                    <Input id="relaxDateTo" type="date" />
+                  </div>
+                  {/* -------------------------------------------------- */}
                 </div>
                 <div className="mt-6 pt-4 border-t flex items-center justify-end space-x-3">
                   <Button type="button" variant="outline">
