@@ -252,40 +252,10 @@ export function CustomTable<TData, TValue>({
             ))}
           </TableHeader>
           <TableBody>
-            {/* Existing Data Rows */}
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={tableColumns.length}
-                  className="h-24 text-center"
-                >
-                  No results.
-                </TableCell>
-              </TableRow>
-            )}
-
-            {/* NEW: Input Row at the bottom */}
+            {/* MOVED: Input Row is now at the top of TableBody */}
             {onAddRow && (
               <TableRow className="bg-muted/20 hover:bg-muted/30">
                 {table.getVisibleLeafColumns().map((column) => {
-                  // Access the key (e.g., 'fabricType') from the column definition
-                  // Note: This assumes columns are defined with accessorKey
                   const accessorKey = (
                     column.columnDef as { accessorKey?: string }
                   ).accessorKey;
@@ -316,12 +286,39 @@ export function CustomTable<TData, TValue>({
                           className="h-8"
                         />
                       ) : (
-                        // Render empty cell for Select/Action columns
                         <div className="h-8" />
                       )}
                     </TableCell>
                   );
                 })}
+              </TableRow>
+            )}
+
+            {/* Existing Data Rows */}
+            {table.getRowModel().rows?.length ? (
+              table.getRowModel().rows.map((row) => (
+                <TableRow
+                  key={row.id}
+                  data-state={row.getIsSelected() && "selected"}
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell
+                  colSpan={tableColumns.length}
+                  className="h-24 text-center"
+                >
+                  No results.
+                </TableCell>
               </TableRow>
             )}
           </TableBody>
@@ -481,7 +478,7 @@ const RelaxTimeStandardPage: React.FC<RelaxTimeStandardPageProps> = () => {
       relaxTime: Number(newRow.relaxTime) || 0, // Convert string input to number
     };
 
-    setStandards((prev) => [...prev, newItem]);
+    setStandards((prev) => [newItem, ...prev]); // Add to top of list or [...prev, newItem] for bottom
   };
 
   // Save function for Editing (via Dialog) only
@@ -625,7 +622,6 @@ const RelaxTimeStandardPage: React.FC<RelaxTimeStandardPageProps> = () => {
               </AlertDialogContent>
             </AlertDialog>
           )}
-          {/* Removed the "Add New" Button as requested */}
         </div>
       </div>
       <div className="border rounded-lg">
@@ -635,7 +631,7 @@ const RelaxTimeStandardPage: React.FC<RelaxTimeStandardPageProps> = () => {
           rowSelection={rowSelection}
           setRowSelection={setRowSelection}
           onSelectionChange={setSelectedStandards}
-          onAddRow={handleInlineAdd} // Pass the function to enable the bottom input row
+          onAddRow={handleInlineAdd} // Pass the function to enable the top input row
         />
       </div>
 
@@ -659,7 +655,7 @@ const RelaxTimeStandardPage: React.FC<RelaxTimeStandardPageProps> = () => {
                 value={currentStandard?.fabricType || ""}
                 onChange={handleFormChange}
                 className="col-span-3"
-                disabled // Typically primary key/name might be disabled in edit, enable if needed
+                disabled
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
