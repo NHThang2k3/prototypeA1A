@@ -1,6 +1,6 @@
 // path: src/pages/packing-list-management/PackingListManagementPage.tsx
 
-import { useState, useEffect, useMemo, type FC } from "react";
+import { useState, useEffect, useMemo, useCallback, type FC } from "react";
 import { v4 as uuidv4 } from "uuid";
 import {
   Plus,
@@ -12,6 +12,8 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import { type ColumnDef } from "@tanstack/react-table";
+// Thêm vào phần UI Imports
+import { Checkbox } from "@/components/ui/checkbox";
 
 // --- UI Imports ---
 import { Button } from "@/components/ui/button";
@@ -447,7 +449,7 @@ const PackingListManagementPage = () => {
     });
   }, [items, searchTerm, printStatusFilter, qcStatusFilter]);
 
-  const handlePrintItems = (itemIds: Set<string>) => {
+  const handlePrintItems = useCallback((itemIds: Set<string>) => {
     setItems((prevItems) =>
       prevItems.map((item) =>
         itemIds.has(item.id) ? { ...item, printStatus: "PRINTED" } : item
@@ -455,13 +457,76 @@ const PackingListManagementPage = () => {
     );
     setSelectedItems([]);
     // alert("Printed selected items");
-  };
+  }, []);
 
   const columns: ColumnDef<FabricRollItem>[] = useMemo(
     () => [
+      // --- THÊM CỘT SELECTION VỚI LOGIC TÙY CHỈNH ---
+      {
+        id: "select",
+        header: ({ table }) => {
+          // 1. Lấy tất cả các dòng đang hiển thị (đã qua filter search/status)
+          const allRows = table.getRowModel().rows;
+
+          // 2. Lọc ra những dòng có thể chọn (Chỉ chọn dòng NOT_PRINTED)
+          const selectableRows = allRows.filter(
+            (row) => row.original.printStatus === "NOT_PRINTED"
+          );
+
+          // 3. Tính toán trạng thái hiển thị của checkbox header
+          // Checked nếu: Có dòng để chọn VÀ tất cả các dòng đó đã được chọn
+          const isAllSelectableSelected =
+            selectableRows.length > 0 &&
+            selectableRows.every((row) => row.getIsSelected());
+
+          // Indeterminate (gạch ngang) nếu: Có một số dòng được chọn nhưng chưa hết
+          const isSomeSelected =
+            selectableRows.some((row) => row.getIsSelected()) &&
+            !isAllSelectableSelected;
+
+          return (
+            <Checkbox
+              checked={
+                isAllSelectableSelected
+                  ? true
+                  : isSomeSelected
+                  ? "indeterminate"
+                  : false
+              }
+              onCheckedChange={(value) => {
+                if (value) {
+                  // LOGIC CHÍNH: Nếu check -> Tạo object selection chỉ chứa ID của các dòng NOT_PRINTED
+                  const newSelection = selectableRows.reduce((acc, row) => {
+                    acc[row.id] = true;
+                    return acc;
+                  }, {} as Record<string, boolean>);
+
+                  table.setRowSelection(newSelection);
+                } else {
+                  // Nếu uncheck -> Bỏ chọn tất cả
+                  table.resetRowSelection();
+                }
+              }}
+              aria-label="Select all eligible rows"
+            />
+          );
+        },
+        cell: ({ row }) => (
+          <Checkbox
+            checked={row.getIsSelected()}
+            onCheckedChange={(value) => row.toggleSelected(!!value)}
+            aria-label="Select row"
+          />
+        ),
+        enableSorting: false,
+        enableHiding: false,
+      },
+      // --- KẾT THÚC CỘT SELECTION ---
+
       { accessorKey: "poNumber", header: "PO Number" },
       { accessorKey: "itemCode", header: "Item Code" },
       { accessorKey: "color", header: "Color" },
+      // ... Giữ nguyên các cột khác của bạn
       { accessorKey: "rollNo", header: "Roll No" },
       { accessorKey: "lotNo", header: "Lot No" },
       { accessorKey: "yards", header: "Yards" },
@@ -481,6 +546,7 @@ const PackingListManagementPage = () => {
         id: "actions",
         header: "Actions",
         cell: ({ row }) => {
+          // ... Giữ nguyên logic actions
           const item = row.original;
           const handlePrintSingle = () => handlePrintItems(new Set([item.id]));
 
@@ -510,8 +576,7 @@ const PackingListManagementPage = () => {
         },
       },
     ],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [items]
+    [handlePrintItems]
   );
 
   return (
@@ -551,6 +616,7 @@ const PackingListManagementPage = () => {
             <CustomTable
               data={filteredItems}
               columns={columns}
+              showCheckbox={false}
               onSelectionChange={setSelectedItems}
             />
           </CardContent>
