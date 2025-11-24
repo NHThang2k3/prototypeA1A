@@ -413,6 +413,26 @@ const IssueFabricFromJobPage: React.FC = () => {
     return fabricRequirements.reduce((sum, req) => sum + req.requiredYards, 0);
   }, [fabricRequirements]);
 
+  const displayAvailableRolls = useMemo(() => {
+    // 1. Lấy phần dư từ các cuộn đang nằm trong bảng Selected
+    const splitRemainders = selectedRolls
+      .filter((roll) => roll.BalanceYards > roll.issuedYards) // Chỉ lấy cuộn còn dư
+      .map((roll) => ({
+        ...roll,
+        // Hiển thị Balance là phần còn lại (Balance gốc - Số lượng đã Issue)
+        BalanceYards: parseFloat(
+          (roll.BalanceYards - roll.issuedYards).toFixed(2)
+        ),
+        // Đánh dấu đây là phần dư (nếu cần style riêng sau này)
+        isRemainder: true,
+      })) as InventoryRoll[];
+
+    // 2. Gộp với danh sách Available gốc và sắp xếp
+    return [...availableInventoryRolls, ...splitRemainders].sort((a, b) =>
+      a.RollNo.localeCompare(b.RollNo)
+    );
+  }, [availableInventoryRolls, selectedRolls]);
+
   // Logic for Auto-allocation
   useEffect(() => {
     if (isIssuing && fabricRequirements.length > 0) {
@@ -539,10 +559,28 @@ const IssueFabricFromJobPage: React.FC = () => {
   );
 
   const handleAddRollFromInventory = useCallback((rollToAdd: InventoryRoll) => {
-    setSelectedRolls((prev) => [
-      ...prev,
-      { ...rollToAdd, issuedYards: rollToAdd.BalanceYards },
-    ]);
+    setSelectedRolls((prev) => {
+      // Kiểm tra xem cuộn này đã có trong Selected Rolls chưa (dựa vào QRCode)
+      const existingIndex = prev.findIndex(
+        (r) => r.QRCode === rollToAdd.QRCode
+      );
+
+      if (existingIndex >= 0) {
+        // CASE: Bấm cộng vào dòng phần dư (Split Remainder)
+        // Hành động: Cập nhật Issued Yards của cuộn đang chọn lên tối đa (bằng BalanceYards gốc)
+        const updatedRolls = [...prev];
+        updatedRolls[existingIndex] = {
+          ...updatedRolls[existingIndex],
+          issuedYards: updatedRolls[existingIndex].BalanceYards,
+        };
+        return updatedRolls;
+      } else {
+        // CASE: Bấm cộng vào cuộn hoàn toàn mới từ kho
+        return [...prev, { ...rollToAdd, issuedYards: rollToAdd.BalanceYards }];
+      }
+    });
+
+    // Chỉ xóa khỏi danh sách gốc nếu nó thực sự nằm trong đó (không phải là remainder)
     setAvailableInventoryRolls((prev) =>
       prev.filter((r) => r.QRCode !== rollToAdd.QRCode)
     );
@@ -943,7 +981,7 @@ const IssueFabricFromJobPage: React.FC = () => {
               <CardContent>
                 <CustomTable
                   columns={availableInventoryColumns}
-                  data={availableInventoryRolls}
+                  data={displayAvailableRolls}
                   showCheckbox={false}
                   showColumnVisibility={false}
                 />
