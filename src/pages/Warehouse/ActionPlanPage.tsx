@@ -8,10 +8,11 @@ import {
   X,
   UserPlus,
   Filter,
+  Eye,
 } from "lucide-react";
 import { ColumnDef } from "@tanstack/react-table";
 
-// Shadcn UI Imports
+// Shadcn UI Imports (Giả định bạn đã config alias @)
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,7 +48,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-// Custom Table Import
+// Custom Table Import (Component bảng của bạn)
 import { CustomTable } from "@/components/ui/custom-table";
 
 // --- TYPES ---
@@ -75,21 +76,23 @@ const initialData: ActionPlan[] = [
     id: "AP-001",
     title: "High defect rate on STYLE-A01",
     remediationProcess:
-      "Adjust heat press temp to 150C and recalibrate sensors.",
+      "Adjust heat press temp to 150C and recalibrate sensors. (Full Detail) Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
     assignees: ["John Doe", "Mike Ross"],
     dueDate: "2023-11-05",
   },
   {
     id: "AP-002",
     title: "Embroidery machine #5 downtime",
-    remediationProcess: "Replace broken needle sensor and update firmware.",
+    remediationProcess:
+      "Replace broken needle sensor and update firmware via USB port B.",
     assignees: ["Maintenance Team"],
     dueDate: "2023-10-30",
   },
   {
     id: "AP-003",
     title: "Pad-Print ink smudging issue",
-    remediationProcess: "Change ink viscosity mixture ratio to 5:1.",
+    remediationProcess:
+      "Change ink viscosity mixture ratio to 5:1 and clean the pad surface with solvent #42.",
     assignees: ["Jane Smith", "QC Team"],
     dueDate: "2023-11-10",
   },
@@ -100,29 +103,29 @@ const ActionPlanPage = () => {
   const [data, setData] = useState<ActionPlan[]>(initialData);
 
   // --- FILTERS STATE ---
-  // tempSearch: Giá trị hiển thị trong ô input
   const [tempSearch, setTempSearch] = useState("");
-  // searchQuery: Giá trị thực sự dùng để filter (khi bấm nút Search)
   const [searchQuery, setSearchQuery] = useState("");
   const [filterAssignee, setFilterAssignee] = useState<string | null>(null);
 
   // --- DIALOG & ALERT STATE ---
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false); // Create/Edit
   const [currentAction, setCurrentAction] = useState<ActionPlan | null>(null);
   const [formData, setFormData] = useState<Partial<ActionPlan>>({});
-  const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
+
+  const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false); // Delete
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+
+  const [isViewDetailOpen, setIsViewDetailOpen] = useState(false); // View Detail
+  const [itemToView, setItemToView] = useState<ActionPlan | null>(null);
 
   // --- FILTER LOGIC ---
   const filteredData = useMemo(() => {
     return data.filter((item) => {
-      // 1. Filter by Search Text (Dùng searchQuery thay vì tempSearch)
       const lowerQuery = searchQuery.toLowerCase();
       const matchesSearch =
         item.title.toLowerCase().includes(lowerQuery) ||
         item.remediationProcess.toLowerCase().includes(lowerQuery);
 
-      // 2. Filter by Assignee
       const matchesAssignee = filterAssignee
         ? item.assignees.includes(filterAssignee)
         : true;
@@ -132,26 +135,23 @@ const ActionPlanPage = () => {
   }, [data, searchQuery, filterAssignee]);
 
   // --- HANDLERS ---
-
-  // Xử lý khi bấm nút Search
   const handleSearch = () => {
     setSearchQuery(tempSearch);
   };
 
-  // Xử lý khi bấm phím Enter trong ô input
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       handleSearch();
     }
   };
 
-  // Reset toàn bộ filter
   const handleReset = () => {
     setTempSearch("");
     setSearchQuery("");
     setFilterAssignee(null);
   };
 
+  // Open Handlers
   const openCreateDialog = () => {
     setCurrentAction(null);
     setFormData({
@@ -169,6 +169,12 @@ const ActionPlanPage = () => {
     setIsDialogOpen(true);
   };
 
+  const openViewDetail = (action: ActionPlan) => {
+    setItemToView(action);
+    setIsViewDetailOpen(true);
+  };
+
+  // Save / Delete Handlers
   const handleSave = () => {
     if (currentAction) {
       // Update
@@ -228,8 +234,13 @@ const ActionPlanPage = () => {
         accessorKey: "title",
         header: "Title",
         cell: ({ row }) => (
-          <div className="flex flex-col">
-            <span className="font-semibold text-base">
+          <div className="flex flex-col max-w-[200px]">
+            {/* CLICK TITLE TO VIEW DETAIL */}
+            <span
+              onClick={() => openViewDetail(row.original)}
+              className="font-semibold text-base truncate cursor-pointer hover:underline hover:text-blue-600 transition-colors"
+              title="Click to view details"
+            >
               {row.original.title}
             </span>
           </div>
@@ -239,8 +250,14 @@ const ActionPlanPage = () => {
         accessorKey: "remediationProcess",
         header: "Remediation Process",
         cell: ({ row }) => (
-          <div className="text-sm text-muted-foreground whitespace-pre-wrap">
-            {row.original.remediationProcess}
+          // LINE CLAMP 2 LINES
+          <div
+            className="max-w-[350px]"
+            title={row.original.remediationProcess}
+          >
+            <p className="text-sm text-muted-foreground whitespace-pre-wrap line-clamp-2">
+              {row.original.remediationProcess}
+            </p>
           </div>
         ),
       },
@@ -248,9 +265,9 @@ const ActionPlanPage = () => {
         accessorKey: "assignees",
         header: "Assignees",
         cell: ({ row }) => (
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-1 max-w-[200px]">
             {row.original.assignees.length > 0 ? (
-              row.original.assignees.map((person, idx) => (
+              row.original.assignees.slice(0, 2).map((person, idx) => (
                 <Badge
                   key={idx}
                   variant="secondary"
@@ -263,6 +280,11 @@ const ActionPlanPage = () => {
               <span className="text-xs text-muted-foreground italic">
                 Unassigned
               </span>
+            )}
+            {row.original.assignees.length > 2 && (
+              <Badge variant="outline" className="text-xs font-normal">
+                +{row.original.assignees.length - 2}
+              </Badge>
             )}
           </div>
         ),
@@ -283,6 +305,13 @@ const ActionPlanPage = () => {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuLabel>Actions</DropdownMenuLabel>
+
+                  {/* VIEW DETAIL ACTION */}
+                  <DropdownMenuItem onClick={() => openViewDetail(action)}>
+                    <Eye className="mr-2 h-4 w-4" /> View Details
+                  </DropdownMenuItem>
+
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => openEditDialog(action)}>
                     <Pencil className="mr-2 h-4 w-4" /> Edit
                   </DropdownMenuItem>
@@ -299,7 +328,7 @@ const ActionPlanPage = () => {
         },
       },
     ],
-    []
+    [] // Dependencies
   );
 
   return (
@@ -323,20 +352,20 @@ const ActionPlanPage = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-col md:flex-row gap-4">
-            {/* Search Input & Button Group */}
+            {/* Search Input */}
             <div className="flex w-full md:w-1/2 items-center space-x-2">
               <Input
                 placeholder="Search by title or process..."
                 value={tempSearch}
                 onChange={(e) => setTempSearch(e.target.value)}
-                onKeyDown={handleKeyDown} // Hỗ trợ phím Enter
+                onKeyDown={handleKeyDown}
               />
               <Button onClick={handleSearch} type="button">
                 <Search className="mr-2 h-4 w-4" /> Search
               </Button>
             </div>
 
-            {/* Assignee Filter Dropdown */}
+            {/* Assignee Filter */}
             <div className="flex w-full md:w-auto items-center">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -382,7 +411,7 @@ const ActionPlanPage = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              {/* Reset Button (Hiện khi có bất kỳ filter nào đang active) */}
+              {/* Reset Button */}
               {(filterAssignee || searchQuery || tempSearch) && (
                 <Button
                   variant="ghost"
@@ -406,6 +435,77 @@ const ActionPlanPage = () => {
         />
       </div>
 
+      {/* --- VIEW DETAIL DIALOG (NEW) --- */}
+      <Dialog open={isViewDetailOpen} onOpenChange={setIsViewDetailOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Action Plan Details</DialogTitle>
+            <DialogDescription>ID: {itemToView?.id}</DialogDescription>
+          </DialogHeader>
+
+          <ScrollArea className="max-h-[70vh] pr-4">
+            <div className="space-y-6 py-2">
+              {/* Title Section */}
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground mb-1">
+                  Title / Problem
+                </h3>
+                <div className="text-lg font-semibold border rounded-md p-3 bg-muted/20">
+                  {itemToView?.title}
+                </div>
+              </div>
+
+              {/* Remediation Process Section - FULL TEXT DISPLAY */}
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground mb-1">
+                  Remediation Process
+                </h3>
+                <div className="text-sm border rounded-md p-3 bg-muted/20 whitespace-pre-wrap leading-relaxed">
+                  {itemToView?.remediationProcess || "No process defined."}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                {/* Assignees Section */}
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                    Assignees
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {itemToView?.assignees &&
+                    itemToView.assignees.length > 0 ? (
+                      itemToView.assignees.map((person, idx) => (
+                        <Badge key={idx} variant="secondary">
+                          {person}
+                        </Badge>
+                      ))
+                    ) : (
+                      <span className="text-sm italic text-muted-foreground">
+                        None
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Due Date Section */}
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                    Due Date
+                  </h3>
+                  <div className="text-sm font-medium">
+                    {itemToView?.dueDate}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ScrollArea>
+
+          <DialogFooter>
+            <Button onClick={() => setIsViewDetailOpen(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Create / Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[600px]">
@@ -419,7 +519,6 @@ const ActionPlanPage = () => {
           </DialogHeader>
           <ScrollArea className="max-h-[80vh] pr-4">
             <div className="grid gap-4 py-4">
-              {/* Title */}
               <div className="grid gap-2">
                 <Label htmlFor="title">Title / Problem</Label>
                 <Input
@@ -432,12 +531,11 @@ const ActionPlanPage = () => {
                 />
               </div>
 
-              {/* Process */}
               <div className="grid gap-2">
                 <Label htmlFor="process">Remediation Process</Label>
                 <Textarea
                   id="process"
-                  className="min-h-[100px]"
+                  className="min-h-[120px]"
                   placeholder="Describe the technical steps to fix the issue..."
                   value={formData.remediationProcess || ""}
                   onChange={(e) =>
@@ -449,7 +547,6 @@ const ActionPlanPage = () => {
                 />
               </div>
 
-              {/* Assignees */}
               <div className="grid gap-2">
                 <Label>Assignees</Label>
                 <DropdownMenu>
