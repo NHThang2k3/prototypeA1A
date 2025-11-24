@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   FileUp,
   Search,
+  Info,
 } from "lucide-react";
 import { ColumnDef, Row } from "@tanstack/react-table";
 
@@ -19,13 +20,22 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { CustomTable } from "@/components/ui/custom-table";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 
 // --- START OF INLINED FILE: src/pages/issue-fabric-form/types.ts ---
 
-// Dữ liệu cho một JOB trong kế hoạch cắt
+// Data for a Cutting Plan JOB
 interface CuttingPlanJob {
   ID: string;
   PlanName: string;
@@ -33,18 +43,22 @@ interface CuttingPlanJob {
   PlanDate: string;
   Style: string;
   JOB: string;
+  Lot: string;
+  PONumber: string;
   ItemCode: string;
   Color: string;
+  ColorCode: string; // Added field
   RequestQuantity: number;
   IssuedQuantity: number;
   Status: "Planned" | "In Progress" | "Completed";
+  QCStatus: "Pass" | "Fail";
   CreatedBy: string;
   Remarks: string;
   erpChecked: boolean;
   qcChecked: boolean;
 }
 
-// Dữ liệu cho một cuộn vải trong kho
+// Data for an Inventory Roll
 interface InventoryRoll {
   PONumber: string;
   ItemCode: string;
@@ -77,7 +91,7 @@ interface InventoryRoll {
   ParentQRCode: string | null;
 }
 
-// Dữ liệu cho một cuộn vải đã được chọn để xuất
+// Data for a Selected Roll
 interface SelectedInventoryRoll extends InventoryRoll {
   issuedYards: number;
 }
@@ -86,89 +100,104 @@ interface SelectedInventoryRoll extends InventoryRoll {
 
 // --- START OF INLINED FILE: src/pages/issue-fabric-form/data.ts ---
 
-// --- DỮ LIỆU GIẢ CHO CUTTING PLAN ---
+// --- MOCK DATA FOR CUTTING PLAN (English & Color Codes) ---
 const MOCK_CUTTING_PLAN_JOBS: CuttingPlanJob[] = [
   {
     ID: "CP001",
-    PlanName: "Kế hoạch cắt áo T-Shirt đợt 1",
+    PlanName: "T-Shirt Cutting Plan Phase 1",
     Factory: "F1",
     PlanDate: "2025-10-20",
     Style: "TSH-001",
     JOB: "JOB-101",
+    Lot: "L-2025-01",
+    PONumber: "PO-KD-9981",
     ItemCode: "CTN-005",
-    Color: "Trắng",
+    Color: "White",
+    ColorCode: "11-0601 TCX", // Pantone-like code
     RequestQuantity: 500,
     IssuedQuantity: 0,
     Status: "Planned",
+    QCStatus: "Pass",
     CreatedBy: "an.nguyen",
-    Remarks: "Ưu tiên cắt trước.",
+    Remarks: "High priority.",
     erpChecked: true,
     qcChecked: true,
   },
   {
     ID: "CP002",
-    PlanName: "Kế hoạch cắt quần Jean nam",
+    PlanName: "Men's Jean Cutting Plan",
     Factory: "F1",
     PlanDate: "2025-10-21",
     Style: "JEA-002",
     JOB: "JOB-102",
+    Lot: "L-2025-02",
+    PONumber: "PO-JEAN-2024",
     ItemCode: "DNM-003",
-    Color: "Xanh đậm",
+    Color: "Dark Blue",
+    ColorCode: "19-4050 TCX",
     RequestQuantity: 350,
     IssuedQuantity: 0,
     Status: "Planned",
+    QCStatus: "Fail",
     CreatedBy: "an.nguyen",
-    Remarks: "Vải denim cần kiểm tra độ co rút.",
+    Remarks: "Denim fabric needs shrinkage test.",
     erpChecked: true,
-    qcChecked: false,
+    qcChecked: false, // QC not checked
   },
   {
     ID: "CP003",
-    PlanName: "Kế hoạch cắt váy liền thân",
+    PlanName: "One-piece Dress Cutting Plan",
     Factory: "F2",
     PlanDate: "2025-10-22",
     Style: "DRS-004",
     JOB: "JOB-103",
+    Lot: "L-2025-03",
+    PONumber: "PO-DRESS-007",
     ItemCode: "SIL-001",
-    Color: "Đỏ đô",
+    Color: "Maroon",
+    ColorCode: "18-1619 TCX",
     RequestQuantity: 200,
     IssuedQuantity: 150,
     Status: "In Progress",
+    QCStatus: "Pass",
     CreatedBy: "bao.tran",
-    Remarks: "Đã nhận đủ vải.",
-    erpChecked: false,
+    Remarks: "Fabric received fully.",
+    erpChecked: false, // ERP not checked
     qcChecked: true,
   },
   {
     ID: "CP004",
-    PlanName: "Kế hoạch cắt áo sơ mi nữ",
+    PlanName: "Women's Shirt Cutting Plan",
     Factory: "F2",
     PlanDate: "2025-10-23",
     Style: "SHT-003",
     JOB: "JOB-104",
+    Lot: "L-2025-04",
+    PONumber: "PO-SHIRT-112",
     ItemCode: "POP-002",
-    Color: "Xanh nhạt",
+    Color: "Light Blue",
+    ColorCode: "14-4115 TCX",
     RequestQuantity: 420,
     IssuedQuantity: 0,
     Status: "Planned",
+    QCStatus: "Pass",
     CreatedBy: "chi.le",
-    Remarks: "Yêu cầu kiểm tra sơ đồ cắt.",
+    Remarks: "Check marker before cutting.",
     erpChecked: true,
     qcChecked: true,
   },
 ];
 
-// --- DỮ LIỆU GIẢ CHO INVENTORY ---
+// --- MOCK DATA FOR INVENTORY (English & Matching Color Codes) ---
 const MOCK_INVENTORY_ROLLS: InventoryRoll[] = [
-  // ... (dữ liệu kho không đổi)
   {
     PONumber: "POPU0018251",
     ItemCode: "DNM-003",
     Factory: "Factory A",
     Supplier: "Supplier Y",
     InvoiceNo: "INV-001",
-    ColorCode: "CC-003",
-    Color: "Xanh đậm",
+    ColorCode: "19-4050 TCX", // Matches Job 2
+    Color: "Dark Blue",
     RollNo: "1",
     LotNo: "225628091",
     Yards: 65,
@@ -184,8 +213,8 @@ const MOCK_INVENTORY_ROLLS: InventoryRoll[] = [
     Factory: "Factory A",
     Supplier: "Supplier Y",
     InvoiceNo: "INV-001",
-    ColorCode: "CC-003",
-    Color: "Xanh đậm",
+    ColorCode: "19-4050 TCX",
+    Color: "Dark Blue",
     RollNo: "2",
     LotNo: "225628092",
     Yards: 80,
@@ -201,8 +230,8 @@ const MOCK_INVENTORY_ROLLS: InventoryRoll[] = [
     Factory: "Factory C",
     Supplier: "Supplier Y",
     InvoiceNo: "INV-009",
-    ColorCode: "CC-002",
-    Color: "Trắng",
+    ColorCode: "11-0601 TCX", // Matches Job 1
+    Color: "White",
     RollNo: "1",
     LotNo: "225628091",
     Yards: 90,
@@ -218,8 +247,8 @@ const MOCK_INVENTORY_ROLLS: InventoryRoll[] = [
     Factory: "Factory C",
     Supplier: "Supplier Y",
     InvoiceNo: "INV-010",
-    ColorCode: "CC-002",
-    Color: "Trắng",
+    ColorCode: "11-0601 TCX",
+    Color: "White",
     RollNo: "2",
     LotNo: "225628093",
     Yards: 120,
@@ -235,8 +264,8 @@ const MOCK_INVENTORY_ROLLS: InventoryRoll[] = [
     Factory: "Factory C",
     Supplier: "Supplier Y",
     InvoiceNo: "INV-010",
-    ColorCode: "CC-002",
-    Color: "Xanh nhạt",
+    ColorCode: "14-4115 TCX", // Matches Job 4
+    Color: "Light Blue",
     RollNo: "4",
     LotNo: "225628093",
     Yards: 500,
@@ -329,9 +358,12 @@ const IssueFabricFromJobPage: React.FC = () => {
     color: string;
     shortageYards: number;
   } | null>(null);
-  const [isLoading, setIsLoading] = useState(true); // Loading for initial job list
-  const [isSearchingInventory, setIsSearchingInventory] = useState(false); // Specific loading for inventory search
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSearchingInventory, setIsSearchingInventory] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false);
+
+  // State for Job Detail Popup
+  const [viewingJob, setViewingJob] = useState<CuttingPlanJob | null>(null);
 
   useEffect(() => {
     getCuttingPlanJobs().then((data) => {
@@ -351,6 +383,7 @@ const IssueFabricFromJobPage: React.FC = () => {
     return allJobs.filter((job) => selectedJobIds.has(job.ID));
   }, [allJobs, selectedJobIds]);
 
+  // Calculate fabric requirements, grouped by ItemCode + Color
   const fabricRequirements = useMemo(() => {
     const requirements = new Map<
       string,
@@ -380,54 +413,76 @@ const IssueFabricFromJobPage: React.FC = () => {
     return fabricRequirements.reduce((sum, req) => sum + req.requiredYards, 0);
   }, [fabricRequirements]);
 
+  // Logic for Auto-allocation
   useEffect(() => {
     if (isIssuing && fabricRequirements.length > 0) {
       const processFabricRequest = async () => {
         setIsSearchingInventory(true);
         setShortageInfo(null);
-        setSelectedRolls([]);
-        setAvailableInventoryRolls([]);
 
-        const mainRequirement = fabricRequirements[0];
-        if (!mainRequirement) {
-          setIsSearchingInventory(false);
-          return;
-        }
+        let finalSelectedRolls: SelectedInventoryRoll[] = [];
+        let finalAvailableRolls: InventoryRoll[] = [];
+        let foundShortage = null;
 
-        const { itemCode, color } = mainRequirement;
-        const requiredYards = totalRequiredYards;
+        // Loop through each fabric requirement
+        for (const req of fabricRequirements) {
+          const { itemCode, color, requiredYards } = req;
 
-        const allMatchingRolls = await getInventoryByItem(itemCode, color);
-        const sortedRolls = [...allMatchingRolls].sort(
-          (a, b) => a.BalanceYards - b.BalanceYards
-        );
-
-        const autoSelected: SelectedInventoryRoll[] = [];
-        let yardsToFulfill = requiredYards;
-        for (const roll of sortedRolls) {
-          if (yardsToFulfill <= 0) break;
-          const yardsToIssue = Math.min(roll.BalanceYards, yardsToFulfill);
-          autoSelected.push({ ...roll, issuedYards: yardsToIssue });
-          yardsToFulfill -= yardsToIssue;
-        }
-        setSelectedRolls(autoSelected);
-
-        const selectedQRCodes = new Set(autoSelected.map((r) => r.QRCode));
-        let availableRolls = allMatchingRolls.filter(
-          (r) => !selectedQRCodes.has(r.QRCode)
-        );
-
-        if (yardsToFulfill > 0) {
-          setShortageInfo({ itemCode, color, shortageYards: yardsToFulfill });
-          const allItemRolls = await getInventoryByItemCode(itemCode);
-          const currentQRCodes = new Set(allMatchingRolls.map((r) => r.QRCode));
-          const substituteRolls = allItemRolls.filter(
-            (r) => !currentQRCodes.has(r.QRCode)
+          const allMatchingRolls = await getInventoryByItem(itemCode, color);
+          const sortedRolls = [...allMatchingRolls].sort(
+            (a, b) => a.BalanceYards - b.BalanceYards
           );
-          availableRolls = [...availableRolls, ...substituteRolls];
+
+          let yardsToFulfill = requiredYards;
+          const currentTypeSelectedRolls: SelectedInventoryRoll[] = [];
+
+          // Auto-pick logic
+          for (const roll of sortedRolls) {
+            if (yardsToFulfill <= 0) break;
+            const yardsToIssue = Math.min(roll.BalanceYards, yardsToFulfill);
+            currentTypeSelectedRolls.push({
+              ...roll,
+              issuedYards: yardsToIssue,
+            });
+            yardsToFulfill -= yardsToIssue;
+          }
+
+          finalSelectedRolls = [
+            ...finalSelectedRolls,
+            ...currentTypeSelectedRolls,
+          ];
+
+          const selectedQRCodes = new Set(
+            currentTypeSelectedRolls.map((r) => r.QRCode)
+          );
+          let availableRolls = allMatchingRolls.filter(
+            (r) => !selectedQRCodes.has(r.QRCode)
+          );
+
+          if (yardsToFulfill > 0) {
+            if (!foundShortage) {
+              foundShortage = {
+                itemCode,
+                color,
+                shortageYards: yardsToFulfill,
+              };
+            }
+            const allItemRolls = await getInventoryByItemCode(itemCode);
+            const currentQRCodes = new Set(
+              allMatchingRolls.map((r) => r.QRCode)
+            );
+            const substituteRolls = allItemRolls.filter(
+              (r) => !currentQRCodes.has(r.QRCode)
+            );
+            availableRolls = [...availableRolls, ...substituteRolls];
+          }
+
+          finalAvailableRolls = [...finalAvailableRolls, ...availableRolls];
         }
 
-        setAvailableInventoryRolls(availableRolls);
+        setSelectedRolls(finalSelectedRolls);
+        setAvailableInventoryRolls(finalAvailableRolls);
+        setShortageInfo(foundShortage);
         setIsSearchingInventory(false);
       };
 
@@ -438,7 +493,7 @@ const IssueFabricFromJobPage: React.FC = () => {
   const handleSimulateImport = useCallback(
     (jobId: string, type: "erp" | "qc") => {
       alert(
-        `Đã import thành công dữ liệu ${type.toUpperCase()} cho JOB: ${jobId}.`
+        `Successfully imported ${type.toUpperCase()} data for JOB: ${jobId}.`
       );
       setAllJobs((prevJobs) =>
         prevJobs.map((job) =>
@@ -451,28 +506,13 @@ const IssueFabricFromJobPage: React.FC = () => {
 
   const handleProceedToIssue = useCallback(() => {
     if (selectedJobIds.size > 0) {
-      const firstSelectedJob = selectedJobs[0];
-      const allSameFabric = selectedJobs.every(
-        (job) =>
-          job.ItemCode === firstSelectedJob.ItemCode &&
-          job.Color === firstSelectedJob.Color
-      );
-
-      if (!allSameFabric) {
-        alert(
-          "Lỗi: Vui lòng chỉ chọn các JOB có cùng Mã Vải (Item Code) và Màu (Color) trong một lần cấp phát."
-        );
-        return;
-      }
-
       setIsIssuing(true);
     }
-  }, [selectedJobIds, selectedJobs]);
+  }, [selectedJobIds]);
 
   const handleJobSelectionChange = useCallback(
     (selectedItems: CuttingPlanJob[]) => {
       setSelectedJobIds(new Set(selectedItems.map((item) => item.ID)));
-      // Nếu người dùng bỏ chọn hết, ẩn Step 2
       if (selectedItems.length === 0) {
         setIsIssuing(false);
       }
@@ -527,9 +567,12 @@ const IssueFabricFromJobPage: React.FC = () => {
     if (shortage > 0) {
       if (
         !window.confirm(
-          `Cảnh báo: Đang cấp phát thiếu ${shortage.toLocaleString(undefined, {
-            maximumFractionDigits: 2,
-          })} yds.\nBạn có chắc chắn muốn tiếp tục?`
+          `Warning: Issuing with shortage of ${shortage.toLocaleString(
+            undefined,
+            {
+              maximumFractionDigits: 2,
+            }
+          )} yds.\nDo you really want to proceed?`
         )
       ) {
         return;
@@ -537,14 +580,14 @@ const IssueFabricFromJobPage: React.FC = () => {
     }
 
     setIsFinishing(true);
-    console.log("--- BẮT ĐẦU QUÁ TRÌNH CẤP PHÁT ---");
-    console.log("Các JOB được xử lý:", selectedJobs);
-    console.log("Các cuộn vải được cấp phát:", selectedRolls);
-    console.log("Tổng yêu cầu:", totalRequiredYards);
-    console.log("Tổng cấp phát:", totalIssuedYards);
+    console.log("--- START ISSUANCE PROCESS ---");
+    console.log("Processed JOBs:", selectedJobs);
+    console.log("Issued Rolls:", selectedRolls);
+    console.log("Total Required:", totalRequiredYards);
+    console.log("Total Issued:", totalIssuedYards);
 
     setTimeout(() => {
-      alert("Cấp phát vải thành công!");
+      alert("Fabric issuance successful!");
       setIsFinishing(false);
       setAllJobs((prev) => prev.filter((j) => !selectedJobIds.has(j.ID)));
       setSelectedJobIds(new Set());
@@ -558,25 +601,50 @@ const IssueFabricFromJobPage: React.FC = () => {
     selectedJobIds,
   ]);
 
+  const handleViewJobDetails = useCallback((job: CuttingPlanJob) => {
+    setViewingJob(job);
+  }, []);
+
   const jobStatusColumns = useMemo<ColumnDef<CuttingPlanJob>[]>(
     () => [
-      { accessorKey: "JOB", header: "JOB" },
+      {
+        accessorKey: "JOB",
+        header: "JOB",
+        cell: ({ row }) => (
+          <div
+            className="flex items-center space-x-2 group cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleViewJobDetails(row.original);
+            }}
+          >
+            <span className="font-medium text-blue-600 group-hover:underline">
+              {row.original.JOB}
+            </span>
+            <Info className="h-4 w-4 text-gray-400 group-hover:text-blue-600" />
+          </div>
+        ),
+      },
       { accessorKey: "ItemCode", header: "Item Code" },
       { accessorKey: "Color", header: "Color" },
+      { accessorKey: "ColorCode", header: "Color Code" }, // Show Color Code
       { accessorKey: "RequestQuantity", header: "Required Qty" },
-      { accessorKey: "Style", header: "Style" },
+      { accessorKey: "Lot", header: "Lot" },
       {
         accessorKey: "erpChecked",
         header: () => <div className="text-center">ERP Check</div>,
         cell: ({ row }) => (
-          <div className="flex  justify-center">
+          <div className="flex justify-center">
             {row.original.erpChecked ? (
               <CheckCircle2 className="h-6 w-6 text-green-600" />
             ) : (
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => handleSimulateImport(row.original.ID, "erp")}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSimulateImport(row.original.ID, "erp");
+                }}
               >
                 <FileUp className="h-4 w-4 mr-2" />
                 Import
@@ -596,7 +664,10 @@ const IssueFabricFromJobPage: React.FC = () => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => handleSimulateImport(row.original.ID, "qc")}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSimulateImport(row.original.ID, "qc");
+                }}
               >
                 <FileUp className="h-4 w-4 mr-2" />
                 Import
@@ -606,13 +677,14 @@ const IssueFabricFromJobPage: React.FC = () => {
         ),
       },
     ],
-    [handleSimulateImport]
+    [handleSimulateImport, handleViewJobDetails]
   );
 
   const selectedRollsColumns = useMemo<ColumnDef<SelectedInventoryRoll>[]>(
     () => [
       { accessorKey: "RollNo", header: "Roll No" },
       { accessorKey: "Color", header: "Color" },
+      { accessorKey: "ColorCode", header: "Color Code" },
       { accessorKey: "LotNo", header: "Lot No" },
       { accessorKey: "BalanceYards", header: "Balance (yds)" },
       {
@@ -658,17 +730,27 @@ const IssueFabricFromJobPage: React.FC = () => {
       {
         accessorKey: "Color",
         header: "Color",
-        cell: ({ row }) => (
-          <span
-            className={
-              row.original.Color !== fabricRequirements[0]?.color
-                ? "text-orange-600 font-semibold"
-                : ""
-            }
-          >
-            {row.original.Color}
-          </span>
-        ),
+        cell: ({ row }) => {
+          const isRequiredColor = fabricRequirements.some(
+            (req) =>
+              req.itemCode === row.original.ItemCode &&
+              req.color === row.original.Color
+          );
+          return (
+            <div className="flex flex-col">
+              <span
+                className={
+                  !isRequiredColor ? "text-orange-600 font-semibold" : ""
+                }
+              >
+                {row.original.Color}
+              </span>
+              <span className="text-xs text-gray-400">
+                {row.original.ColorCode}
+              </span>
+            </div>
+          );
+        },
       },
       { accessorKey: "LotNo", header: "Lot No" },
       {
@@ -699,8 +781,8 @@ const IssueFabricFromJobPage: React.FC = () => {
         <CardHeader>
           <CardTitle>Step 1: Select JOBs to Process</CardTitle>
           <CardDescription>
-            Import data for ERP/QC checks. You can select multiple valid JOBs to
-            issue at once.
+            Import data for ERP/QC checks. Select multiple valid JOBs to issue
+            fabric.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -854,7 +936,7 @@ const IssueFabricFromJobPage: React.FC = () => {
                   {shortageInfo
                     ? `Shortage! Select Substitute Rolls (Item: ${shortageInfo.itemCode})`
                     : `Available Inventory (Item: ${
-                        fabricRequirements[0]?.itemCode || "N/A"
+                        fabricRequirements[0]?.itemCode || "Mixed"
                       })`}
                 </CardTitle>
               </CardHeader>
@@ -870,6 +952,161 @@ const IssueFabricFromJobPage: React.FC = () => {
           </div>
         </>
       )}
+
+      {/* Dialog for JOB Details */}
+      <Dialog
+        open={!!viewingJob}
+        onOpenChange={(open) => !open && setViewingJob(null)}
+      >
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>JOB Details: {viewingJob?.JOB}</DialogTitle>
+            <DialogDescription>
+              {viewingJob?.erpChecked
+                ? "Detailed information for the selected JOB"
+                : ""}
+            </DialogDescription>
+          </DialogHeader>
+
+          {viewingJob && (
+            <>
+              {/* If ERP not checked, show minimal info */}
+              {!viewingJob.erpChecked ? (
+                <div className="py-6 flex flex-col items-center justify-center space-y-2 text-muted-foreground">
+                  <Info className="h-10 w-10 text-gray-300" />
+                  <p>Information not available. Please perform ERP Check.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-4 py-4">
+                  {/* PO Number */}
+                  <div className="space-y-1">
+                    <span className="text-sm font-medium text-muted-foreground">
+                      PO Number
+                    </span>
+                    <p className="text-sm font-bold text-blue-800">
+                      {viewingJob.PONumber}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <span className="text-sm font-medium text-muted-foreground">
+                      Lot
+                    </span>
+                    <p className="text-sm font-medium">{viewingJob.Lot}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-sm font-medium text-muted-foreground">
+                      Item Code
+                    </span>
+                    <p className="text-sm font-medium">{viewingJob.ItemCode}</p>
+                  </div>
+
+                  {/* Color Code */}
+                  <div className="space-y-1">
+                    <span className="text-sm font-medium text-muted-foreground">
+                      Color Code
+                    </span>
+                    <p className="text-sm font-medium">
+                      {viewingJob.ColorCode}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <span className="text-sm font-medium text-muted-foreground">
+                      Color
+                    </span>
+                    <p className="text-sm font-medium">{viewingJob.Color}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-sm font-medium text-muted-foreground">
+                      Request Qty
+                    </span>
+                    <p className="text-sm font-medium">
+                      {viewingJob.RequestQuantity}
+                    </p>
+                  </div>
+
+                  {/* QC Status displayed only if checked */}
+                  {viewingJob.qcChecked && (
+                    <div className="space-y-1">
+                      <span className="text-sm font-medium text-muted-foreground">
+                        QC Status
+                      </span>
+                      <div>
+                        <Badge
+                          variant={
+                            viewingJob.QCStatus === "Pass"
+                              ? "default"
+                              : "destructive"
+                          }
+                          className={
+                            viewingJob.QCStatus === "Pass"
+                              ? "bg-green-600 hover:bg-green-700"
+                              : "bg-red-600 hover:bg-red-700"
+                          }
+                        >
+                          {viewingJob.QCStatus.toUpperCase()}
+                        </Badge>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-1">
+                    <span className="text-sm font-medium text-muted-foreground">
+                      Created By
+                    </span>
+                    <p className="text-sm font-medium">
+                      {viewingJob.CreatedBy}
+                    </p>
+                  </div>
+
+                  <div className="col-span-2 space-y-1">
+                    <span className="text-sm font-medium text-muted-foreground">
+                      Remarks
+                    </span>
+                    <p className="text-sm font-medium bg-slate-100 p-2 rounded">
+                      {viewingJob.Remarks || "No remarks"}
+                    </p>
+                  </div>
+
+                  <div className="col-span-2 flex gap-4 pt-2 border-t mt-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">
+                        System Checks:
+                      </span>
+                    </div>
+                    <Badge
+                      variant={viewingJob.erpChecked ? "outline" : "secondary"}
+                      className={
+                        viewingJob.erpChecked
+                          ? "border-green-600 text-green-700"
+                          : ""
+                      }
+                    >
+                      ERP: {viewingJob.erpChecked ? "Synced" : "Pending"}
+                    </Badge>
+                    <Badge
+                      variant={viewingJob.qcChecked ? "outline" : "secondary"}
+                      className={
+                        viewingJob.qcChecked
+                          ? "border-green-600 text-green-700"
+                          : ""
+                      }
+                    >
+                      QC Check: {viewingJob.qcChecked ? "Done" : "Pending"}
+                    </Badge>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setViewingJob(null)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

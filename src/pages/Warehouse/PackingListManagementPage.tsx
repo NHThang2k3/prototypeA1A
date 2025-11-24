@@ -30,7 +30,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  // DialogTrigger, // <-- FIX: Removed unused import
 } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -82,17 +81,13 @@ export interface FabricRollItem {
   printStatus: PrintStatus;
 }
 
-// Type for items in the import modal
 export interface PackingListItem {
   id: string;
-  // Add other properties as needed from the import process
-  // [key: string]: any;
 }
 
 // --- END OF TYPES ---
 
-// --- START OF MOCK DATA (from data.ts) ---
-
+// --- START OF MOCK DATA ---
 const mockFabricRolls: FabricRollItem[] = [
   {
     id: uuidv4(),
@@ -144,12 +139,36 @@ const mockFabricRolls: FabricRollItem[] = [
     comment: "No issues found",
     printStatus: "NOT_PRINTED",
   },
-  // ... other mock data ...
+  // Thêm dữ liệu mẫu để test filter
+  {
+    id: uuidv4(),
+    poNumber: "TEST-001",
+    itemCode: "TEST-CODE-1",
+    factory: "Factory A",
+    supplier: "Supplier Y",
+    invoiceNo: "INV-007",
+    colorCode: "CC-005",
+    color: "Red",
+    description: "Cotton",
+    rollNo: 2,
+    lotNo: "12345",
+    yards: 10,
+    netWeightKgs: 2.5,
+    grossWeightKgs: 2.6,
+    width: '60"',
+    location: "F1-01",
+    qrCode: "QR-111",
+    dateInHouse: "1/1/2024",
+    qcCheck: true,
+    qcDate: "1/2/2024",
+    qcBy: "Admin",
+    comment: "",
+    printStatus: "PRINTED",
+  },
 ];
-
 // --- END OF MOCK DATA ---
 
-// --- START OF COMPONENT: StatusBadge.tsx ---
+// --- START OF COMPONENTS ---
 
 interface StatusBadgeProps {
   status: PrintStatus;
@@ -173,9 +192,6 @@ const StatusBadge: FC<StatusBadgeProps> = ({ status }) => {
     </Badge>
   );
 };
-// --- END OF COMPONENT: StatusBadge.tsx ---
-
-// --- START OF COMPONENT: PageHeader.tsx ---
 
 interface PageHeaderProps {
   onImportClick: () => void;
@@ -184,7 +200,6 @@ const PageHeader: FC<PageHeaderProps> = ({ onImportClick }) => {
   return (
     <div className="flex justify-between items-center mb-6">
       <h1 className="text-3xl font-bold">Packing List Management</h1>
-      {/* <-- FIX: Removed the incorrect DialogTrigger wrapper. The button's onClick is handled by the parent. --> */}
       <Button onClick={onImportClick}>
         <Plus className="mr-2 h-5 w-5" />
         Import Packing List
@@ -192,11 +207,26 @@ const PageHeader: FC<PageHeaderProps> = ({ onImportClick }) => {
     </div>
   );
 };
-// --- END OF COMPONENT: PageHeader.tsx ---
 
-// --- START OF COMPONENT: PackingListFilters.tsx ---
+// 1. UPDATE: Định nghĩa Props cho Filter Component
+interface PackingListFiltersProps {
+  searchTerm: string;
+  onSearchChange: (value: string) => void;
+  printStatus: string;
+  onPrintStatusChange: (value: string) => void;
+  qcStatus: string;
+  onQcStatusChange: (value: string) => void;
+}
 
-const PackingListFilters: FC = () => {
+// 2. UPDATE: Nhận props và gắn vào các input/select
+const PackingListFilters: FC<PackingListFiltersProps> = ({
+  searchTerm,
+  onSearchChange,
+  printStatus,
+  onPrintStatusChange,
+  qcStatus,
+  onQcStatusChange,
+}) => {
   return (
     <Card className="mb-4">
       <CardContent className="pt-6">
@@ -210,6 +240,8 @@ const PackingListFilters: FC = () => {
                 id="item-search"
                 placeholder="Enter PO, Item Code, Color, Lot..."
                 className="pl-10"
+                value={searchTerm}
+                onChange={(e) => onSearchChange(e.target.value)}
               />
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             </div>
@@ -218,7 +250,7 @@ const PackingListFilters: FC = () => {
             <Label htmlFor="print-status-filter" className="mb-1.5 block">
               Print Status
             </Label>
-            <Select>
+            <Select value={printStatus} onValueChange={onPrintStatusChange}>
               <SelectTrigger id="print-status-filter">
                 <SelectValue placeholder="All Statuses" />
               </SelectTrigger>
@@ -233,7 +265,7 @@ const PackingListFilters: FC = () => {
             <Label htmlFor="qc-check-filter" className="mb-1.5 block">
               QC Check
             </Label>
-            <Select>
+            <Select value={qcStatus} onValueChange={onQcStatusChange}>
               <SelectTrigger id="qc-check-filter">
                 <SelectValue placeholder="All" />
               </SelectTrigger>
@@ -245,19 +277,23 @@ const PackingListFilters: FC = () => {
             </Select>
           </div>
         </div>
-        <div className="mt-4 flex justify-end">
-          <Button>
-            <Search className="w-4 h-4 mr-2" />
-            Search
+        {/* Button Search có thể dùng để trigger force reload nếu cần, ở đây ta dùng reactive filter nên nút này mang tính trang trí hoặc clear filter */}
+        <div className="mt-4 flex justify-end gap-2">
+          <Button
+            variant="outline"
+            onClick={() => {
+              onSearchChange("");
+              onPrintStatusChange("all");
+              onQcStatusChange("all");
+            }}
+          >
+            Reset Filters
           </Button>
         </div>
       </CardContent>
     </Card>
   );
 };
-// --- END OF COMPONENT: PackingListFilters.tsx ---
-
-// --- START OF COMPONENT: TableSkeleton.tsx ---
 
 const TableSkeleton: FC = () => {
   return (
@@ -310,22 +346,14 @@ const TableSkeleton: FC = () => {
     </Card>
   );
 };
-// --- END OF COMPONENT: TableSkeleton.tsx ---
 
-// --- START OF COMPONENT: ImportPackingListModal.tsx ---
-
-// Placeholder for missing components
+// --- Placeholder Modal Imports ---
 const ImportPackingListFormPage: FC<{
   items: PackingListItem[];
   onItemsChange: (items: PackingListItem[]) => void;
 }> = ({ onItemsChange }) => (
   <div className="text-center p-10 border-2 border-dashed rounded-lg">
-    <p className="text-muted-foreground">
-      Import Packing List Form UI would be here.
-    </p>
-    <p className="text-sm text-muted-foreground/80">
-      This is a placeholder component.
-    </p>
+    <p className="text-muted-foreground">Import Packing List Form UI</p>
     <Button
       variant="outline"
       size="sm"
@@ -333,16 +361,6 @@ const ImportPackingListFormPage: FC<{
       onClick={() => onItemsChange([{ id: "sample-1" }, { id: "sample-2" }])}
     >
       Simulate File Upload
-    </Button>
-  </div>
-);
-const ActionToolbar: FC<{ onSubmit: () => void; isSubmitting: boolean }> = ({
-  onSubmit,
-  isSubmitting,
-}) => (
-  <div className="flex justify-end">
-    <Button onClick={onSubmit} disabled={isSubmitting}>
-      {isSubmitting ? "Submitting..." : "Submit Inbound Shipment"}
     </Button>
   </div>
 );
@@ -359,36 +377,29 @@ const ImportPackingListModal: FC<ImportPackingListModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = () => {
-    if (items.length === 0) {
-      alert("Please upload and process a file before submitting.");
-      return;
-    }
     setIsSubmitting(true);
     setTimeout(() => {
       setIsSubmitting(false);
-      const newShipmentId = `PNK-${Date.now()}`;
-      alert(`Successfully created inbound shipment ${newShipmentId}!`);
       onOpenChange(false);
-    }, 1500);
+    }, 1000);
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl h-full max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-4xl">
         <DialogHeader>
           <DialogTitle>Import Packing List</DialogTitle>
         </DialogHeader>
-        <div className="p-6 pt-0 overflow-y-auto flex-grow">
-          <ImportPackingListFormPage items={items} onItemsChange={setItems} />
-        </div>
+        <ImportPackingListFormPage items={items} onItemsChange={setItems} />
         <DialogFooter>
-          <ActionToolbar onSubmit={handleSubmit} isSubmitting={isSubmitting} />
+          <Button onClick={handleSubmit} disabled={isSubmitting}>
+            {isSubmitting ? "Submitting..." : "Submit"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 };
-// --- END OF COMPONENT: ImportPackingListModal.tsx ---
 
 // --- MAIN PAGE COMPONENT: PackingListManagementPage ---
 
@@ -398,6 +409,11 @@ const PackingListManagementPage = () => {
   const [selectedItems, setSelectedItems] = useState<FabricRollItem[]>([]);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
+  // 3. UPDATE: Thêm state cho Filters
+  const [searchTerm, setSearchTerm] = useState("");
+  const [printStatusFilter, setPrintStatusFilter] = useState("all");
+  const [qcStatusFilter, setQcStatusFilter] = useState("all");
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setItems(mockFabricRolls);
@@ -406,20 +422,39 @@ const PackingListManagementPage = () => {
     return () => clearTimeout(timer);
   }, []);
 
+  // 4. UPDATE: Logic lọc dữ liệu (useMemo)
+  const filteredItems = useMemo(() => {
+    return items.filter((item) => {
+      // Lọc theo Search Term (tìm trong PO, Code, Color, Lot)
+      const searchLower = searchTerm.toLowerCase();
+      const matchesSearch =
+        searchTerm === "" ||
+        item.poNumber.toLowerCase().includes(searchLower) ||
+        item.itemCode.toLowerCase().includes(searchLower) ||
+        item.color.toLowerCase().includes(searchLower) ||
+        item.lotNo.toLowerCase().includes(searchLower);
+
+      // Lọc theo Print Status
+      const matchesPrintStatus =
+        printStatusFilter === "all" || item.printStatus === printStatusFilter;
+
+      // Lọc theo QC Status
+      let matchesQC = true;
+      if (qcStatusFilter === "checked") matchesQC = item.qcCheck === true;
+      if (qcStatusFilter === "not-checked") matchesQC = item.qcCheck === false;
+
+      return matchesSearch && matchesPrintStatus && matchesQC;
+    });
+  }, [items, searchTerm, printStatusFilter, qcStatusFilter]);
+
   const handlePrintItems = (itemIds: Set<string>) => {
     setItems((prevItems) =>
       prevItems.map((item) =>
         itemIds.has(item.id) ? { ...item, printStatus: "PRINTED" } : item
       )
     );
-    const printedItemCodes = items
-      .filter((item) => itemIds.has(item.id))
-      .map((item) => `${item.itemCode} (Roll: ${item.rollNo})`)
-      .join(", ");
-    alert(
-      `Print command sent for items: ${printedItemCodes}\n(This would trigger a printing API).`
-    );
     setSelectedItems([]);
+    // alert("Printed selected items");
   };
 
   const columns: ColumnDef<FabricRollItem>[] = useMemo(
@@ -476,21 +511,30 @@ const PackingListManagementPage = () => {
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [items] // Add dependency to re-render actions when print status changes
+    [items]
   );
 
   return (
     <div className="p-4 md:p-6 lg:p-8 bg-gray-50 min-h-full">
       <PageHeader onImportClick={() => setIsImportModalOpen(true)} />
-      <PackingListFilters />
+
+      {/* 5. UPDATE: Truyền props vào Filters */}
+      <PackingListFilters
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        printStatus={printStatusFilter}
+        onPrintStatusChange={setPrintStatusFilter}
+        qcStatus={qcStatusFilter}
+        onQcStatusChange={setQcStatusFilter}
+      />
 
       {loading ? (
         <TableSkeleton />
-      ) : items.length > 0 ? (
+      ) : filteredItems.length > 0 ? ( // Sử dụng filteredItems để kiểm tra độ dài
         <Card>
           <CardHeader>
             <div className="flex justify-between items-center">
-              <CardTitle>Item List</CardTitle>
+              <CardTitle>Item List ({filteredItems.length})</CardTitle>
               <Button
                 onClick={() =>
                   handlePrintItems(new Set(selectedItems.map((i) => i.id)))
@@ -503,8 +547,9 @@ const PackingListManagementPage = () => {
             </div>
           </CardHeader>
           <CardContent>
+            {/* 6. UPDATE: Truyền filteredItems vào Table */}
             <CustomTable
-              data={items}
+              data={filteredItems}
               columns={columns}
               onSelectionChange={setSelectedItems}
             />
@@ -512,7 +557,17 @@ const PackingListManagementPage = () => {
         </Card>
       ) : (
         <Card className="text-center p-10">
-          <p>No items found.</p>
+          <p>No items found matching your filters.</p>
+          <Button
+            variant="link"
+            onClick={() => {
+              setSearchTerm("");
+              setPrintStatusFilter("all");
+              setQcStatusFilter("all");
+            }}
+          >
+            Clear Filters
+          </Button>
         </Card>
       )}
 
