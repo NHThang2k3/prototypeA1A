@@ -172,7 +172,12 @@ const sidebarNavItems: NavItem[] = [
         icon: Clock,
         key: "relax-time-standard",
       },
-      { title: "Action Plan", path: "#", icon: Settings, key: "action-plan" },
+      {
+        title: "Action Plan",
+        path: "/fabric-warehouse/action-plan",
+        icon: Settings,
+        key: "action-plan",
+      },
     ],
   },
   {

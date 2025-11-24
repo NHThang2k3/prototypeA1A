@@ -129,6 +129,7 @@ function App() {
             path="relax-time-standard"
             element={<RelaxTimeStandardPage />}
           />
+          <Route path="action-plan" element={<ActionPlanPage />} />
         </Route>
 
         {/* === Module Kho Phụ Liệu (Ví dụ) === */}
