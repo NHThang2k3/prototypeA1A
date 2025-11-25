@@ -57,7 +57,6 @@ interface ActionPlan {
   title: string;
   remediationProcess: string;
   assignees: string[];
-  dueDate: string;
 }
 
 // --- MOCK DATA ---
@@ -78,7 +77,6 @@ const initialData: ActionPlan[] = [
     remediationProcess:
       "Adjust heat press temp to 150C and recalibrate sensors. (Full Detail) Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
     assignees: ["John Doe", "Mike Ross"],
-    dueDate: "2023-11-05",
   },
   {
     id: "AP-002",
@@ -86,7 +84,6 @@ const initialData: ActionPlan[] = [
     remediationProcess:
       "Replace broken needle sensor and update firmware via USB port B.",
     assignees: ["Maintenance Team"],
-    dueDate: "2023-10-30",
   },
   {
     id: "AP-003",
@@ -94,7 +91,6 @@ const initialData: ActionPlan[] = [
     remediationProcess:
       "Change ink viscosity mixture ratio to 5:1 and clean the pad surface with solvent #42.",
     assignees: ["Jane Smith", "QC Team"],
-    dueDate: "2023-11-10",
   },
 ];
 
@@ -158,7 +154,6 @@ const ActionPlanPage = () => {
       title: "",
       remediationProcess: "",
       assignees: [],
-      dueDate: new Date().toISOString().split("T")[0],
     });
     setIsDialogOpen(true);
   };
@@ -192,7 +187,6 @@ const ActionPlanPage = () => {
         title: formData.title || "",
         remediationProcess: formData.remediationProcess || "",
         assignees: formData.assignees || [],
-        dueDate: formData.dueDate || "",
       };
       setData((prev) => [newItem, ...prev]);
     }
@@ -484,16 +478,6 @@ const ActionPlanPage = () => {
                         None
                       </span>
                     )}
-                  </div>
-                </div>
-
-                {/* Due Date Section */}
-                <div>
-                  <h3 className="text-sm font-medium text-muted-foreground mb-2">
-                    Due Date
-                  </h3>
-                  <div className="text-sm font-medium">
-                    {itemToView?.dueDate}
                   </div>
                 </div>
               </div>
