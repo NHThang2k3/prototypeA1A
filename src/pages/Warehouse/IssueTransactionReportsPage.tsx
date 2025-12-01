@@ -1,7 +1,7 @@
 // Path: src/pages/issue-transaction-reports/IssueTransactionReportsPage.tsx
 
 import React, { useState, useMemo } from "react";
-import { Download, Search } from "lucide-react";
+import { Download, Search } from "lucide-react"; // Đã thêm icon X
 import { ColumnDef } from "@tanstack/react-table";
 
 import { CustomTable } from "@/components/ui/custom-table";
@@ -18,15 +18,21 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+// Thêm các imports cho Dialog
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 // =================================================================================
-// --- START OF FILE: types.ts ---
+// --- TYPES ---
 // =================================================================================
 
-// Định nghĩa trạng thái QC
 type QcStatus = "Passed" | "Failed" | "Pending";
 
-// Định nghĩa cấu trúc dữ liệu cho một cuộn vải
 interface FabricRoll {
   poNumber: string;
   itemCode: string;
@@ -42,7 +48,7 @@ interface FabricRoll {
   grossWeightKgs: number;
   width: string;
   location: string;
-  qrCode: string; // Sử dụng làm ID duy nhất
+  qrCode: string;
   dateInHouse: string;
   description: string;
   qcStatus: QcStatus;
@@ -63,20 +69,18 @@ interface FabricRoll {
   parentQrCode: string | null;
 }
 
-// Cập nhật định nghĩa Filters để phù hợp với dữ liệu mới
 interface FabricRollFilters {
-  query?: string; // Dùng để tìm kiếm PO Number hoặc Item Code
+  query?: string;
   supplier?: string;
-  qcStatus?: QcStatus | "" | "all"; // Updated type to include 'all'
-  dateFrom?: string; // Date In House from
-  dateTo?: string; // Date In House to
+  qcStatus?: QcStatus | "" | "all";
+  dateFrom?: string;
+  dateTo?: string;
 }
 
 // =================================================================================
-// --- START OF FILE: data.ts ---
+// --- MOCK DATA ---
 // =================================================================================
 
-// Dữ liệu mẫu mới dựa trên bảng bạn cung cấp
 const mockFabricRolls: FabricRoll[] = [
   {
     poNumber: "POPU0018251",
@@ -395,6 +399,10 @@ const mockFabricRolls: FabricRoll[] = [
   },
 ];
 
+// =================================================================================
+// --- COMPONENTS ---
+// =================================================================================
+
 interface PageHeaderProps {
   selectedCount: number;
   onExport: () => void;
@@ -402,7 +410,6 @@ interface PageHeaderProps {
 
 const PageHeader: React.FC<PageHeaderProps> = ({ selectedCount, onExport }) => {
   const hasSelection = selectedCount > 0;
-
   return (
     <Card className="mb-6">
       <CardHeader>
@@ -461,7 +468,6 @@ const ReportFilters: React.FC<ReportFiltersProps> = ({ onFilterChange }) => {
               />
             </div>
           </div>
-
           <div className="md:col-span-6 lg:col-span-3 space-y-2">
             <Label htmlFor="qcStatus">QC Status</Label>
             <Select
@@ -473,7 +479,6 @@ const ReportFilters: React.FC<ReportFiltersProps> = ({ onFilterChange }) => {
                 <SelectValue placeholder="All Statuses" />
               </SelectTrigger>
               <SelectContent>
-                {/* FIX: Changed value from "" to "all" */}
                 <SelectItem value="all">All</SelectItem>
                 <SelectItem value="Passed">Passed</SelectItem>
                 <SelectItem value="Failed">Failed</SelectItem>
@@ -481,7 +486,6 @@ const ReportFilters: React.FC<ReportFiltersProps> = ({ onFilterChange }) => {
               </SelectContent>
             </Select>
           </div>
-
           <div className="md:col-span-12 lg:col-span-5 space-y-2">
             <Label>Issued Date (From - To)</Label>
             <div className="flex items-center space-x-2">
@@ -515,105 +519,176 @@ const TableSkeleton = () => (
   </div>
 );
 
-const columns: ColumnDef<FabricRoll>[] = [
-  { accessorKey: "poNumber", header: "PO Number" },
-  { accessorKey: "itemCode", header: "Item Code" },
-  { accessorKey: "factory", header: "Factory" },
-  { accessorKey: "supplier", header: "Supplier" },
-  { accessorKey: "invoiceNo", header: "Invoice No" },
-  { accessorKey: "colorCode", header: "Color Code" },
-  { accessorKey: "color", header: "Color" },
-  { accessorKey: "rollNo", header: "Roll No" },
-  { accessorKey: "lotNo", header: "Lot No" },
-  { accessorKey: "yards", header: "Yards" },
-  { accessorKey: "netWeightKgs", header: "Net Weight (Kgs)" },
-  { accessorKey: "grossWeightKgs", header: "Gross Weight (Kgs)" },
-  { accessorKey: "width", header: "Width" },
-  { accessorKey: "location", header: "Location" },
-  { accessorKey: "qrCode", header: "QR Code" },
-  {
-    accessorKey: "dateInHouse",
-    header: "Date In House",
-    cell: ({ row }) =>
-      new Date(row.original.dateInHouse).toLocaleDateString("en-GB"),
-  },
-  { accessorKey: "description", header: "Description" },
-  {
-    accessorKey: "qcStatus",
-    header: "QC Status",
-    cell: ({ row }) => {
-      const status = row.original.qcStatus;
-      const variant: "default" | "secondary" | "destructive" =
-        status === "Passed"
-          ? "default"
-          : status === "Failed"
-          ? "destructive"
-          : "secondary";
-      return <Badge variant={variant}>{status}</Badge>;
-    },
-  },
-  {
-    accessorKey: "qcDate",
-    header: "QC Date",
-    cell: ({ row }) =>
-      new Date(row.original.qcDate).toLocaleDateString("en-GB"),
-  },
-  { accessorKey: "qcBy", header: "QC By" },
-  { accessorKey: "comment", header: "Comment" },
-  {
-    accessorKey: "printed",
-    header: "Printed",
-    cell: ({ row }) => String(row.original.printed).toUpperCase(),
-  },
-  { accessorKey: "balanceYards", header: "Balance Yards" },
-  { accessorKey: "hourStandard", header: "Hour Standard" },
-  { accessorKey: "hourRelax", header: "Hour Relax" },
-  {
-    accessorKey: "relaxDate",
-    header: "Relax Date",
-    cell: ({ row }) =>
-      new Date(row.original.relaxDate).toLocaleDateString("en-GB"),
-  },
-  { accessorKey: "relaxTime", header: "Relax Time" },
-  { accessorKey: "relaxBy", header: "Relax By" },
-  { accessorKey: "job", header: "JOB" },
-  {
-    accessorKey: "issuedDate",
-    header: "Issued Date",
-    cell: ({ row }) =>
-      new Date(row.original.issuedDate).toLocaleDateString("en-GB"),
-  },
-  { accessorKey: "issuedBy", header: "Issued By" },
-  { accessorKey: "destination", header: "Destination" },
+// --- Component hiển thị chi tiết ---
+const FabricRollDetailsModal = ({
+  roll,
+  isOpen,
+  onClose,
+}: {
+  roll: FabricRoll | null;
+  isOpen: boolean;
+  onClose: () => void;
+}) => {
+  if (!roll) return null;
 
-  // Special column for the visibility toggler, required by custom-table component
-  {
-    id: "actions",
-    header: () => null,
-    cell: () => null,
-  },
-];
+  const DetailItem = ({
+    label,
+    value,
+  }: {
+    label: string;
+    value: React.ReactNode;
+  }) => (
+    <div className="flex flex-col space-y-1">
+      <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
+        {label}
+      </span>
+      <span className="text-sm font-semibold text-gray-800 break-words">
+        {value || "-"}
+      </span>
+    </div>
+  );
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            Roll Details - <span className="text-primary">{roll.poNumber}</span>
+          </DialogTitle>
+          <DialogDescription>
+            Detailed information for QR Code: {roll.qrCode}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
+          {/* Group 1: General Info */}
+          <div className="col-span-full pb-2 border-b">
+            <h3 className="font-bold text-gray-900 mb-3">
+              General Information
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <DetailItem label="Item Code" value={roll.itemCode} />
+              <DetailItem label="Supplier" value={roll.supplier} />
+              <DetailItem label="Factory" value={roll.factory} />
+              <DetailItem label="Invoice No" value={roll.invoiceNo} />
+              <DetailItem label="Job" value={roll.job} />
+              <DetailItem label="Description" value={roll.description} />
+            </div>
+          </div>
+
+          {/* Group 2: Specifications */}
+          <div className="col-span-full pb-2 border-b">
+            <h3 className="font-bold text-gray-900 mb-3">Specifications</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <DetailItem label="Color" value={roll.color} />
+              <DetailItem label="Color Code" value={roll.colorCode} />
+              <DetailItem label="Roll No" value={roll.rollNo} />
+              <DetailItem label="Lot No" value={roll.lotNo} />
+              <DetailItem label="Width" value={roll.width} />
+              <DetailItem label="Yards" value={roll.yards} />
+              <DetailItem
+                label="Net Weight"
+                value={`${roll.netWeightKgs} kg`}
+              />
+              <DetailItem
+                label="Gross Weight"
+                value={`${roll.grossWeightKgs} kg`}
+              />
+            </div>
+          </div>
+
+          {/* Group 3: Status & Location */}
+          <div className="col-span-full pb-2 border-b">
+            <h3 className="font-bold text-gray-900 mb-3">Status & Tracking</h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <DetailItem
+                label="QC Status"
+                value={
+                  <Badge
+                    variant={
+                      roll.qcStatus === "Passed"
+                        ? "default"
+                        : roll.qcStatus === "Failed"
+                        ? "destructive"
+                        : "secondary"
+                    }
+                  >
+                    {roll.qcStatus}
+                  </Badge>
+                }
+              />
+              <DetailItem label="Location" value={roll.location} />
+              <DetailItem label="Destination" value={roll.destination} />
+              <DetailItem
+                label="Date In House"
+                value={new Date(roll.dateInHouse).toLocaleDateString("en-GB")}
+              />
+              <DetailItem label="Balance Yards" value={roll.balanceYards} />
+              <DetailItem label="Printed" value={roll.printed ? "Yes" : "No"} />
+            </div>
+          </div>
+
+          {/* Group 4: Processing Info */}
+          <div className="col-span-full">
+            <h3 className="font-bold text-gray-900 mb-3">Processing Log</h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 bg-gray-50 p-3 rounded-md">
+              <DetailItem
+                label="QC Date"
+                value={new Date(roll.qcDate).toLocaleDateString("en-GB")}
+              />
+              <DetailItem label="QC By" value={roll.qcBy} />
+              <DetailItem label="QC Comment" value={roll.comment} />
+
+              <DetailItem
+                label="Relax Date"
+                value={`${new Date(roll.relaxDate).toLocaleDateString(
+                  "en-GB"
+                )} ${roll.relaxTime}`}
+              />
+              <DetailItem label="Relax By" value={roll.relaxBy} />
+              <DetailItem label="Hours Relax" value={roll.hourRelax} />
+
+              <DetailItem
+                label="Issued Date"
+                value={new Date(roll.issuedDate).toLocaleDateString("en-GB")}
+              />
+              <DetailItem label="Issued By" value={roll.issuedBy} />
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-end mt-4">
+          <Button variant="outline" onClick={onClose}>
+            Close
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+// =================================================================================
+// --- MAIN PAGE ---
+// =================================================================================
 
 const IssueTransactionReportsPage = () => {
   const isLoading = false;
   const [filters, setFilters] = useState<FabricRollFilters>({});
   const [selectedRolls, setSelectedRolls] = useState<FabricRoll[]>([]);
 
+  // State để quản lý việc hiển thị modal chi tiết
+  const [viewingRoll, setViewingRoll] = useState<FabricRoll | null>(null);
+
   const filteredRolls = useMemo(() => {
     return mockFabricRolls.filter((roll) => {
       const { query, supplier, qcStatus, dateFrom, dateTo } = filters;
-
       const queryMatch =
         !query ||
         roll.poNumber.toLowerCase().includes(query.toLowerCase()) ||
         roll.itemCode.toLowerCase().includes(query.toLowerCase());
-
       const supplierMatch = !supplier || roll.supplier === supplier;
-
-      // FIX: Updated filtering logic to handle "all" value
       const qcStatusMatch =
         !qcStatus || qcStatus === "all" || roll.qcStatus === qcStatus;
-
       const dateInHouse = new Date(roll.dateInHouse);
       const fromDateMatch = !dateFrom || dateInHouse >= new Date(dateFrom);
       const toDateMatch = !dateTo || dateInHouse <= new Date(dateTo);
@@ -628,14 +703,107 @@ const IssueTransactionReportsPage = () => {
     });
   }, [filters]);
 
+  // CHUYỂN COLUMNS VÀO TRONG ĐỂ SỬ DỤNG STATE (viewingRoll)
+  const columns = useMemo<ColumnDef<FabricRoll>[]>(
+    () => [
+      {
+        accessorKey: "poNumber",
+        header: "PO Number",
+        // CẬP NHẬT: Cell renderer cho PO Number
+        cell: ({ row }) => (
+          <div
+            className="flex items-center cursor-pointer group"
+            onClick={() => setViewingRoll(row.original)} // Mở modal khi click
+          >
+            <span className="font-medium text-blue-600 group-hover:underline group-hover:text-blue-800 transition-colors">
+              {row.original.poNumber}
+            </span>
+          </div>
+        ),
+      },
+      { accessorKey: "itemCode", header: "Item Code" },
+      { accessorKey: "factory", header: "Factory" },
+      { accessorKey: "supplier", header: "Supplier" },
+      { accessorKey: "invoiceNo", header: "Invoice No" },
+      { accessorKey: "colorCode", header: "Color Code" },
+      { accessorKey: "color", header: "Color" },
+      { accessorKey: "rollNo", header: "Roll No" },
+      { accessorKey: "lotNo", header: "Lot No" },
+      { accessorKey: "yards", header: "Yards" },
+      { accessorKey: "netWeightKgs", header: "Net Weight (Kgs)" },
+      { accessorKey: "grossWeightKgs", header: "Gross Weight (Kgs)" },
+      { accessorKey: "width", header: "Width" },
+      { accessorKey: "location", header: "Location" },
+      { accessorKey: "qrCode", header: "QR Code" },
+      {
+        accessorKey: "dateInHouse",
+        header: "Date In House",
+        cell: ({ row }) =>
+          new Date(row.original.dateInHouse).toLocaleDateString("en-GB"),
+      },
+      { accessorKey: "description", header: "Description" },
+      {
+        accessorKey: "qcStatus",
+        header: "QC Status",
+        cell: ({ row }) => {
+          const status = row.original.qcStatus;
+          const variant: "default" | "secondary" | "destructive" =
+            status === "Passed"
+              ? "default"
+              : status === "Failed"
+              ? "destructive"
+              : "secondary";
+          return <Badge variant={variant}>{status}</Badge>;
+        },
+      },
+      {
+        accessorKey: "qcDate",
+        header: "QC Date",
+        cell: ({ row }) =>
+          new Date(row.original.qcDate).toLocaleDateString("en-GB"),
+      },
+      { accessorKey: "qcBy", header: "QC By" },
+      { accessorKey: "comment", header: "Comment" },
+      {
+        accessorKey: "printed",
+        header: "Printed",
+        cell: ({ row }) => String(row.original.printed).toUpperCase(),
+      },
+      { accessorKey: "balanceYards", header: "Balance Yards" },
+      { accessorKey: "hourStandard", header: "Hour Standard" },
+      { accessorKey: "hourRelax", header: "Hour Relax" },
+      {
+        accessorKey: "relaxDate",
+        header: "Relax Date",
+        cell: ({ row }) =>
+          new Date(row.original.relaxDate).toLocaleDateString("en-GB"),
+      },
+      { accessorKey: "relaxTime", header: "Relax Time" },
+      { accessorKey: "relaxBy", header: "Relax By" },
+      { accessorKey: "job", header: "JOB" },
+      {
+        accessorKey: "issuedDate",
+        header: "Issued Date",
+        cell: ({ row }) =>
+          new Date(row.original.issuedDate).toLocaleDateString("en-GB"),
+      },
+      { accessorKey: "issuedBy", header: "Issued By" },
+      { accessorKey: "destination", header: "Destination" },
+
+      {
+        id: "actions",
+        header: () => null,
+        cell: () => null,
+      },
+    ],
+    [] // Dependencies rỗng vì setViewingRoll là stable
+  );
+
   const handleFilterChange = (newFilters: FabricRollFilters) => {
     setFilters(newFilters);
   };
 
   const handleExport = () => {
-    alert(
-      `Exporting ${selectedRolls.length} selected rolls. See console for data.`
-    );
     console.log("Data to export:", selectedRolls);
   };
 
@@ -663,6 +831,13 @@ const IssueTransactionReportsPage = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Hiển thị Modal chi tiết */}
+      <FabricRollDetailsModal
+        roll={viewingRoll}
+        isOpen={!!viewingRoll}
+        onClose={() => setViewingRoll(null)}
+      />
     </div>
   );
 };

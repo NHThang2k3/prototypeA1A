@@ -16,6 +16,13 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 // Custom Standardized Table
 import { CustomTable } from "@/components/ui/custom-table";
@@ -257,6 +264,108 @@ const ReportFilters: React.FC<ReportFiltersProps> = ({ onFilterChange }) => {
   );
 };
 
+// --- MODAL CHI TIẾT ---
+const AccessoryDetailsModal = ({
+  data,
+  isOpen,
+  onClose,
+}: {
+  data: Accessory | null;
+  isOpen: boolean;
+  onClose: () => void;
+}) => {
+  if (!data) return null;
+
+  const DetailItem = ({
+    label,
+    value,
+  }: {
+    label: string;
+    value: React.ReactNode;
+  }) => (
+    <div className="flex flex-col space-y-1">
+      <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
+        {label}
+      </span>
+      <span className="text-sm font-semibold text-gray-800 break-words">
+        {value || "-"}
+      </span>
+    </div>
+  );
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            Accessory Details -{" "}
+            <span className="text-primary">{data.itemNumber}</span>
+          </DialogTitle>
+          <DialogDescription>QR Code: {data.qrCode}</DialogDescription>
+        </DialogHeader>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
+          {/* General Info */}
+          <div className="col-span-full pb-2 border-b">
+            <h3 className="font-bold text-gray-900 mb-3">
+              General Information
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <DetailItem label="Material Name" value={data.materialName} />
+              <DetailItem label="Category" value={data.itemCategory} />
+              <DetailItem label="Supplier" value={data.supplier} />
+              <DetailItem label="PO Number" value={data.poNumber} />
+              <DetailItem label="Job" value={data.job} />
+              <DetailItem label="Description" value={data.description} />
+            </div>
+          </div>
+
+          {/* Specifications */}
+          <div className="col-span-full pb-2 border-b">
+            <h3 className="font-bold text-gray-900 mb-3">Specifications</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <DetailItem label="Color" value={data.color} />
+              <DetailItem label="Size" value={data.size} />
+              <DetailItem label="Unit" value={data.unit} />
+              <DetailItem label="Total Qty" value={data.quantity} />
+              <DetailItem label="Reorder Point" value={data.reorderPoint} />
+              <DetailItem label="Batch Number" value={data.batchNumber} />
+            </div>
+          </div>
+
+          {/* Transaction Info */}
+          <div className="col-span-full">
+            <h3 className="font-bold text-gray-900 mb-3">
+              Transaction Details
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 bg-gray-50 p-3 rounded-md">
+              <DetailItem
+                label="Status"
+                value={<StatusBadge status={data.status} />}
+              />
+              <DetailItem label="Issued Quantity" value={data.issuedQuantity} />
+              <DetailItem label="Destination" value={data.destination} />
+              <DetailItem
+                label="Issued Date"
+                value={new Date(data.issuedDate).toLocaleDateString()}
+              />
+              <DetailItem label="Issued By" value={data.issuedBy} />
+              <DetailItem label="Location" value={data.location} />
+              <DetailItem label="Remark" value={data.remark} />
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-end mt-4">
+          <Button variant="outline" onClick={onClose}>
+            Close
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 // ============================================================================
 // --- MAIN PAGE COMPONENT ---
 // ============================================================================
@@ -264,6 +373,9 @@ const ReportFilters: React.FC<ReportFiltersProps> = ({ onFilterChange }) => {
 const AccessoryIssueTransactionReportsPage = () => {
   const [filters, setFilters] = useState<AccessoryFilters>({});
   const [selectedRows, setSelectedRows] = useState<Accessory[]>([]);
+  const [viewingAccessory, setViewingAccessory] = useState<Accessory | null>(
+    null
+  );
 
   const isLoading = false;
   const data = mockAccessories;
@@ -303,7 +415,20 @@ const AccessoryIssueTransactionReportsPage = () => {
 
   const columns = useMemo<ColumnDef<Accessory>[]>(
     () => [
-      { accessorKey: "qrCode", header: "QR Code" },
+      {
+        accessorKey: "qrCode",
+        header: "QR Code",
+        cell: ({ row }) => (
+          <div
+            className="flex items-center cursor-pointer group"
+            onClick={() => setViewingAccessory(row.original)}
+          >
+            <span className="font-medium text-blue-600 group-hover:underline group-hover:text-blue-800 transition-colors">
+              {row.original.qrCode}
+            </span>
+          </div>
+        ),
+      },
       { accessorKey: "itemNumber", header: "Item Number" },
       { accessorKey: "materialName", header: "Material Name" },
       { accessorKey: "supplier", header: "Supplier" },
@@ -362,6 +487,13 @@ const AccessoryIssueTransactionReportsPage = () => {
           onSelectionChange={setSelectedRows}
         />
       )}
+
+      {/* Modal Chi Tiết */}
+      <AccessoryDetailsModal
+        data={viewingAccessory}
+        isOpen={!!viewingAccessory}
+        onClose={() => setViewingAccessory(null)}
+      />
     </div>
   );
 };

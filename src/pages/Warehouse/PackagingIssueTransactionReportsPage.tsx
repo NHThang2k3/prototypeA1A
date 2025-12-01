@@ -1,5 +1,3 @@
-// src/pages/packaging-issue-transaction-reports/PackagingIssueTransactionReportsPage.tsx
-
 import React, { useState, useMemo } from "react";
 import { Download, Search } from "lucide-react";
 import { ColumnDef } from "@tanstack/react-table";
@@ -23,9 +21,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 // ============================================================================
-// TYPES, CONSTANTS, AND MOCK DATA (Unchanged)
+// TYPES, CONSTANTS, AND MOCK DATA
 // ============================================================================
 
 type PackagingStatus = "Complete" | "Partially" | "Pending";
@@ -59,7 +64,7 @@ interface Packaging {
 
 interface PackagingFilters {
   query?: string;
-  status?: PackagingStatus | "" | "all"; // FIX: Updated type to include 'all'
+  status?: PackagingStatus | "" | "all";
   dateFrom?: string;
   dateTo?: string;
 }
@@ -214,58 +219,113 @@ const StatusBadge: React.FC<{ status: PackagingStatus }> = ({ status }) => {
   );
 };
 
-const tableColumns: ColumnDef<Packaging>[] = [
-  { accessorKey: "qrCode", header: "QR Code" },
-  { accessorKey: "itemNumber", header: "Item Number" },
-  { accessorKey: "itemCategory", header: "Item Category" },
-  { accessorKey: "materialName", header: "Material Name" },
-  { accessorKey: "color", header: "Color" },
-  { accessorKey: "size", header: "Size" },
-  { accessorKey: "quantity", header: "Quantity" },
-  { accessorKey: "unit", header: "Unit" },
-  { accessorKey: "location", header: "Location" },
-  { accessorKey: "batchNumber", header: "Batch Number" },
-  {
-    accessorKey: "dateReceived",
-    header: "Date Received",
-    cell: ({ row }) =>
-      new Date(row.original.dateReceived).toLocaleDateString("en-GB"),
-  },
-  { accessorKey: "supplier", header: "Supplier" },
-  { accessorKey: "poNumber", header: "PO Number" },
-  { accessorKey: "reorderPoint", header: "Reorder Point" },
-  {
-    accessorKey: "lastModifiedDate",
-    header: "Last Modified Date",
-    cell: ({ row }) =>
-      new Date(row.original.lastModifiedDate).toLocaleDateString("en-GB"),
-  },
-  { accessorKey: "lastModifiedBy", header: "Last Modified By" },
-  { accessorKey: "description", header: "Description" },
-  { accessorKey: "job", header: "JOB" },
-  { accessorKey: "issuedQuantity", header: "Issued Quantity" },
-  {
-    accessorKey: "issuedDate",
-    header: "Issued Date",
-    cell: ({ row }) =>
-      new Date(row.original.issuedDate).toLocaleDateString("en-GB"),
-  },
-  { accessorKey: "issuedBy", header: "Issued By" },
-  { accessorKey: "destination", header: "Destination" },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => <StatusBadge status={row.original.status} />,
-  },
-  { accessorKey: "remark", header: "Remark" },
-  // NOTE: A column with id "actions" is added to enable the column visibility
-  // toggle feature from the standardized `custom-table` component.
-  {
-    id: "actions",
-    header: "",
-    cell: () => null,
-  },
-];
+// --- MODAL CHI TIẾT ---
+const PackagingDetailsModal = ({
+  data,
+  isOpen,
+  onClose,
+}: {
+  data: Packaging | null;
+  isOpen: boolean;
+  onClose: () => void;
+}) => {
+  if (!data) return null;
+
+  const DetailItem = ({
+    label,
+    value,
+  }: {
+    label: string;
+    value: React.ReactNode;
+  }) => (
+    <div className="flex flex-col space-y-1">
+      <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
+        {label}
+      </span>
+      <span className="text-sm font-semibold text-gray-800 break-words">
+        {value || "-"}
+      </span>
+    </div>
+  );
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            Packaging Details -{" "}
+            <span className="text-primary">{data.itemNumber}</span>
+          </DialogTitle>
+          <DialogDescription>QR Code: {data.qrCode}</DialogDescription>
+        </DialogHeader>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
+          {/* General Info */}
+          <div className="col-span-full pb-2 border-b">
+            <h3 className="font-bold text-gray-900 mb-3">
+              General Information
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <DetailItem label="Material Name" value={data.materialName} />
+              <DetailItem label="Category" value={data.itemCategory} />
+              <DetailItem label="Supplier" value={data.supplier} />
+              <DetailItem label="PO Number" value={data.poNumber} />
+              <DetailItem label="Job" value={data.job} />
+              <DetailItem label="Description" value={data.description} />
+            </div>
+          </div>
+
+          {/* Specifications */}
+          <div className="col-span-full pb-2 border-b">
+            <h3 className="font-bold text-gray-900 mb-3">Specifications</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <DetailItem label="Color" value={data.color} />
+              <DetailItem label="Size" value={data.size} />
+              <DetailItem label="Unit" value={data.unit} />
+              <DetailItem label="Total Qty" value={data.quantity} />
+              <DetailItem label="Reorder Point" value={data.reorderPoint} />
+              <DetailItem label="Batch Number" value={data.batchNumber} />
+            </div>
+          </div>
+
+          {/* Transaction Info */}
+          <div className="col-span-full">
+            <h3 className="font-bold text-gray-900 mb-3">
+              Transaction Details
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 bg-gray-50 p-3 rounded-md">
+              <DetailItem
+                label="Status"
+                value={<StatusBadge status={data.status} />}
+              />
+              <DetailItem label="Issued Quantity" value={data.issuedQuantity} />
+              <DetailItem label="Destination" value={data.destination} />
+              <DetailItem
+                label="Issued Date"
+                value={new Date(data.issuedDate).toLocaleDateString("en-GB")}
+              />
+              <DetailItem label="Issued By" value={data.issuedBy} />
+              <DetailItem label="Location" value={data.location} />
+              <DetailItem
+                label="Last Modified"
+                value={new Date(data.lastModifiedDate).toLocaleDateString(
+                  "en-GB"
+                )}
+              />
+              <DetailItem label="Remark" value={data.remark} />
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-end mt-4">
+          <Button variant="outline" onClick={onClose}>
+            Close
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
 
 // ============================================================================
 // MAIN PAGE COMPONENT
@@ -274,6 +334,9 @@ const tableColumns: ColumnDef<Packaging>[] = [
 const PackagingIssueTransactionReportsPage = () => {
   const [filters, setFilters] = useState<PackagingFilters>({});
   const [selectedPackagings, setSelectedPackagings] = useState<Packaging[]>([]);
+  const [viewingPackaging, setViewingPackaging] = useState<Packaging | null>(
+    null
+  );
 
   const filteredPackagings = useMemo(() => {
     return mockPackagings.filter((pkg) => {
@@ -283,7 +346,6 @@ const PackagingIssueTransactionReportsPage = () => {
         pkg.itemNumber.toLowerCase().includes(query.toLowerCase()) ||
         pkg.poNumber.toLowerCase().includes(query.toLowerCase());
 
-      // FIX: Updated filtering logic to handle "all" value
       const statusMatch = !status || status === "all" || pkg.status === status;
 
       const issuedDate = new Date(pkg.issuedDate);
@@ -292,6 +354,74 @@ const PackagingIssueTransactionReportsPage = () => {
       return queryMatch && statusMatch && fromDateMatch && toDateMatch;
     });
   }, [filters]);
+
+  // MOVE COLUMNS INSIDE COMPONENT TO ACCESS STATE
+  const tableColumns = useMemo<ColumnDef<Packaging>[]>(
+    () => [
+      {
+        accessorKey: "qrCode",
+        header: "QR Code",
+        cell: ({ row }) => (
+          <div
+            className="flex items-center cursor-pointer group"
+            onClick={() => setViewingPackaging(row.original)}
+          >
+            <span className="font-medium text-blue-600 group-hover:underline group-hover:text-blue-800 transition-colors">
+              {row.original.qrCode}
+            </span>
+          </div>
+        ),
+      },
+      { accessorKey: "itemNumber", header: "Item Number" },
+      { accessorKey: "itemCategory", header: "Item Category" },
+      { accessorKey: "materialName", header: "Material Name" },
+      { accessorKey: "color", header: "Color" },
+      { accessorKey: "size", header: "Size" },
+      { accessorKey: "quantity", header: "Quantity" },
+      { accessorKey: "unit", header: "Unit" },
+      { accessorKey: "location", header: "Location" },
+      { accessorKey: "batchNumber", header: "Batch Number" },
+      {
+        accessorKey: "dateReceived",
+        header: "Date Received",
+        cell: ({ row }) =>
+          new Date(row.original.dateReceived).toLocaleDateString("en-GB"),
+      },
+      { accessorKey: "supplier", header: "Supplier" },
+      { accessorKey: "poNumber", header: "PO Number" },
+      { accessorKey: "reorderPoint", header: "Reorder Point" },
+      {
+        accessorKey: "lastModifiedDate",
+        header: "Last Modified Date",
+        cell: ({ row }) =>
+          new Date(row.original.lastModifiedDate).toLocaleDateString("en-GB"),
+      },
+      { accessorKey: "lastModifiedBy", header: "Last Modified By" },
+      { accessorKey: "description", header: "Description" },
+      { accessorKey: "job", header: "JOB" },
+      { accessorKey: "issuedQuantity", header: "Issued Quantity" },
+      {
+        accessorKey: "issuedDate",
+        header: "Issued Date",
+        cell: ({ row }) =>
+          new Date(row.original.issuedDate).toLocaleDateString("en-GB"),
+      },
+      { accessorKey: "issuedBy", header: "Issued By" },
+      { accessorKey: "destination", header: "Destination" },
+      {
+        accessorKey: "status",
+        header: "Status",
+        cell: ({ row }) => <StatusBadge status={row.original.status} />,
+      },
+      { accessorKey: "remark", header: "Remark" },
+      {
+        id: "actions",
+        header: "",
+        cell: () => null,
+      },
+    ],
+    []
+  );
 
   const handleFilterChange = (
     key: keyof PackagingFilters,
@@ -357,7 +487,6 @@ const PackagingIssueTransactionReportsPage = () => {
                   <SelectValue placeholder="All" />
                 </SelectTrigger>
                 <SelectContent>
-                  {/* FIX: Changed value from "" to "all" */}
                   <SelectItem value="all">All</SelectItem>
                   <SelectItem value="Complete">Complete</SelectItem>
                   <SelectItem value="Partially">Partially</SelectItem>
@@ -404,6 +533,13 @@ const PackagingIssueTransactionReportsPage = () => {
           />
         </CardContent>
       </Card>
+
+      {/* Modal Chi Tiết */}
+      <PackagingDetailsModal
+        data={viewingPackaging}
+        isOpen={!!viewingPackaging}
+        onClose={() => setViewingPackaging(null)}
+      />
     </div>
   );
 };

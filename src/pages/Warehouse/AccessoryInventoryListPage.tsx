@@ -8,6 +8,7 @@ import {
   MoreHorizontal,
   Move,
   PackageMinus,
+  Eye, // --- NEW: Import Eye Icon
 } from "lucide-react";
 import { type ColumnDef } from "@tanstack/react-table";
 
@@ -21,6 +22,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator, // --- NEW: Import Separator
 } from "@/components/ui/dropdown-menu";
 import {
   Dialog,
@@ -42,7 +44,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { CustomTable } from "@/components/ui/custom-table";
 
 // ============================================================================
-// --- TYPES & DATA (Unchanged) ---
+// --- TYPES & DATA ---
 // ============================================================================
 
 export type AccessoryStatus = "In Stock" | "Out of Stock" | "Low Stock";
@@ -71,7 +73,6 @@ export interface AccessoryItem {
 }
 
 const DUMMY_ACCESSORY_DATA: AccessoryItem[] = [
-  // ... (dummy data remains the same)
   {
     id: "ACC-LBL-001-MLT",
     qrCode: "ACC-LBL-001-MLT",
@@ -207,7 +208,7 @@ const DUMMY_ACCESSORY_DATA: AccessoryItem[] = [
 ];
 
 // ============================================================================
-// --- REFACTORED & HELPER COMPONENTS (Unchanged) ---
+// --- REFACTORED & HELPER COMPONENTS ---
 // ============================================================================
 
 const PageSkeleton: FC = () => (
@@ -272,7 +273,6 @@ const StatusBadge: FC<{ status: AccessoryStatus }> = ({ status }) => {
     variant: "default",
   };
 
-  // Add custom colors for variants
   const variantClasses = {
     default: "bg-green-100 text-green-800 border-green-200",
     outline: "bg-yellow-100 text-yellow-800 border-yellow-200",
@@ -395,6 +395,126 @@ const AccessoryInventoryHeader: FC<AccessoryInventoryHeaderProps> = ({
 // ============================================================================
 // --- NEW: MODAL COMPONENTS ---
 // ============================================================================
+
+// --- 1. NEW ACCESSORY DETAIL MODAL ---
+interface AccessoryDetailModalProps {
+  item: AccessoryItem | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+const AccessoryDetailModal: FC<AccessoryDetailModalProps> = ({
+  item,
+  open,
+  onOpenChange,
+}) => {
+  if (!item) return null;
+
+  const DetailRow = ({
+    label,
+    value,
+  }: {
+    label: string;
+    value: React.ReactNode;
+  }) => (
+    <div className="grid grid-cols-3 gap-4 py-2 border-b last:border-0 border-gray-100">
+      <span className="font-medium text-muted-foreground col-span-1">
+        {label}
+      </span>
+      <span className="col-span-2 text-foreground font-medium break-words">
+        {value || "-"}
+      </span>
+    </div>
+  );
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Accessory Details: {item.itemNumber}</DialogTitle>
+          <DialogDescription>{item.materialName}</DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-6 mt-2">
+          {/* General Info */}
+          <div>
+            <h3 className="font-semibold text-lg mb-2 text-primary">
+              General Information
+            </h3>
+            <div className="bg-slate-50 p-4 rounded-lg border">
+              <DetailRow label="QR Code" value={item.qrCode} />
+              <DetailRow label="Category" value={item.itemCategory} />
+              <DetailRow label="Description" value={item.description} />
+              <DetailRow label="Material Name" value={item.materialName} />
+              <DetailRow label="Color" value={item.color} />
+              <DetailRow label="Size" value={item.size} />
+            </div>
+          </div>
+
+          {/* Inventory Status */}
+          <div>
+            <h3 className="font-semibold text-lg mb-2 text-primary">
+              Inventory Status
+            </h3>
+            <div className="bg-slate-50 p-4 rounded-lg border">
+              <DetailRow
+                label="Current Quantity"
+                value={`${item.quantity} ${item.unit}`}
+              />
+              <DetailRow
+                label="Required Quantity"
+                value={`${item.requiredQuantity} ${item.unit}`}
+              />
+              <DetailRow
+                label="Reorder Point"
+                value={`${item.reorderPoint} ${item.unit}`}
+              />
+              <DetailRow
+                label="Status"
+                value={<StatusBadge status={item.status} />}
+              />
+              <DetailRow label="Location" value={item.location} />
+            </div>
+          </div>
+
+          {/* Supply Chain Info */}
+          <div>
+            <h3 className="font-semibold text-lg mb-2 text-primary">
+              Supply Chain
+            </h3>
+            <div className="bg-slate-50 p-4 rounded-lg border">
+              <DetailRow label="Supplier" value={item.supplier} />
+              <DetailRow label="PO Number" value={item.poNumber} />
+              <DetailRow label="Batch Number" value={item.batchNumber} />
+              <DetailRow label="Date Received" value={item.dateReceived} />
+            </div>
+          </div>
+
+          {/* System Info */}
+          <div>
+            <h3 className="font-semibold text-lg mb-2 text-primary">
+              System Info
+            </h3>
+            <div className="bg-slate-50 p-4 rounded-lg border">
+              <DetailRow
+                label="Last Modified Date"
+                value={item.lastModifiedDate}
+              />
+              <DetailRow label="Last Modified By" value={item.lastModifiedBy} />
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button onClick={() => onOpenChange(false)}>Close</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+// --- EXISTING MODALS (UNCHANGED) ---
+
 interface TransferLocationDialogProps {
   item: AccessoryItem | null;
   open: boolean;
@@ -411,7 +531,6 @@ const TransferLocationDialog: FC<TransferLocationDialogProps> = ({
   const [newLocation, setNewLocation] = useState("");
 
   useEffect(() => {
-    // Reset input when dialog is closed
     if (!open) {
       setNewLocation("");
     }
@@ -473,7 +592,6 @@ const IssueAccessoryDialog: FC<IssueAccessoryDialogProps> = ({
   const [quantity, setQuantity] = useState<number | string>("");
 
   useEffect(() => {
-    // Reset input when dialog is closed or item changes
     if (!open) {
       setQuantity("");
     }
@@ -526,7 +644,7 @@ const IssueAccessoryDialog: FC<IssueAccessoryDialogProps> = ({
 };
 
 // ============================================================================
-// --- MAIN PAGE COMPONENT (MODIFIED) ---
+// --- MAIN PAGE COMPONENT ---
 // ============================================================================
 
 const AccessoryInventoryListPage: FC = () => {
@@ -535,7 +653,8 @@ const AccessoryInventoryListPage: FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedRows, setSelectedRows] = useState<AccessoryItem[]>([]);
 
-  type ModalType = "transfer" | "issue";
+  // --- UPDATED: Added 'detail' to ModalType
+  type ModalType = "transfer" | "issue" | "detail";
   const [modalState, setModalState] = useState<{
     type: ModalType | null;
     data: AccessoryItem | null;
@@ -666,6 +785,15 @@ const AccessoryInventoryListPage: FC = () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                {/* --- NEW: View Details Action --- */}
+                <DropdownMenuItem
+                  onClick={() => setModalState({ type: "detail", data: item })}
+                >
+                  <Eye className="mr-2 h-4 w-4" />
+                  View Details
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+
                 <DropdownMenuItem onClick={() => handlePrintQr(item)}>
                   <Printer className="mr-2 h-4 w-4" />
                   Reprint QR Code
@@ -695,13 +823,24 @@ const AccessoryInventoryListPage: FC = () => {
 
   return (
     <div className="p-4 md:p-6 lg:p-8 space-y-6 bg-gray-50 min-h-screen">
-      {/* --- NEW: RENDER DIALOG COMPONENTS --- */}
+      {/* --- RENDER DIALOG COMPONENTS --- */}
+
+      {/* 1. Detail Modal */}
+      <AccessoryDetailModal
+        item={modalState.data}
+        open={modalState.type === "detail"}
+        onOpenChange={() => setModalState({ type: null, data: null })}
+      />
+
+      {/* 2. Transfer Modal */}
       <TransferLocationDialog
         item={modalState.data}
         open={modalState.type === "transfer"}
         onOpenChange={() => setModalState({ type: null, data: null })}
         onConfirm={handleTransferLocation}
       />
+
+      {/* 3. Issue Modal */}
       <IssueAccessoryDialog
         item={modalState.data}
         open={modalState.type === "issue"}

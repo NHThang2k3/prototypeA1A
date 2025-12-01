@@ -1,7 +1,7 @@
 // src/pages/Warehouse/InventoryListPage.tsx
 
 // =================================================================================
-// TYPE DEFINITIONS & DUMMY DATA (Unchanged)
+// TYPE DEFINITIONS & DUMMY DATA
 // =================================================================================
 export type QCStatus = "Passed" | "Failed" | "Pending";
 
@@ -40,12 +40,14 @@ export interface FabricRoll {
   parentQrCode: string | null;
   locationHistory: LocationHistoryEntry[];
 }
+
 export interface LocationHistoryEntry {
   dateTime: string;
   from: string;
   to: string;
   changedBy: string;
 }
+
 const DUMMY_FABRIC_DATA: FabricRoll[] = [
   {
     id: "QR-76433",
@@ -246,9 +248,9 @@ import {
   Search,
   SlidersHorizontal,
   Trash2,
-  ArrowUpDown, // ADDED: For sorting indicator
+  ArrowUpDown,
 } from "lucide-react";
-import { ColumnDef } from "@tanstack/react-table"; // ADDED
+import { ColumnDef } from "@tanstack/react-table";
 
 // Shadcn UI Components
 import { Button } from "@/components/ui/button";
@@ -261,7 +263,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-// import { Checkbox } from "@/components/ui/checkbox"; // REMOVED: Handled by CustomTable
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -269,7 +270,6 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  // DropdownMenuCheckboxItem, // REMOVED: Handled by CustomTable
 } from "@/components/ui/dropdown-menu";
 import {
   Table,
@@ -309,8 +309,11 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import { cn } from "@/lib/utils";
-
 import { CustomTable } from "@/components/ui/custom-table";
+
+// =================================================================================
+// SUB-COMPONENTS
+// =================================================================================
 
 export const FilterSkeleton = () => (
   <Card>
@@ -335,7 +338,6 @@ export const FilterSkeleton = () => (
 );
 
 export const TableSkeleton = () => (
-  // ...
   <div className="space-y-4 mt-6">
     <div className="flex justify-between items-center">
       <Skeleton className="h-8 w-64" />
@@ -419,7 +421,6 @@ export const InventoryHeader = ({
   onViewHistory,
   onDelete,
 }: InventoryHeaderProps) => {
-  // ... (Unchanged)
   const hasSelection = selectedRowCount > 0;
   return (
     <div className="flex flex-col md:flex-row justify-between md:items-center mb-6">
@@ -472,8 +473,6 @@ export const InventoryHeader = ({
     </div>
   );
 };
-
-// ... các import giữ nguyên
 
 export const InventoryFilters = () => {
   return (
@@ -535,8 +534,6 @@ export const InventoryFilters = () => {
                       </SelectContent>
                     </Select>
                   </div>
-
-                  {/* --- PHẦN ĐƯỢC THÊM VÀO: RELAX DATE FROM - TO --- */}
                   <div className="space-y-2">
                     <Label htmlFor="relaxDateFrom">Relax Date From</Label>
                     <Input id="relaxDateFrom" type="date" />
@@ -545,7 +542,6 @@ export const InventoryFilters = () => {
                     <Label htmlFor="relaxDateTo">Relax Date To</Label>
                     <Input id="relaxDateTo" type="date" />
                   </div>
-                  {/* -------------------------------------------------- */}
                 </div>
                 <div className="mt-6 pt-4 border-t flex items-center justify-end space-x-3">
                   <Button type="button" variant="outline">
@@ -596,14 +592,140 @@ const RelaxProgressBar: React.FC<{ roll: FabricRoll }> = ({ roll }) => {
   );
 };
 
-// --- Modal Components --- (Unchanged)
+// =================================================================================
+// MODALS
+// =================================================================================
+
+// ADDED: Fabric Roll Detail Modal
+const FabricRollDetailModal: FC<{
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  roll: FabricRoll | null;
+}> = ({ open, onOpenChange, roll }) => {
+  if (!roll) return null;
+
+  const DetailRow = ({
+    label,
+    value,
+  }: {
+    label: string;
+    value: React.ReactNode;
+  }) => (
+    <div className="grid grid-cols-3 gap-4 py-2 border-b last:border-0 border-gray-100">
+      <span className="font-medium text-muted-foreground col-span-1">
+        {label}
+      </span>
+      <span className="col-span-2 text-foreground font-medium">
+        {value || "-"}
+      </span>
+    </div>
+  );
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Fabric Roll Details</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-6 mt-4">
+          {/* General Info */}
+          <div>
+            <h3 className="font-semibold text-lg mb-2 text-primary flex items-center">
+              General Information
+            </h3>
+            <div className="bg-slate-50 p-4 rounded-lg border">
+              <DetailRow label="QR Code" value={roll.qrCode} />
+              <DetailRow label="PO Number" value={roll.poNumber} />
+              <DetailRow label="Item Code" value={roll.itemCode} />
+              <DetailRow label="Description" value={roll.description} />
+              <DetailRow label="Factory" value={roll.factory} />
+              <DetailRow
+                label="Supplier"
+                value={`${roll.supplier} (${roll.supplierCode})`}
+              />
+              <DetailRow label="Invoice No" value={roll.invoiceNo} />
+            </div>
+          </div>
+
+          {/* Specifications */}
+          <div>
+            <h3 className="font-semibold text-lg mb-2 text-primary">
+              Specifications
+            </h3>
+            <div className="bg-slate-50 p-4 rounded-lg border">
+              <DetailRow
+                label="Color"
+                value={`${roll.color} (${roll.colorCode})`}
+              />
+              <DetailRow label="Roll No" value={roll.rollNo} />
+              <DetailRow label="Lot No" value={roll.lotNo} />
+              <DetailRow label="Width" value={roll.width} />
+              <DetailRow label="Location" value={roll.location} />
+            </div>
+          </div>
+
+          {/* Metrics */}
+          <div>
+            <h3 className="font-semibold text-lg mb-2 text-primary">
+              Measurements
+            </h3>
+            <div className="bg-slate-50 p-4 rounded-lg border">
+              <DetailRow label="Yards (Shipped)" value={roll.yards} />
+              <DetailRow label="Balance Yards" value={roll.balanceYards} />
+              <DetailRow label="Net Weight (Kg)" value={roll.netWeightKgs} />
+              <DetailRow
+                label="Gross Weight (Kg)"
+                value={roll.grossWeightKgs}
+              />
+            </div>
+          </div>
+
+          {/* QC Status */}
+          <div>
+            <h3 className="font-semibold text-lg mb-2 text-primary">
+              Quality Control
+            </h3>
+            <div className="bg-slate-50 p-4 rounded-lg border">
+              <DetailRow
+                label="Status"
+                value={<StatusBadge status={roll.qcStatus} />}
+              />
+              <DetailRow label="QC Date" value={roll.qcDate} />
+              <DetailRow label="QC By" value={roll.qcBy} />
+              <DetailRow label="Comment" value={roll.comment} />
+            </div>
+          </div>
+
+          {/* Relax Status */}
+          <div>
+            <h3 className="font-semibold text-lg mb-2 text-primary">
+              Relaxation
+            </h3>
+            <div className="bg-slate-50 p-4 rounded-lg border">
+              <DetailRow label="Need Relax" value={roll.needRelax} />
+              <DetailRow label="Relax Date" value={roll.relaxDate} />
+              <DetailRow label="Relax Time" value={roll.relaxTime} />
+              <DetailRow label="Standard Hours" value={roll.hourStandard} />
+              <div className="py-2 border-t mt-2">
+                <span className="font-medium text-muted-foreground block mb-2">
+                  Current Status
+                </span>
+                <RelaxProgressBar roll={roll} />
+              </div>
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 const MultiTransferLocationModal: FC<{
   open: boolean;
   onOpenChange: (open: boolean) => void;
   rolls: FabricRoll[];
   onSubmit: (newLocation: string) => void;
 }> = ({ open, onOpenChange, rolls, onSubmit }) => {
-  // ...
   const [newLocation, setNewLocation] = useState("");
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -643,12 +765,12 @@ const MultiTransferLocationModal: FC<{
     </Dialog>
   );
 };
+
 const MultiLocationHistoryModal: FC<{
   open: boolean;
   onOpenChange: (open: boolean) => void;
   rolls: FabricRoll[];
 }> = ({ open, onOpenChange, rolls }) => {
-  // ...
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl">
@@ -705,12 +827,11 @@ const InventoryListPage = () => {
   const [fabricRolls, setFabricRolls] = useState<FabricRoll[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // CHANGED: State is now for the selected data objects, not just IDs
+  // State for selected data objects
   const [selectedRolls, setSelectedRolls] = useState<FabricRoll[]>([]);
 
-  // REMOVED: `visibleColumns`, `currentPage`, `rowsPerPage` state. CustomTable handles these.
-
-  type ModalType = "transfer" | "history";
+  // UPDATED: Added "details" to ModalType
+  type ModalType = "transfer" | "history" | "details";
   const [modalState, setModalState] = useState<{
     type: ModalType | null;
     data: FabricRoll[];
@@ -730,20 +851,20 @@ const InventoryListPage = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  // REMOVED: useEffect for clearing selection on page change.
-  // REMOVED: `paginatedRolls` useMemo hook.
-
-  // --- Single Item Action Handlers --- (These will be passed into the column definition)
+  // --- Single Item Action Handlers ---
   const handlePrintSingle = (item: FabricRoll) =>
     alert(`Printing QR Code for: ${item.id}`);
   const handleTransferSingle = (item: FabricRoll) =>
     setModalState({ type: "transfer", data: [item] });
   const handleViewHistorySingle = (item: FabricRoll) =>
     setModalState({ type: "history", data: [item] });
+  // ADDED: Handler for View Details
+  const handleViewDetailsSingle = (item: FabricRoll) =>
+    setModalState({ type: "details", data: [item] });
   const handleDeleteSingle = (item: FabricRoll) =>
     setDeleteConfirmation({ open: true, items: [item] });
 
-  // ADDED: Define columns for CustomTable
+  // Columns definition
   const columns = useMemo<ColumnDef<FabricRoll>[]>(
     () => [
       {
@@ -801,6 +922,12 @@ const InventoryListPage = () => {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
+
+                {/* ADDED: View Details Action */}
+                <DropdownMenuItem onClick={() => handleViewDetailsSingle(item)}>
+                  View Details
+                </DropdownMenuItem>
+
                 <DropdownMenuItem onClick={() => handlePrintSingle(item)}>
                   Reprint QR Code
                 </DropdownMenuItem>
@@ -826,7 +953,7 @@ const InventoryListPage = () => {
     []
   );
 
-  // --- Bulk Action Handlers --- (Logic simplified)
+  // --- Bulk Action Handlers ---
   const handleExportSelected = () =>
     alert(`Exporting ${selectedRolls.length} selected item(s) to Excel.`);
   const handlePrintMultiple = () =>
@@ -848,7 +975,7 @@ const InventoryListPage = () => {
   const handleExportAll = () =>
     alert(`Exporting all ${fabricRolls.length} items to Excel.`);
 
-  // --- Logic Handlers --- (Slightly modified)
+  // --- Logic Handlers ---
   const handleExecuteTransfer = (
     rollsToUpdate: FabricRoll[],
     newLocation: string
@@ -873,7 +1000,7 @@ const InventoryListPage = () => {
       })
     );
     setModalState({ type: null, data: [] });
-    setSelectedRolls([]); // CHANGED: Clear selection
+    setSelectedRolls([]);
     alert(`${rollsToUpdate.length} item(s) have been moved to ${newLocation}.`);
   };
 
@@ -885,7 +1012,7 @@ const InventoryListPage = () => {
       prevRolls.filter((roll) => !idsToDelete.has(roll.id))
     );
     alert(`${idsToDelete.size} item(s) have been deleted.`);
-    setSelectedRolls([]); // CHANGED: Clear selection
+    setSelectedRolls([]);
     setDeleteConfirmation({ open: false, items: [] });
   };
 
@@ -900,7 +1027,7 @@ const InventoryListPage = () => {
         ) : (
           <>
             <InventoryHeader
-              selectedRowCount={selectedRolls.length} // CHANGED: Use selectedRolls.length
+              selectedRowCount={selectedRolls.length}
               onExportAll={handleExportAll}
               onExportSelected={handleExportSelected}
               onPrintMultiple={handlePrintMultiple}
@@ -910,7 +1037,6 @@ const InventoryListPage = () => {
             />
             <InventoryFilters />
 
-            {/* CHANGED: Replaced InventoryTable and InventoryPagination with CustomTable */}
             <div className="mt-6">
               {fabricRolls.length > 0 ? (
                 <CustomTable
@@ -935,7 +1061,17 @@ const InventoryListPage = () => {
         )}
       </section>
 
-      {/* --- Modals & Dialogs --- (Unchanged) */}
+      {/* --- Modals & Dialogs --- */}
+
+      {/* ADDED: Detail Modal Render */}
+      <FabricRollDetailModal
+        open={modalState.type === "details"}
+        onOpenChange={(open) =>
+          !open && setModalState({ type: null, data: [] })
+        }
+        roll={modalState.data[0] || null}
+      />
+
       <MultiTransferLocationModal
         open={modalState.type === "transfer"}
         onOpenChange={(open) =>
