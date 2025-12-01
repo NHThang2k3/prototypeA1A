@@ -120,6 +120,18 @@ const sidebarNavItems: NavItem[] = [
             icon: ScrollText,
             key: "reports-issues",
           },
+          {
+            title: "Stock Taking",
+            path: "/fabric-warehouse/stock-taking",
+            icon: ListPlus,
+            key: "stock-taking",
+          },
+          {
+            title: "Stock Taking Warehouse",
+            path: "/fabric-warehouse/stock-taking-warehouse",
+            icon: ListPlus,
+            key: "stock-taking-warehouse",
+          },
         ],
       },
       {

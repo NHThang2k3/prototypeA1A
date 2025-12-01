@@ -776,12 +776,12 @@ const InventoryListPage = () => {
       { accessorKey: "needRelax", header: "Need Relax" },
       {
         id: "relaxProgress",
-        header: "Relax Progress",
+        header: "Relax Status",
         cell: ({ row }) => <RelaxProgressBar roll={row.original} />,
       },
       {
         accessorKey: "relaxDate",
-        header: "Date Relaxed",
+        header: "Date Relax",
         cell: ({ row }) =>
           row.original.relaxDate
             ? new Date(row.original.relaxDate).toLocaleDateString()

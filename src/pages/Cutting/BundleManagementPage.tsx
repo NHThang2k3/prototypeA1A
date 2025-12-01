@@ -6,7 +6,6 @@ import {
   Search,
   Upload,
   Eye,
-  FilePenLine,
   QrCode,
   Printer,
   Wrench,
@@ -165,10 +164,10 @@ const ImportJobModal = ({ isOpen, onOpenChange }: ImportJobModalProps) => {
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Import 8 Excel Files to Create a New JOB</DialogTitle>
+          <DialogTitle>Import 8 Excel Files to Create a New Bundle</DialogTitle>
           <DialogDescription>
-            Please upload all 8 required files to generate a new JOB. The system
-            will process these files to gather all necessary information.
+            Please upload all 8 required files to generate a new Bundle. The
+            system will process these files to gather all necessary information.
           </DialogDescription>
         </DialogHeader>
         <main className="p-6 pt-0 overflow-y-auto">
@@ -222,7 +221,7 @@ const ImportJobModal = ({ isOpen, onOpenChange }: ImportJobModalProps) => {
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button disabled={!allFilesUploaded}>Create JOB</Button>
+          <Button disabled={!allFilesUploaded}>Create Bundle</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -278,7 +277,7 @@ const UpdateJobModal = ({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Update Job: {job.jobNo}</DialogTitle>
+          <DialogTitle>Update: {job.jobNo}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
@@ -422,11 +421,9 @@ const BundleManagementPage = () => {
                   <Eye className="mr-2 h-4 w-4" /> View Details
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleUpdateJob(job)}>
-                  <Wrench className="mr-2 h-4 w-4" /> Update Job
+                  <Wrench className="mr-2 h-4 w-4" /> Update
                 </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <FilePenLine className="mr-2 h-4 w-4" /> Edit Job
-                </DropdownMenuItem>
+
                 <DropdownMenuItem>
                   <QrCode className="mr-2 h-4 w-4" /> Generate QR Code
                 </DropdownMenuItem>

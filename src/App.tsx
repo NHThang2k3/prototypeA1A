@@ -90,6 +90,9 @@ import ImportPackingListFormPagePackaging from "./pages/Warehouse/ImportPackingL
 import ScanInBufferPage from "./pages/Buffer/ScanInBufferPage";
 import ScanOutBufferPage from "./pages/Buffer/ScanOutBufferPage";
 import RelaxTimeStandardPage from "./pages/Warehouse/RelaxTimeStandardPage";
+import StockTaking from "./pages/Warehouse/StockTaking";
+import StockTakingWarehouse from "./pages/Warehouse/StockTakingWarehouse";
+import PermissionManagementPage from "./pages/FactorySetting/PermissionManagementPage";
 
 function App() {
   return (
@@ -130,6 +133,11 @@ function App() {
             element={<RelaxTimeStandardPage />}
           />
           <Route path="action-plan" element={<ActionPlanPage />} />
+          <Route path="stock-taking" element={<StockTaking />} />
+          <Route
+            path="stock-taking-warehouse"
+            element={<StockTakingWarehouse />}
+          />
         </Route>
 
         {/* === Module Kho Phụ Liệu (Ví dụ) === */}
@@ -532,6 +540,10 @@ function App() {
             element={<LocationManagementPage />}
           />
           <Route path="audit-log" element={<AuditLogPage />} />
+          <Route
+            path="permission-management"
+            element={<PermissionManagementPage />}
+          />
         </Route>
 
         {/* === MODULE DASHBOARD TỔNG (MỚI) === */}

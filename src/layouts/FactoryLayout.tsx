@@ -38,6 +38,12 @@ const sidebarNavItems: NavItem[] = [
     icon: ShieldAlert,
     key: "audit-log",
   },
+  {
+    title: "Permission Management",
+    path: "/factory/permission-management",
+    icon: ShieldAlert,
+    key: "permission-management",
+  },
 ];
 
 type SidebarContextType = {

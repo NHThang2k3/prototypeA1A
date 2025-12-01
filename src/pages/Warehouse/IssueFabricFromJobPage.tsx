@@ -663,11 +663,39 @@ const IssueFabricFromJobPage: React.FC = () => {
           </div>
         ),
       },
-      { accessorKey: "ItemCode", header: "Item Code" },
-      { accessorKey: "Color", header: "Color" },
-      { accessorKey: "ColorCode", header: "Color Code" }, // Show Color Code
-      { accessorKey: "RequestQuantity", header: "Required Qty" },
-      { accessorKey: "Lot", header: "Lot" },
+      {
+        accessorKey: "ItemCode",
+        header: "Item Code",
+        // Thay đổi: Nếu chưa ERP Check thì hiện "-"
+        cell: ({ row }) =>
+          row.original.erpChecked ? row.original.ItemCode : "-",
+      },
+      {
+        accessorKey: "Color",
+        header: "Color",
+        // Thay đổi: Nếu chưa ERP Check thì hiện "-"
+        cell: ({ row }) => (row.original.erpChecked ? row.original.Color : "-"),
+      },
+      {
+        accessorKey: "ColorCode",
+        header: "Color Code",
+        // Thay đổi: Nếu chưa ERP Check thì hiện "-"
+        cell: ({ row }) =>
+          row.original.erpChecked ? row.original.ColorCode : "-",
+      },
+      {
+        accessorKey: "RequestQuantity",
+        header: "Required Qty",
+        // Thay đổi: Nếu chưa ERP Check thì hiện "-"
+        cell: ({ row }) =>
+          row.original.erpChecked ? row.original.RequestQuantity : "-",
+      },
+      {
+        accessorKey: "Lot",
+        header: "Lot",
+        // Thay đổi: Nếu chưa ERP Check thì hiện "-"
+        cell: ({ row }) => (row.original.erpChecked ? row.original.Lot : "-"),
+      },
       {
         accessorKey: "erpChecked",
         header: () => <div className="text-center">ERP Check</div>,
