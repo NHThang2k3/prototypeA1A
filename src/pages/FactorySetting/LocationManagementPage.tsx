@@ -18,9 +18,10 @@ export interface LocationItem {
   country: "Vietnam" | "Cambodia" | "Thailand"; // Quốc gia
   factory: string; // Nhà máy
   warehouse: string;
-  shelf: number;
-  pallet: number;
-  capacity: number;
+  type: "Shelf" | "Machine";
+  shelf: number; // Also acts as Machine Number/Name ID if type is Machine
+  pallet: number; // 0 if Machine
+  capacity: number; // 0 if Machine
   currentOccupancy: number;
   lastUpdated: string; // Giữ dạng string để đơn giản
   description: string;
@@ -49,6 +50,7 @@ const locationListData: LocationItem[] = [
     country: "Vietnam",
     factory: "Factory A",
     warehouse: "F1",
+    type: "Shelf",
     shelf: 1,
     pallet: 1,
     capacity: 100,
@@ -65,6 +67,7 @@ const locationListData: LocationItem[] = [
     country: "Vietnam",
     factory: "Factory A",
     warehouse: "F1",
+    type: "Shelf",
     shelf: 1,
     pallet: 2,
     capacity: 100,
@@ -81,6 +84,7 @@ const locationListData: LocationItem[] = [
     country: "Vietnam",
     factory: "Factory A",
     warehouse: "F1",
+    type: "Shelf",
     shelf: 2,
     pallet: 2,
     capacity: 80,
@@ -98,6 +102,7 @@ const locationListData: LocationItem[] = [
     country: "Vietnam",
     factory: "Factory B",
     warehouse: "F2",
+    type: "Shelf",
     shelf: 5,
     pallet: 3,
     capacity: 120,
@@ -114,6 +119,7 @@ const locationListData: LocationItem[] = [
     country: "Vietnam",
     factory: "Factory B",
     warehouse: "F2",
+    type: "Shelf",
     shelf: 3,
     pallet: 5,
     capacity: 100,
@@ -131,6 +137,7 @@ const locationListData: LocationItem[] = [
     country: "Cambodia",
     factory: "Factory C",
     warehouse: "F3",
+    type: "Shelf",
     shelf: 10,
     pallet: 8,
     capacity: 150,
@@ -147,6 +154,7 @@ const locationListData: LocationItem[] = [
     country: "Cambodia",
     factory: "Factory C",
     warehouse: "A1",
+    type: "Shelf",
     shelf: 1, // Row
     pallet: 1, // Bin
     capacity: 500,
@@ -163,6 +171,7 @@ const locationListData: LocationItem[] = [
     country: "Cambodia",
     factory: "Factory C",
     warehouse: "A1",
+    type: "Shelf",
     shelf: 1, // Row
     pallet: 2, // Bin
     capacity: 500,
@@ -180,6 +189,7 @@ const locationListData: LocationItem[] = [
     country: "Thailand",
     factory: "Factory D",
     warehouse: "P1",
+    type: "Shelf",
     shelf: 1, // Section
     pallet: 1, // Position
     capacity: 1000,
@@ -196,6 +206,7 @@ const locationListData: LocationItem[] = [
     country: "Thailand",
     factory: "Factory D",
     warehouse: "P1",
+    type: "Shelf",
     shelf: 2, // Section
     pallet: 1, // Position
     capacity: 800,
@@ -432,11 +443,19 @@ interface LocationFormModalProps {
   defaultPurpose: "fabric" | "accessories" | "packaging";
 }
 
+// --- CONFIGURATION CONSTANTS ---
 const COUNTRIES: LocationItem["country"][] = [
   "Vietnam",
   "Cambodia",
   "Thailand",
 ];
+
+// Factories Mapping for Dropdown
+const FACTORIES_BY_COUNTRY: Record<LocationItem["country"], string[]> = {
+  Vietnam: ["Factory A", "Factory B"],
+  Cambodia: ["Factory C"],
+  Thailand: ["Factory D"],
+};
 
 const LocationFormModal: React.FC<LocationFormModalProps> = ({
   isOpen,
@@ -446,9 +465,12 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
   defaultPurpose,
 }) => {
   const [country, setCountry] = useState<LocationItem["country"]>("Vietnam");
-  const [factory, setFactory] = useState("");
+  const [factory, setFactory] = useState(FACTORIES_BY_COUNTRY["Vietnam"][0]); // Default to first factory
   const [warehouse, setWarehouse] = useState("F1");
-  const [shelf, setShelf] = useState<number | "">("");
+
+  const [type, setType] = useState<"Shelf" | "Machine">("Shelf");
+
+  const [shelf, setShelf] = useState<number | "">(""); // Used for Shelf No or Machine No
   const [pallet, setPallet] = useState<number | "">("");
   const [capacity, setCapacity] = useState<number | "">("");
   const [currentOccupancy, setCurrentOccupancy] = useState<number | "">("");
@@ -458,11 +480,23 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
 
   const isEditing = !!initialData;
 
+  // Handle Country Change -> Reset Factory List
+  useEffect(() => {
+    if (!isEditing && isOpen) {
+      const factories = FACTORIES_BY_COUNTRY[country];
+      // If current factory is not in the new country list, pick the first one
+      if (!factories.includes(factory)) {
+        setFactory(factories[0]);
+      }
+    }
+  }, [country, isEditing, isOpen, factory]);
+
   useEffect(() => {
     if (isOpen && initialData) {
       setCountry(initialData.country);
       setFactory(initialData.factory);
       setWarehouse(initialData.warehouse);
+      setType(initialData.type || "Shelf");
       setShelf(initialData.shelf);
       setPallet(initialData.pallet);
       setCapacity(initialData.capacity);
@@ -473,8 +507,9 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
     } else if (isOpen && !initialData) {
       // Reset form
       setCountry("Vietnam");
-      setFactory("");
+      setFactory(FACTORIES_BY_COUNTRY["Vietnam"][0]);
       setWarehouse("F1");
+      setType("Shelf");
       setShelf("");
       setPallet("");
       setCapacity("");
@@ -489,31 +524,51 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (
-      !factory ||
-      !warehouse ||
-      shelf === "" ||
-      pallet === "" ||
-      capacity === ""
-    ) {
-      alert("Please fill in all required fields.");
-      return;
+
+    // Validation Logic
+    if (type === "Shelf") {
+      if (
+        !factory ||
+        !warehouse ||
+        shelf === "" ||
+        pallet === "" ||
+        capacity === ""
+      ) {
+        alert("Please fill in all required fields for Shelf.");
+        return;
+      }
+    } else {
+      // Machine
+      if (!factory || !warehouse || shelf === "") {
+        alert("Please fill in all required fields for Machine.");
+        return;
+      }
     }
 
-    const locationId = isEditing
-      ? initialData!.id
-      : `${warehouse}-${String(shelf).padStart(2, "0")}-${String(
+    // ID Generation Logic
+    let locationId = "";
+    if (isEditing) {
+      locationId = initialData!.id;
+    } else {
+      if (type === "Shelf") {
+        locationId = `${warehouse}-${String(shelf).padStart(2, "0")}-${String(
           pallet
         ).padStart(2, "0")}`;
+      } else {
+        // Machine ID Format: Warehouse-M-Number
+        locationId = `${warehouse}-M-${String(shelf).padStart(2, "0")}`;
+      }
+    }
 
     onSave({
       id: locationId,
       country,
       factory,
       warehouse,
+      type,
       shelf: Number(shelf),
-      pallet: Number(pallet),
-      capacity: Number(capacity),
+      pallet: type === "Shelf" ? Number(pallet) : 0,
+      capacity: type === "Shelf" ? Number(capacity) : 0,
       currentOccupancy: Number(currentOccupancy),
       description,
       lastUpdated: new Date().toLocaleDateString("en-US"), // Update date
@@ -546,14 +601,14 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
                 htmlFor="purpose"
                 className="block text-sm font-medium text-gray-700"
               >
-                Purpose *
+                Purpose
               </label>
               <select
                 id="purpose"
                 value={purpose}
                 onChange={(e) => setPurpose(e.target.value as typeof purpose)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white"
-                required
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white disabled:bg-gray-100 disabled:text-gray-500"
+                disabled={isEditing}
               >
                 <option value="fabric">Fabric</option>
                 <option value="accessories">Accessories</option>
@@ -566,14 +621,14 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
                 htmlFor="country"
                 className="block text-sm font-medium text-gray-700"
               >
-                Country *
+                Country
               </label>
               <select
                 id="country"
                 value={country}
                 onChange={(e) => setCountry(e.target.value as typeof country)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white"
-                required
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white disabled:bg-gray-100 disabled:text-gray-500"
+                disabled={isEditing}
               >
                 {COUNTRIES.map((c) => (
                   <option key={c} value={c}>
@@ -582,91 +637,132 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
                 ))}
               </select>
             </div>
-            {/* Factory */}
+            {/* Factory (Changed to Dropdown) */}
             <div>
               <label
                 htmlFor="factory"
                 className="block text-sm font-medium text-gray-700"
               >
-                Factory *
+                Factory
               </label>
-              <input
+              <select
                 id="factory"
-                type="text"
                 value={factory}
                 onChange={(e) => setFactory(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-                required
-              />
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white disabled:bg-gray-100 disabled:text-gray-500"
+                disabled={isEditing}
+              >
+                {FACTORIES_BY_COUNTRY[country].map((f) => (
+                  <option key={f} value={f}>
+                    {f}
+                  </option>
+                ))}
+              </select>
             </div>
-            {/* Warehouse, Shelf, Pallet, Capacity etc. */}
+            {/* Warehouse */}
             <div>
               <label
                 htmlFor="warehouse"
                 className="block text-sm font-medium text-gray-700"
               >
-                Warehouse *
+                Warehouse
               </label>
               <input
                 id="warehouse"
                 type="text"
                 value={warehouse}
                 onChange={(e) => setWarehouse(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-                required
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm disabled:bg-gray-100 disabled:text-gray-500"
+                disabled={isEditing}
               />
             </div>
+
+            {/* --- TYPE SELECTION --- */}
+            <div>
+              <label
+                htmlFor="type"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Type
+              </label>
+              <select
+                id="type"
+                value={type}
+                onChange={(e) => setType(e.target.value as "Shelf" | "Machine")}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white disabled:bg-gray-100 disabled:text-gray-500"
+                disabled={isEditing}
+              >
+                <option value="Shelf">Shelf</option>
+                <option value="Machine">Machine</option>
+              </select>
+            </div>
+
+            {/* Shelf / Machine Name (Label Changed) */}
             <div>
               <label
                 htmlFor="shelf"
                 className="block text-sm font-medium text-gray-700"
               >
-                Shelf *
+                {type === "Shelf" ? "Shelf Number" : "Machine Name"} *
               </label>
               <input
                 id="shelf"
                 type="number"
                 min="1"
+                placeholder={
+                  type === "Machine" ? "e.g. 1 (for Machine 01)" : ""
+                }
                 value={shelf}
                 onChange={(e) => setShelf(Number(e.target.value))}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm disabled:bg-gray-100 disabled:text-gray-500"
                 required
+                disabled={isEditing}
               />
             </div>
-            <div>
-              <label
-                htmlFor="pallet"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Pallet *
-              </label>
-              <input
-                id="pallet"
-                type="number"
-                min="1"
-                value={pallet}
-                onChange={(e) => setPallet(Number(e.target.value))}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-                required
-              />
-            </div>
-            <div>
-              <label
-                htmlFor="capacity"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Capacity *
-              </label>
-              <input
-                id="capacity"
-                type="number"
-                min="0"
-                value={capacity}
-                onChange={(e) => setCapacity(Number(e.target.value))}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-                required
-              />
-            </div>
+
+            {/* --- CONDITIONAL FIELDS: Pallet & Capacity (Only for Shelf) --- */}
+            {type === "Shelf" && (
+              <>
+                <div>
+                  <label
+                    htmlFor="pallet"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Pallet *
+                  </label>
+                  <input
+                    id="pallet"
+                    type="number"
+                    min="1"
+                    value={pallet}
+                    onChange={(e) => setPallet(Number(e.target.value))}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm disabled:bg-gray-100 disabled:text-gray-500"
+                    required
+                    disabled={isEditing}
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="capacity"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Capacity *
+                  </label>
+                  <input
+                    id="capacity"
+                    type="number"
+                    min="0"
+                    value={capacity}
+                    onChange={(e) => setCapacity(Number(e.target.value))}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                    required
+                    // Capacity remains editable even in Edit mode
+                  />
+                </div>
+              </>
+            )}
+
+            {/* Description (Always Editable) */}
             <div className="col-span-2">
               <label
                 htmlFor="description"
@@ -682,6 +778,8 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
               ></textarea>
             </div>
+
+            {/* Enabled (Always Editable) */}
             <div className="col-span-2 flex items-center">
               <input
                 id="enabled"
@@ -847,9 +945,6 @@ interface LocationTableProps {
   onSelectionChange: (newSelectedIds: Set<string>) => void;
 }
 
-// =========================================================================
-// === BẮT ĐẦU PHẦN CODE ĐÃ SỬA =============================================
-// =========================================================================
 const LocationTable: React.FC<LocationTableProps> = ({
   locations,
   onEdit,
@@ -945,6 +1040,13 @@ const LocationTable: React.FC<LocationTableProps> = ({
   };
 
   const renderOccupancy = (occupancy: number, capacity: number) => {
+    // Handling case where capacity is 0 (e.g., Machine)
+    if (capacity === 0) {
+      return (
+        <span className="text-sm text-gray-500 font-medium">N/A (Machine)</span>
+      );
+    }
+
     const percentage = capacity > 0 ? (occupancy / capacity) * 100 : 0;
     const barColor =
       percentage > 90
@@ -1078,6 +1180,12 @@ const LocationTable: React.FC<LocationTableProps> = ({
                           { capacity: 0, occupancy: 0 }
                         );
 
+                        // Determine if this group is purely machines or shelves (based on first item)
+                        const groupType =
+                          locationsOnShelf[0]?.type === "Machine"
+                            ? "Machine"
+                            : "Shelf";
+
                         const shelfLocationIds = locationsOnShelf.map(
                           (loc) => loc.id
                         );
@@ -1092,7 +1200,7 @@ const LocationTable: React.FC<LocationTableProps> = ({
 
                         return (
                           <React.Fragment key={shelfKey}>
-                            {/* Shelf Row */}
+                            {/* Shelf/Machine Group Row */}
                             <tr className="bg-gray-50">
                               <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-700 font-semibold">
                                 <div className="flex items-center ">
@@ -1123,7 +1231,7 @@ const LocationTable: React.FC<LocationTableProps> = ({
                                     ) : (
                                       <ChevronRight className="h-4 w-4 mr-2" />
                                     )}
-                                    Shelf {shelfId}
+                                    {groupType} {shelfId}
                                   </div>
                                 </div>
                               </td>
@@ -1238,9 +1346,7 @@ const LocationTable: React.FC<LocationTableProps> = ({
     </div>
   );
 };
-// =========================================================================
-// === KẾT THÚC PHẦN CODE ĐÃ SỬA =============================================
-// =========================================================================
+
 // --- MAIN PAGE COMPONENT ---
 
 const TABS = {
