@@ -1,27 +1,23 @@
 // src/pages/bundle-management/BundleManagementPage.tsx
 
-// 1. IMPORTS
 import React, { useState, useMemo, useEffect } from "react";
 import {
   Search,
-  Upload,
   Eye,
   QrCode,
   Printer,
   Wrench,
-  FileUp,
-  CheckCircle2,
   MoreHorizontal,
 } from "lucide-react";
 import { ColumnDef } from "@tanstack/react-table";
 
+// Assuming these exist based on prompt instructions
 import { CustomTable } from "@/components/ui/custom-table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -34,8 +30,17 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 
-// 2. TYPE DEFINITIONS (from types.ts)
+// --- TYPE DEFINITIONS ---
 export type Job = {
   jobNo: string;
   subNo: number;
@@ -66,7 +71,7 @@ export type Job = {
   colorGroup: string;
 };
 
-// 3. SAMPLE DATA (from data.ts)
+// --- SAMPLE DATA ---
 const sampleJobs: Job[] = [
   {
     jobNo: "SOTSM2503115",
@@ -128,101 +133,171 @@ const sampleJobs: Job[] = [
   },
 ];
 
-// 5. CHILD COMPONENTS
+// --- CHILD COMPONENTS ---
 
-// === ImportJobModal.tsx ===
-type ImportJobModalProps = {
+// === PrintQRModal.tsx (New Component based on Screenshot) ===
+type PrintQRModalProps = {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
 };
 
-const requiredFiles = [
-  "Bill of Materials (BOM)",
-  "Cutting Plan",
-  "Marker Data",
-  "Order Details",
-  "Sewing Operations",
-  "Packaging Spec",
-  "Labeling Info",
-  "Quality Control Plan",
-];
-
-const ImportJobModal = ({ isOpen, onOpenChange }: ImportJobModalProps) => {
-  const [uploadedFiles, setUploadedFiles] = useState<
-    Record<string, File | null>
-  >(requiredFiles.reduce((acc, val) => ({ ...acc, [val]: null }), {}));
-
-  const handleFileChange = (fileName: string, file: File | null) => {
-    setUploadedFiles((prev) => ({ ...prev, [fileName]: file }));
-  };
-
-  const allFilesUploaded = Object.values(uploadedFiles).every(
-    (file) => file !== null
-  );
+const PrintQRModal = ({ isOpen, onOpenChange }: PrintQRModalProps) => {
+  const [_printType, setPrintType] = useState("both"); // both, home, decoration
+  
+  // Dummy data for select boxes
+  const cutNos = ["1", "2", "3", "4", "5"];
+  const bundleNos = ["101", "102", "103", "104", "105"];
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-3xl bg-slate-50 border-slate-300 shadow-xl">
+        
+        
         <DialogHeader>
-          <DialogTitle>Import 8 Excel Files to Create a New Bundle</DialogTitle>
-          <DialogDescription>
-            Please upload all 8 required files to generate a new Bundle. The
-            system will process these files to gather all necessary information.
-          </DialogDescription>
+          <DialogTitle className="hidden">Print QR Code</DialogTitle>
         </DialogHeader>
-        <main className="p-6 pt-0 overflow-y-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {requiredFiles.map((fileName) => (
-              <div key={fileName} className="border rounded-lg p-3">
-                <Label htmlFor={fileName} className="cursor-pointer">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">{fileName}</p>
-                      {uploadedFiles[fileName] ? (
-                        <div className="flex items-center text-green-600 mt-1">
-                          <CheckCircle2 size={16} className="mr-1.5" />
-                          <span className="text-xs font-semibold">
-                            {uploadedFiles[fileName]?.name}
-                          </span>
-                        </div>
-                      ) : (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Click or drag to upload
-                        </p>
-                      )}
-                    </div>
-                    <FileUp
-                      className={`transition-colors ${
-                        uploadedFiles[fileName]
-                          ? "text-green-500"
-                          : "text-blue-500"
-                      }`}
-                      size={28}
-                    />
-                  </div>
-                  <Input
-                    id={fileName}
-                    type="file"
-                    className="hidden"
-                    accept=".xlsx, .xls"
-                    onChange={(e) =>
-                      handleFileChange(
-                        fileName,
-                        e.target.files ? e.target.files[0] : null
-                      )
-                    }
-                  />
-                </Label>
-              </div>
-            ))}
+
+        <div className="flex flex-col gap-6 p-4">
+          {/* Radio Buttons Group */}
+          <RadioGroup 
+            defaultValue="both" 
+            onValueChange={setPrintType} 
+            className="flex flex-wrap gap-6 items-center"
+          >
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="both" id="r1" />
+              <Label htmlFor="r1" className="text-blue-700 font-bold underline cursor-pointer text-base">
+                In hàng nhà và hàng trang trí
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="home" id="r2" />
+              <Label htmlFor="r2" className="text-blue-700 font-bold underline cursor-pointer text-base">
+                In hàng nhà
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="decoration" id="r3" />
+              <Label htmlFor="r3" className="text-blue-700 font-bold underline cursor-pointer text-base">
+                In hàng trang trí
+              </Label>
+            </div>
+          </RadioGroup>
+
+          {/* Main Input */}
+          <div>
+            <Input className="h-10 border-blue-200 focus-visible:ring-blue-400" />
           </div>
-        </main>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button disabled={!allFilesUploaded}>Create Bundle</Button>
-        </DialogFooter>
+
+          {/* Controls Grid */}
+          <div className="grid grid-cols-12 gap-4">
+            
+            {/* Left Column: Inputs */}
+            <div className="col-span-12 md:col-span-8 space-y-6">
+              
+              {/* CutNo Row */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <Label className="font-bold underline text-black">CutNo Start</Label>
+                  <Select>
+                    <SelectTrigger className="bg-white">
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {cutNos.map((n) => <SelectItem key={n} value={n}>{n}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="font-bold underline text-black">CutNo End</Label>
+                  <Select>
+                    <SelectTrigger className="bg-white">
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {cutNos.map((n) => <SelectItem key={n} value={n}>{n}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Bundle Row */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <Label className="font-bold underline text-black">Bundle Start</Label>
+                  <Select>
+                    <SelectTrigger className="bg-white">
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {bundleNos.map((n) => <SelectItem key={n} value={n}>{n}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="font-bold underline text-black">Bundle End</Label>
+                  <Select>
+                    <SelectTrigger className="bg-white">
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {bundleNos.map((n) => <SelectItem key={n} value={n}>{n}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Right Column: Buttons */}
+            <div className="col-span-12 md:col-span-4 flex flex-col justify-between gap-4">
+              
+              {/* LOAD Buttons aligned with input rows generally */}
+              <div className="flex flex-col gap-6 mt-6">
+                 <Button 
+                   className="w-full bg-gradient-to-b from-white to-gray-200 hover:from-gray-100 hover:to-gray-300 text-blue-700 font-bold border border-gray-400 shadow-sm"
+                 >
+                   LOAD
+                 </Button>
+                 <Button 
+                   className="w-full bg-gradient-to-b from-white to-gray-200 hover:from-gray-100 hover:to-gray-300 text-blue-700 font-bold border border-gray-400 shadow-sm"
+                 >
+                   LOAD
+                 </Button>
+              </div>
+
+              {/* PRINT Button */}
+              <Button 
+                className="w-full h-16 bg-[#FFFFE0] hover:bg-[#FFFACD] text-blue-700 text-3xl font-bold border-2 border-gray-400 shadow-md"
+              >
+                PRINT
+              </Button>
+
+            </div>
+          </div>
+
+          {/* Footer Options */}
+          <div className="flex justify-end items-center gap-6 mt-2">
+            <div className="flex items-center space-x-2">
+              <Checkbox id="printAgain" />
+              <Label htmlFor="printAgain" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                Print Again
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox id="showData" />
+              <Label htmlFor="showData" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                Show Data
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox id="emb" />
+              <Label htmlFor="emb" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                EMB
+              </Label>
+            </div>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );
@@ -348,14 +423,14 @@ const UpdateJobModal = ({
   );
 };
 
-// 6. MAIN COMPONENT
+// --- MAIN COMPONENT ---
 const BundleManagementPage = () => {
   const [jobs, setJobs] = useState<Job[]>(sampleJobs);
   const [searchTerm, setSearchTerm] = useState("");
 
   // State for modals
-  const [isImportModalOpen, setImportModalOpen] = useState(false);
   const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
+  const [isPrintModalOpen, setPrintModalOpen] = useState(false);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
 
   const handleUpdateJob = (jobToUpdate: Job) => {
@@ -424,10 +499,10 @@ const BundleManagementPage = () => {
                   <Wrench className="mr-2 h-4 w-4" /> Update
                 </DropdownMenuItem>
 
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setPrintModalOpen(true)}>
                   <QrCode className="mr-2 h-4 w-4" /> Generate QR Code
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setPrintModalOpen(true)}>
                   <Printer className="mr-2 h-4 w-4" /> Print QR Code
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -451,11 +526,11 @@ const BundleManagementPage = () => {
       <header>
         <h1 className="text-3xl font-bold">Bundle Management</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Manage, import, and view details of all jobs.
+          Manage and view details of all jobs.
         </p>
       </header>
 
-      {/* Thanh công cụ */}
+      {/* Toolbar */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="relative flex-grow w-full md:w-auto">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -468,24 +543,25 @@ const BundleManagementPage = () => {
           />
         </div>
         <div className="flex items-center gap-2 w-full md:w-auto">
+          {/* REPLACED "Import File" WITH "Print QR code" */}
           <Button
-            onClick={() => setImportModalOpen(true)}
-            variant="outline"
+            onClick={() => setPrintModalOpen(true)}
+            variant="default" // Using default (primary) variant to stand out
             className="w-full sm:w-auto"
           >
-            <Upload className="mr-2 h-5 w-5" />
-            Import File
+            <Printer className="mr-2 h-5 w-5" />
+            Print QR code
           </Button>
         </div>
       </div>
 
-      {/* Bảng */}
+      {/* Table */}
       <CustomTable columns={columns} data={filteredJobs} />
 
       {/* Modals */}
-      <ImportJobModal
-        isOpen={isImportModalOpen}
-        onOpenChange={setImportModalOpen}
+      <PrintQRModal
+        isOpen={isPrintModalOpen}
+        onOpenChange={setPrintModalOpen}
       />
       <UpdateJobModal
         isOpen={isUpdateModalOpen}
@@ -497,5 +573,4 @@ const BundleManagementPage = () => {
   );
 };
 
-// 7. EXPORT
 export default BundleManagementPage;

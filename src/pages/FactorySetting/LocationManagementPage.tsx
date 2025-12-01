@@ -19,7 +19,7 @@ export interface LocationItem {
   factory: string; // Nhà máy
   warehouse: string;
   type: "Shelf" | "Machine";
-  shelf: number; // Also acts as Machine Number/Name ID if type is Machine
+  shelf: number | string; // Shelf number for Shelves, Machine name for Machines
   pallet: number; // 0 if Machine
   capacity: number; // 0 if Machine
   currentOccupancy: number;
@@ -217,6 +217,58 @@ const locationListData: LocationItem[] = [
     isQrPrinted: true,
     purpose: "packaging",
     enabled: false,
+  },
+  // --- Machines in Fabric Warehouses ---
+  {
+    id: "F1-M-Relaxation-Machine-01",
+    country: "Vietnam",
+    factory: "Factory A",
+    warehouse: "F1",
+    type: "Machine",
+    shelf: "Relaxation Machine 01" as any, // Machine name stored as string
+    pallet: 0,
+    capacity: 0,
+    currentOccupancy: 0,
+    lastUpdated: "10/23/2025",
+    description: "Fabric relaxation machine for pre-treatment",
+    qrCode: "LOC-F1-M-Relaxation-Machine-01",
+    isQrPrinted: true,
+    purpose: "fabric",
+    enabled: true,
+  },
+  {
+    id: "F1-M-Cutting-Machine-A1",
+    country: "Vietnam",
+    factory: "Factory A",
+    warehouse: "F1",
+    type: "Machine",
+    shelf: "Cutting Machine A1" as any,
+    pallet: 0,
+    capacity: 0,
+    currentOccupancy: 0,
+    lastUpdated: "10/23/2025",
+    description: "Automated fabric cutting machine",
+    qrCode: "LOC-F1-M-Cutting-Machine-A1",
+    isQrPrinted: false,
+    purpose: "fabric",
+    enabled: true,
+  },
+  {
+    id: "F2-M-Inspection-Table-01",
+    country: "Vietnam",
+    factory: "Factory B",
+    warehouse: "F2",
+    type: "Machine",
+    shelf: "Inspection Table 01" as any,
+    pallet: 0,
+    capacity: 0,
+    currentOccupancy: 0,
+    lastUpdated: "10/24/2025",
+    description: "Quality inspection table with lighting",
+    qrCode: "LOC-F2-M-Inspection-Table-01",
+    isQrPrinted: true,
+    purpose: "fabric",
+    enabled: true,
   },
 ];
 
@@ -470,7 +522,7 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
 
   const [type, setType] = useState<"Shelf" | "Machine">("Shelf");
 
-  const [shelf, setShelf] = useState<number | "">(""); // Used for Shelf No or Machine No
+  const [shelf, setShelf] = useState<number | string | "">(""); // Used for Shelf No or Machine Name
   const [pallet, setPallet] = useState<number | "">("");
   const [capacity, setCapacity] = useState<number | "">("");
   const [currentOccupancy, setCurrentOccupancy] = useState<number | "">("");
@@ -497,7 +549,7 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
       setFactory(initialData.factory);
       setWarehouse(initialData.warehouse);
       setType(initialData.type || "Shelf");
-      setShelf(initialData.shelf);
+      setShelf(initialData.type === "Machine" ? String(initialData.shelf) : initialData.shelf);
       setPallet(initialData.pallet);
       setCapacity(initialData.capacity);
       setCurrentOccupancy(initialData.currentOccupancy);
@@ -555,8 +607,8 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
           pallet
         ).padStart(2, "0")}`;
       } else {
-        // Machine ID Format: Warehouse-M-Number
-        locationId = `${warehouse}-M-${String(shelf).padStart(2, "0")}`;
+        // Machine ID Format: Warehouse-M-MachineName
+        locationId = `${warehouse}-M-${String(shelf).replace(/\s/g, "-")}`;
       }
     }
 
@@ -566,7 +618,7 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
       factory,
       warehouse,
       type,
-      shelf: Number(shelf),
+      shelf: type === "Shelf" ? Number(shelf) : shelf as any, // Store machine name as-is
       pallet: type === "Shelf" ? Number(pallet) : 0,
       capacity: type === "Shelf" ? Number(capacity) : 0,
       currentOccupancy: Number(currentOccupancy),
@@ -707,13 +759,17 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
               </label>
               <input
                 id="shelf"
-                type="number"
-                min="1"
+                type={type === "Shelf" ? "number" : "text"}
+                min={type === "Shelf" ? "1" : undefined}
                 placeholder={
-                  type === "Machine" ? "e.g. 1 (for Machine 01)" : ""
+                  type === "Machine" ? "e.g. Relaxation Machine 01" : ""
                 }
                 value={shelf}
-                onChange={(e) => setShelf(Number(e.target.value))}
+                onChange={(e) => 
+                  type === "Shelf" 
+                    ? setShelf(Number(e.target.value)) 
+                    : setShelf(e.target.value)
+                }
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm disabled:bg-gray-100 disabled:text-gray-500"
                 required
                 disabled={isEditing}
@@ -955,10 +1011,12 @@ const LocationTable: React.FC<LocationTableProps> = ({
 }) => {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
+  // 1. Modified grouping logic: Separate Shelves and Machines
   const groupedData = useMemo(() => {
     const warehouses: {
       [key: string]: {
-        shelves: { [key: number]: LocationItem[] };
+        shelves: { [key: string]: LocationItem[] };
+        machines: LocationItem[]; // Machines are now a flat list per warehouse
         totals: { capacity: number; occupancy: number };
       };
     } = {};
@@ -967,27 +1025,37 @@ const LocationTable: React.FC<LocationTableProps> = ({
       if (!warehouses[location.warehouse]) {
         warehouses[location.warehouse] = {
           shelves: {},
+          machines: [],
           totals: { capacity: 0, occupancy: 0 },
         };
       }
-      if (!warehouses[location.warehouse].shelves[location.shelf]) {
-        warehouses[location.warehouse].shelves[location.shelf] = [];
-      }
-      warehouses[location.warehouse].shelves[location.shelf].push(location);
+
+      // Update Totals
       warehouses[location.warehouse].totals.capacity += location.capacity;
-      warehouses[location.warehouse].totals.occupancy +=
-        location.currentOccupancy;
+      warehouses[location.warehouse].totals.occupancy += location.currentOccupancy;
+
+      if (location.type === "Machine") {
+        // Add directly to machines list
+        warehouses[location.warehouse].machines.push(location);
+      } else {
+        // Group Shelves by Shelf Number
+        if (!warehouses[location.warehouse].shelves[location.shelf]) {
+          warehouses[location.warehouse].shelves[location.shelf] = [];
+        }
+        warehouses[location.warehouse].shelves[location.shelf].push(location);
+      }
     });
 
     return warehouses;
   }, [locations]);
 
   useEffect(() => {
-    // Mở rộng tất cả các warehouse và shelf mặc định khi tải
+    // Expand all warehouses by default
     const initialExpanded = new Set<string>();
     Object.keys(groupedData).forEach((warehouseId) => {
       const whKey = `wh-${warehouseId}`;
       initialExpanded.add(whKey);
+      // Only expand shelves, machines don't need expanding
       Object.keys(groupedData[warehouseId].shelves).forEach((shelfId) => {
         initialExpanded.add(`${whKey}-sh-${shelfId}`);
       });
@@ -1034,19 +1102,15 @@ const LocationTable: React.FC<LocationTableProps> = ({
   };
 
   const handlePrintQr = (location: LocationItem) => {
-    alert(
-      `Printing QR Code for ${location.id}...\nContent: ${location.qrCode}`
-    );
+    alert(`Printing QR Code for ${location.id}...\nContent: ${location.qrCode}`);
   };
 
   const renderOccupancy = (occupancy: number, capacity: number) => {
-    // Handling case where capacity is 0 (e.g., Machine)
     if (capacity === 0) {
       return (
         <span className="text-sm text-gray-500 font-medium">N/A (Machine)</span>
       );
     }
-
     const percentage = capacity > 0 ? (occupancy / capacity) * 100 : 0;
     const barColor =
       percentage > 90
@@ -1112,21 +1176,25 @@ const LocationTable: React.FC<LocationTableProps> = ({
               const whKey = `wh-${warehouseId}`;
               const isWhExpanded = expandedRows.has(whKey);
 
-              const warehouseLocationIds = Object.values(warehouseData.shelves)
+              // Calculate IDs for Select All in Warehouse
+              const shelfLocationIds = Object.values(warehouseData.shelves)
                 .flat()
                 .map((loc) => loc.id);
-              const selectedInWarehouseCount = warehouseLocationIds.filter(
-                (id) => selectedIds.has(id)
+              const machineLocationIds = warehouseData.machines.map((loc) => loc.id);
+              const allWarehouseIds = [...shelfLocationIds, ...machineLocationIds];
+
+              const selectedInWarehouseCount = allWarehouseIds.filter((id) =>
+                selectedIds.has(id)
               ).length;
               const isAllInWarehouseSelected =
-                warehouseLocationIds.length > 0 &&
-                selectedInWarehouseCount === warehouseLocationIds.length;
+                allWarehouseIds.length > 0 &&
+                selectedInWarehouseCount === allWarehouseIds.length;
               const isSomeInWarehouseSelected =
                 selectedInWarehouseCount > 0 && !isAllInWarehouseSelected;
 
               return (
                 <React.Fragment key={whKey}>
-                  {/* Warehouse Row */}
+                  {/* --- LEVEL 1: WAREHOUSE ROW --- */}
                   <tr className="bg-gray-100 font-bold">
                     <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-800">
                       <div className="flex items-center">
@@ -1134,13 +1202,12 @@ const LocationTable: React.FC<LocationTableProps> = ({
                           type="checkbox"
                           className="h-4 w-4 text-blue-600 border-gray-300 rounded mr-4"
                           ref={(el) => {
-                            if (el)
-                              el.indeterminate = isSomeInWarehouseSelected;
+                            if (el) el.indeterminate = isSomeInWarehouseSelected;
                           }}
                           checked={isAllInWarehouseSelected}
                           onChange={() =>
                             handleSelectGroup(
-                              warehouseLocationIds,
+                              allWarehouseIds,
                               !isAllInWarehouseSelected
                             )
                           }
@@ -1167,176 +1234,142 @@ const LocationTable: React.FC<LocationTableProps> = ({
                     <td colSpan={4} className="px-6 py-3"></td>
                   </tr>
 
-                  {isWhExpanded &&
-                    Object.entries(warehouseData.shelves).map(
-                      ([shelfId, locationsOnShelf]) => {
-                        const shelfKey = `${whKey}-sh-${shelfId}`;
-                        const isShelfExpanded = expandedRows.has(shelfKey);
-                        const shelfTotals = locationsOnShelf.reduce(
-                          (acc, loc) => ({
-                            capacity: acc.capacity + loc.capacity,
-                            occupancy: acc.occupancy + loc.currentOccupancy,
-                          }),
-                          { capacity: 0, occupancy: 0 }
-                        );
+                  {isWhExpanded && (
+                    <>
+                      {/* --- SECTION A: SHELVES (Nested) --- */}
+                      {Object.entries(warehouseData.shelves).map(
+                        ([shelfId, locationsOnShelf]) => {
+                          const shelfKey = `${whKey}-sh-${shelfId}`;
+                          const isShelfExpanded = expandedRows.has(shelfKey);
+                          const shelfTotals = locationsOnShelf.reduce(
+                            (acc, loc) => ({
+                              capacity: acc.capacity + loc.capacity,
+                              occupancy: acc.occupancy + loc.currentOccupancy,
+                            }),
+                            { capacity: 0, occupancy: 0 }
+                          );
 
-                        // Determine if this group is purely machines or shelves (based on first item)
-                        const groupType =
-                          locationsOnShelf[0]?.type === "Machine"
-                            ? "Machine"
-                            : "Shelf";
+                          const currentShelfIds = locationsOnShelf.map((loc) => loc.id);
+                          const selectedInShelfCount = currentShelfIds.filter((id) =>
+                            selectedIds.has(id)
+                          ).length;
+                          const isAllInShelfSelected =
+                            currentShelfIds.length > 0 &&
+                            selectedInShelfCount === currentShelfIds.length;
+                          const isSomeInShelfSelected =
+                            selectedInShelfCount > 0 && !isAllInShelfSelected;
 
-                        const shelfLocationIds = locationsOnShelf.map(
-                          (loc) => loc.id
-                        );
-                        const selectedInShelfCount = shelfLocationIds.filter(
-                          (id) => selectedIds.has(id)
-                        ).length;
-                        const isAllInShelfSelected =
-                          shelfLocationIds.length > 0 &&
-                          selectedInShelfCount === shelfLocationIds.length;
-                        const isSomeInShelfSelected =
-                          selectedInShelfCount > 0 && !isAllInShelfSelected;
-
-                        return (
-                          <React.Fragment key={shelfKey}>
-                            {/* Shelf/Machine Group Row */}
-                            <tr className="bg-gray-50">
-                              <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-700 font-semibold">
-                                <div className="flex items-center ">
-                                  {" "}
-                                  {/* INDENT LEVEL 1 */}
-                                  <input
-                                    type="checkbox"
-                                    className="h-4 w-4 text-blue-600 border-gray-300 rounded mr-10"
-                                    ref={(el) => {
-                                      if (el)
-                                        el.indeterminate =
-                                          isSomeInShelfSelected;
-                                    }}
-                                    checked={isAllInShelfSelected}
-                                    onChange={() =>
-                                      handleSelectGroup(
-                                        shelfLocationIds,
-                                        !isAllInShelfSelected
-                                      )
-                                    }
-                                  />
-                                  <div
-                                    className="flex items-center cursor-pointer hover:bg-gray-100"
-                                    onClick={() => toggleRow(shelfKey)}
-                                  >
-                                    {isShelfExpanded ? (
-                                      <ChevronDown className="h-4 w-4 mr-2" />
-                                    ) : (
-                                      <ChevronRight className="h-4 w-4 mr-2" />
-                                    )}
-                                    {groupType} {shelfId}
-                                  </div>
-                                </div>
-                              </td>
-                              <td className="px-6 py-3">
-                                {renderOccupancy(
-                                  shelfTotals.occupancy,
-                                  shelfTotals.capacity
-                                )}
-                              </td>
-                              <td colSpan={4} className="px-6 py-3"></td>
-                            </tr>
-
-                            {isShelfExpanded &&
-                              locationsOnShelf.map((location) => (
-                                // Pallet/Location Row
-                                <tr
-                                  key={location.id}
-                                  className="hover:bg-blue-50"
-                                >
-                                  <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
-                                    <div className="flex items-center ">
-                                      {" "}
-                                      {/* INDENT LEVEL 2 */}
-                                      <input
-                                        type="checkbox"
-                                        className="h-4 w-4 text-blue-600 border-gray-300 rounded mr-20"
-                                        checked={selectedIds.has(location.id)}
-                                        onChange={(e) =>
-                                          handleSelectOne(
-                                            location.id,
-                                            e.target.checked
-                                          )
-                                        }
-                                      />
-                                      <span
-                                        className="hover:text-blue-600 hover:underline cursor-pointer"
-                                        onClick={() => onViewItems(location)}
-                                      >
-                                        {location.id}
-                                      </span>
+                          return (
+                            <React.Fragment key={shelfKey}>
+                              {/* Level 2: Shelf Header */}
+                              <tr className="bg-gray-50">
+                                <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-700 font-semibold">
+                                  <div className="flex items-center">
+                                    {/* Indent 1 */}
+                                    <div className="w-6 shrink-0" /> 
+                                    <input
+                                      type="checkbox"
+                                      className="h-4 w-4 text-blue-600 border-gray-300 rounded mr-4"
+                                      ref={(el) => {
+                                        if (el) el.indeterminate = isSomeInShelfSelected;
+                                      }}
+                                      checked={isAllInShelfSelected}
+                                      onChange={() =>
+                                        handleSelectGroup(
+                                          currentShelfIds,
+                                          !isAllInShelfSelected
+                                        )
+                                      }
+                                    />
+                                    <div
+                                      className="flex items-center cursor-pointer hover:bg-gray-100"
+                                      onClick={() => toggleRow(shelfKey)}
+                                    >
+                                      {isShelfExpanded ? (
+                                        <ChevronDown className="h-4 w-4 mr-2" />
+                                      ) : (
+                                        <ChevronRight className="h-4 w-4 mr-2" />
+                                      )}
+                                      Shelf {shelfId}
                                     </div>
-                                  </td>
-                                  <td className="px-6 py-3">
-                                    {renderOccupancy(
-                                      location.currentOccupancy,
-                                      location.capacity
-                                    )}
-                                  </td>
-                                  <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-500">
-                                    {location.isQrPrinted ? (
-                                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                        Yes
-                                      </span>
-                                    ) : (
-                                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                                        No
-                                      </span>
-                                    )}
-                                  </td>
-                                  <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-500">
-                                    {location.enabled ? (
-                                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                        Enabled
-                                      </span>
-                                    ) : (
-                                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                                        Disabled
-                                      </span>
-                                    )}
-                                  </td>
-                                  <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-500 max-w-xs truncate">
-                                    {location.description}
-                                  </td>
-                                  <td className="px-6 py-3 whitespace-nowrap text-right text-sm font-medium">
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      onClick={() => handlePrintQr(location)}
-                                      title="Print QR Code"
-                                    >
-                                      <Printer className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      onClick={() => onEdit(location)}
-                                      title="Edit Location"
-                                    >
-                                      <Edit className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      onClick={() => onDelete(location.id)}
-                                      title="Delete Location"
-                                    >
-                                      <Trash2 className="h-4 w-4 text-red-600 hover:text-red-800" />
-                                    </Button>
-                                  </td>
-                                </tr>
-                              ))}
-                          </React.Fragment>
-                        );
-                      }
-                    )}
+                                  </div>
+                                </td>
+                                <td className="px-6 py-3">
+                                  {renderOccupancy(
+                                    shelfTotals.occupancy,
+                                    shelfTotals.capacity
+                                  )}
+                                </td>
+                                <td colSpan={4} className="px-6 py-3"></td>
+                              </tr>
+
+                              {/* Level 3: Shelf Items */}
+                              {isShelfExpanded &&
+                                locationsOnShelf.map((location) => (
+                                  <tr key={location.id} className="hover:bg-blue-50">
+                                    <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                                      <div className="flex items-center">
+                                         {/* Indent 2 */}
+                                        <div className="w-16 shrink-0" />
+                                        <input
+                                          type="checkbox"
+                                          className="h-4 w-4 text-blue-600 border-gray-300 rounded mr-4"
+                                          checked={selectedIds.has(location.id)}
+                                          onChange={(e) =>
+                                            handleSelectOne(
+                                              location.id,
+                                              e.target.checked
+                                            )
+                                          }
+                                        />
+                                        <span
+                                          className="hover:text-blue-600 hover:underline cursor-pointer"
+                                          onClick={() => onViewItems(location)}
+                                        >
+                                          {location.id}
+                                        </span>
+                                      </div>
+                                    </td>
+                                    {renderCommonCells(location, onEdit, onDelete, handlePrintQr, renderOccupancy)}
+                                  </tr>
+                                ))}
+                            </React.Fragment>
+                          );
+                        }
+                      )}
+
+                      {/* --- SECTION B: MACHINES (Direct List) --- */}
+                      {warehouseData.machines.length > 0 && (
+                        warehouseData.machines.map((machine) => (
+                          <tr key={machine.id} className="hover:bg-blue-50 bg-white">
+                            <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                              <div className="flex items-center">
+                                {/* Indent 1 (Aligns with Shelf Headers visually, but is an Item) */}
+                                <div className="w-10 shrink-0" />
+                                <input
+                                  type="checkbox"
+                                  className="h-4 w-4 text-blue-600 border-gray-300 rounded mr-4"
+                                  checked={selectedIds.has(machine.id)}
+                                  onChange={(e) =>
+                                    handleSelectOne(machine.id, e.target.checked)
+                                  }
+                                />
+                                <div className="flex flex-col">
+                                  <span className="font-semibold text-gray-800">
+                                    {machine.shelf} {/* Machine Name */}
+                                  </span>
+                                  <span className="text-xs text-gray-500 font-mono">
+                                    {machine.id}
+                                  </span>
+                                </div>
+                              </div>
+                            </td>
+                            {renderCommonCells(machine, onEdit, onDelete, handlePrintQr, renderOccupancy)}
+                          </tr>
+                        ))
+                      )}
+                    </>
+                  )}
                 </React.Fragment>
               );
             })}
@@ -1346,6 +1379,72 @@ const LocationTable: React.FC<LocationTableProps> = ({
     </div>
   );
 };
+
+// Helper to render common columns (Occupancy to Actions) to avoid code duplication
+const renderCommonCells = (
+    location: LocationItem, 
+    onEdit: (l: LocationItem) => void, 
+    onDelete: (id: string) => void, 
+    handlePrintQr: (l: LocationItem) => void,
+    renderOccupancy: (occ: number, cap: number) => React.ReactNode
+) => (
+  <>
+    <td className="px-6 py-3">
+      {renderOccupancy(location.currentOccupancy, location.capacity)}
+    </td>
+    <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-500">
+      {location.isQrPrinted ? (
+        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+          Yes
+        </span>
+      ) : (
+        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+          No
+        </span>
+      )}
+    </td>
+    <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-500">
+      {location.enabled ? (
+        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+          Enabled
+        </span>
+      ) : (
+        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+          Disabled
+        </span>
+      )}
+    </td>
+    <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-500 max-w-xs truncate">
+      {location.description}
+    </td>
+    <td className="px-6 py-3 whitespace-nowrap text-right text-sm font-medium">
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={() => handlePrintQr(location)}
+        title="Print QR Code"
+      >
+        <Printer className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={() => onEdit(location)}
+        title="Edit Location"
+      >
+        <Edit className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={() => onDelete(location.id)}
+        title="Delete Location"
+      >
+        <Trash2 className="h-4 w-4 text-red-600 hover:text-red-800" />
+      </Button>
+    </td>
+  </>
+);
 
 // --- MAIN PAGE COMPONENT ---
 
@@ -1360,6 +1459,7 @@ const LocationManagementPage = () => {
   const [locations, setLocations] = useState<LocationItem[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabKey>("fabric");
+  const [fabricSubTab, setFabricSubTab] = useState<"Shelf" | "Machine">("Shelf"); // New sub-tab state
   const [selectedLocationIds, setSelectedLocationIds] = useState<Set<string>>(
     new Set()
   );
@@ -1388,10 +1488,10 @@ const LocationManagementPage = () => {
     }, 1000);
   }, []);
 
-  // Reset selection when tab or filter changes
+  // Reset selection when tab, filter, or fabric sub-tab changes
   useEffect(() => {
     setSelectedLocationIds(new Set());
-  }, [activeTab, filter]);
+  }, [activeTab, filter, fabricSubTab]);
 
   // --- Handlers for Location Form Modal ---
   const handleOpenAddModal = () => {
@@ -1510,9 +1610,13 @@ const LocationManagementPage = () => {
         filter.country === "all" || loc.country === filter.country;
       const matchFactory =
         filter.factory === "all" || loc.factory === filter.factory;
-      return matchPurpose && matchCountry && matchFactory;
+      
+      // When fabric tab is active, also filter by sub-tab type
+      const matchType = activeTab === "fabric" ? loc.type === fabricSubTab : true;
+      
+      return matchPurpose && matchCountry && matchFactory && matchType;
     });
-  }, [locations, activeTab, filter]);
+  }, [locations, activeTab, filter, fabricSubTab]);
 
   if (isLoading || !locations) {
     return (
@@ -1555,6 +1659,34 @@ const LocationManagementPage = () => {
             ))}
           </nav>
         </div>
+        
+        {/* Sub-tabs for Fabric Warehouse */}
+        {activeTab === "fabric" && (
+          <div className="mt-4 border-b border-gray-200">
+            <nav className="-mb-px flex space-x-4" aria-label="Fabric Sub-tabs">
+              <button
+                onClick={() => setFabricSubTab("Shelf")}
+                className={`${
+                  fabricSubTab === "Shelf"
+                    ? "border-blue-400 text-blue-600 bg-blue-50"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                } whitespace-nowrap py-2 px-3 border-b-2 font-medium text-sm rounded-t-md`}
+              >
+                Shelf
+              </button>
+              <button
+                onClick={() => setFabricSubTab("Machine")}
+                className={`${
+                  fabricSubTab === "Machine"
+                    ? "border-blue-400 text-blue-600 bg-blue-50"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                } whitespace-nowrap py-2 px-3 border-b-2 font-medium text-sm rounded-t-md`}
+              >
+                Machine
+              </button>
+            </nav>
+          </div>
+        )}
       </div>
 
       <div style={{ height: "calc(100vh - 240px)" }}>
