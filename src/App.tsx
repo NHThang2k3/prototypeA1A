@@ -92,7 +92,7 @@ import ScanOutBufferPage from "./pages/Buffer/ScanOutBufferPage";
 import RelaxTimeStandardPage from "./pages/Warehouse/RelaxTimeStandardPage";
 import StockTaking from "./pages/Warehouse/StockTaking";
 import StockTakingWarehouse from "./pages/Warehouse/StockTakingWarehouse";
-import PermissionManagementPage from "./pages/FactorySetting/PermissionManagementPage";
+import PermissionManagementPage from "./pages/FactorySetting/RoleManagementPage";
 
 function App() {
   return (
