@@ -1,5 +1,3 @@
-// src/pages/import-packing-list/ImportPackingListFormPage.tsx
-
 import React, { useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import {
@@ -13,13 +11,14 @@ import {
 import * as XLSX from "xlsx";
 import { ColumnDef } from "@tanstack/react-table";
 
+// Đảm bảo đường dẫn import đúng với dự án của bạn
 import { Button } from "@/components/ui/button";
 import { CustomTable } from "@/components/ui/custom-table";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-// --- TYPE DEFINITIONS (Unchanged) ---
-interface PackingListItem {
+// --- TYPE DEFINITIONS ---
+export interface PackingListItem {
   id: string;
   poNumber: string;
   itemCode: string;
@@ -40,29 +39,35 @@ interface PackingListItem {
   description: string;
 }
 
-// --- LOCAL COMPONENT: ActionToolbar (Refactored) ---
+// --- LOCAL COMPONENT: ActionToolbar ---
 interface ActionToolbarProps {
   onSubmit: () => void;
   isSubmitting: boolean;
+  totalItems: number;
 }
 
 const ActionToolbar: React.FC<ActionToolbarProps> = ({
   onSubmit,
   isSubmitting,
+  totalItems,
 }) => {
   return (
-    <div className="sticky bottom-0 bg-background/90 backdrop-blur-sm border-t p-4 z-10">
-      <div className="max-w-7xl mx-auto flex justify-end items-center">
-        <Button onClick={onSubmit} disabled={isSubmitting}>
+    <div className="sticky bottom-0 bg-background/95 backdrop-blur-sm border-t p-4 z-10 mt-auto">
+      <div className="flex justify-between items-center">
+        <div className="text-sm text-muted-foreground">
+          Total items to import:{" "}
+          <span className="font-medium text-foreground">{totalItems}</span>
+        </div>
+        <Button onClick={onSubmit} disabled={isSubmitting || totalItems === 0}>
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {isSubmitting ? "Processing..." : "Complete"}
+          {isSubmitting ? "Importing..." : "Confirm Import"}
         </Button>
       </div>
     </div>
   );
 };
 
-// --- LOCAL COMPONENT: FileUploadZone (Refactored for Multiple Files) ---
+// --- LOCAL COMPONENT: FileUploadZone ---
 type FileStatus = "parsing" | "success" | "error";
 
 interface ProcessedFile {
@@ -105,7 +110,6 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({
   const [processedFiles, setProcessedFiles] = useState<ProcessedFile[]>([]);
 
   const parseFile = async (file: File): Promise<PackingListItem[]> => {
-    // Parsing logic remains unchanged
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (event) => {
@@ -116,8 +120,13 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({
           const sheetName = workbook.SheetNames[0];
           if (!sheetName) throw new Error("Excel file has no sheets.");
           const worksheet = workbook.Sheets[sheetName];
-          const json: { [key: string]: string | number }[] =
-            XLSX.utils.sheet_to_json(worksheet, { raw: false, defval: "" });
+
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const json: any[] = XLSX.utils.sheet_to_json(worksheet, {
+            raw: false,
+            defval: "",
+          });
+
           if (json.length === 0) {
             throw new Error("File has no data or the first sheet is empty.");
           }
@@ -134,7 +143,7 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({
             .map((row, index) => {
               if (Object.values(row).every((val) => val === "")) return null;
               const newItem: Partial<PackingListItem> = {
-                id: `${file.name}-${index}`,
+                id: `${file.name}-${index}-${Date.now()}`,
               };
               for (const header of requiredHeaders) {
                 const key = headerMapping[header];
@@ -146,13 +155,11 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({
                 ) {
                   const numValue = parseFloat(String(value));
                   if (isNaN(numValue)) {
-                    throw new Error(
-                      `Invalid number at row ${
-                        index + 2
-                      }, column "${header}": "${value}"`
-                    );
+                    // Fallback to 0 or throw error strictly
+                    newItem[key] = 0;
+                  } else {
+                    newItem[key] = numValue;
                   }
-                  newItem[key] = numValue;
                 } else {
                   newItem[key] = String(value ?? "");
                 }
@@ -160,6 +167,7 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({
               return newItem as PackingListItem;
             })
             .filter((item): item is PackingListItem => item !== null);
+
           if (parsedItems.length === 0) {
             throw new Error("No valid data found in the file.");
           }
@@ -179,13 +187,13 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
-      // Logic remains unchanged
       const newFilesToProcess = acceptedFiles.filter(
         (file) =>
           !processedFiles.some(
             (processedFile) => processedFile.file.name === file.name
           )
       );
+
       newFilesToProcess.forEach((file) => {
         setProcessedFiles((prev) => [
           ...prev,
@@ -237,22 +245,20 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({
       <div
         {...getRootProps()}
         className={cn(
-          "w-full border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-colors",
+          "w-full border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors bg-muted/20",
           isDragActive
-            ? "border-primary bg-primary-foreground"
-            : "border-input hover:border-muted-foreground",
+            ? "border-primary bg-primary/10"
+            : "border-input hover:border-primary/50",
           processedFiles.length > 0 && "mb-6"
         )}
       >
         <input {...getInputProps()} />
         <div className="flex flex-col items-center text-muted-foreground">
           <UploadCloud className="w-10 h-10 mb-3" />
-          <p className="font-semibold">
-            Drag and drop files here, or click to select files
+          <p className="font-semibold text-foreground">
+            Drag & drop files here, or click to select
           </p>
-          <p className="text-sm">
-            Only Excel files (.xls, .xlsx) are supported
-          </p>
+          <p className="text-xs mt-1">Supports .xlsx, .xls</p>
         </div>
       </div>
 
@@ -262,46 +268,39 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({
             <div
               key={file.name}
               className={cn(
-                "w-full p-4 rounded-md border flex items-center justify-between",
-                status === "success" && "bg-green-50 border-green-200",
-                status === "error" &&
-                  "bg-destructive-foreground border-destructive"
+                "w-full p-3 rounded-md border flex items-center justify-between text-sm",
+                status === "success" && "bg-green-50/50 border-green-200",
+                status === "error" && "bg-red-50/50 border-red-200"
               )}
             >
-              <div className="flex items-center overflow-hidden">
-                <FileText className="w-6 h-6 text-muted-foreground mr-3 flex-shrink-0" />
+              <div className="flex items-center overflow-hidden gap-3">
+                <FileText className="w-5 h-5 text-muted-foreground flex-shrink-0" />
                 <div className="flex-grow overflow-hidden">
-                  <p
-                    className="font-medium text-foreground truncate"
-                    title={file.name}
-                  >
+                  <p className="font-medium truncate" title={file.name}>
                     {file.name}
                   </p>
-                  <p className="text-sm text-muted-foreground">
-                    {(file.size / 1024).toFixed(2)} KB
-                  </p>
                   {status === "error" && (
-                    <p className="text-sm text-destructive mt-1">{error}</p>
+                    <p className="text-xs text-red-600 mt-0.5">{error}</p>
                   )}
                 </div>
               </div>
-              <div className="flex items-center space-x-3 ml-4 flex-shrink-0">
+              <div className="flex items-center gap-2 flex-shrink-0">
                 {status === "parsing" && (
-                  <Loader2 className="w-5 h-5 text-primary animate-spin" />
+                  <Loader2 className="w-4 h-4 text-primary animate-spin" />
                 )}
                 {status === "success" && (
-                  <CheckCircle2 className="w-5 h-5 text-green-600" />
+                  <CheckCircle2 className="w-4 h-4 text-green-600" />
                 )}
                 {status === "error" && (
-                  <AlertCircle className="w-5 h-5 text-destructive" />
+                  <AlertCircle className="w-4 h-4 text-red-600" />
                 )}
                 <Button
                   variant="ghost"
                   size="icon"
+                  className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
                   onClick={() => handleRemoveFile(file.name)}
-                  title="Remove file"
                 >
-                  <XCircle className="w-5 h-5" />
+                  <XCircle className="w-4 h-4" />
                 </Button>
               </div>
             </div>
@@ -312,14 +311,11 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({
   );
 };
 
-// --- LOCAL COMPONENT: PreviewTable (Refactored) ---
+// --- LOCAL COMPONENT: PreviewTable ---
 const columns: ColumnDef<PackingListItem>[] = [
   { accessorKey: "poNumber", header: "PO Number" },
   { accessorKey: "itemCode", header: "Item Code" },
   { accessorKey: "factory", header: "Factory" },
-  { accessorKey: "supplier", header: "Supplier" },
-  { accessorKey: "invoiceNo", header: "Invoice No" },
-  { accessorKey: "colorCode", header: "Color Code" },
   { accessorKey: "color", header: "Color" },
   { accessorKey: "rollNo", header: "Roll No" },
   { accessorKey: "lotNo", header: "Lot No" },
@@ -330,19 +326,11 @@ const columns: ColumnDef<PackingListItem>[] = [
   },
   {
     accessorKey: "netWeight",
-    header: "Net Weight (Kgs)",
+    header: "Net (Kgs)",
     cell: ({ row }) => row.original.netWeight.toFixed(2),
-  },
-  {
-    accessorKey: "grossWeight",
-    header: "Gross Weight (Kgs)",
-    cell: ({ row }) => row.original.grossWeight.toFixed(2),
   },
   { accessorKey: "width", header: "Width" },
   { accessorKey: "location", header: "Location" },
-  { accessorKey: "qrCode", header: "QR Code" },
-  { accessorKey: "dateInHouse", header: "Date In House" },
-  { accessorKey: "description", header: "Description" },
 ];
 
 interface PreviewTableProps {
@@ -351,19 +339,25 @@ interface PreviewTableProps {
 
 const PreviewTable: React.FC<PreviewTableProps> = ({ items }) => {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>2. Data Preview ({items.length} total rows)</CardTitle>
+    <Card className="border-0 shadow-none">
+      <CardHeader className="px-0 pt-0">
+        <CardTitle className="text-lg">Data Preview</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-0">
         <CustomTable columns={columns} data={items} showCheckbox={false} />
       </CardContent>
     </Card>
   );
 };
 
-// --- MAIN PAGE COMPONENT (Refactored) ---
-const ImportPackingListFormPage: React.FC = () => {
+// --- MAIN PAGE COMPONENT ---
+interface ImportPackingListFormPageProps {
+  onSuccess?: () => void;
+}
+
+const ImportPackingListFormPage: React.FC<ImportPackingListFormPageProps> = ({
+  onSuccess,
+}) => {
   const [items, setItems] = useState<PackingListItem[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -378,50 +372,50 @@ const ImportPackingListFormPage: React.FC = () => {
   }, []);
 
   const handleSubmit = () => {
-    // Business logic remains unchanged
-    if (items.length === 0) {
-      alert("There are no valid items to submit.");
-      return;
-    }
+    if (items.length === 0) return;
+
     setIsSubmitting(true);
-    console.log("Submitting the following items:", items);
+    console.log("Submitting items:", items);
+
+    // Giả lập API call
     setTimeout(() => {
       console.log("Submission successful!");
       setIsSubmitting(false);
       setItems([]);
-      alert("Inbound shipment created successfully!");
-    }, 2000);
+      alert(`Successfully imported ${items.length} items!`);
+
+      if (onSuccess) {
+        onSuccess();
+      }
+    }, 1500);
   };
 
   return (
-    <>
-      <div className="space-y-6 pb-24">
+    <div className="flex flex-col h-full bg-background">
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
         <div>
-          <h1 className="text-2xl font-bold">Inbound from Packing List File</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Upload one or more Excel files to create a batch inbound shipment.
-          </p>
+          <h2 className="text-lg font-semibold mb-2">1. Upload Files</h2>
+          <FileUploadZone
+            onFileAdded={handleFileAdded}
+            onFileRemoved={handleFileRemoved}
+          />
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>1. Upload Packing List Files</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <FileUploadZone
-              onFileAdded={handleFileAdded}
-              onFileRemoved={handleFileRemoved}
-            />
-          </CardContent>
-        </Card>
-
-        {items.length > 0 && <PreviewTable items={items} />}
+        {items.length > 0 && (
+          <div>
+            <PreviewTable items={items} />
+          </div>
+        )}
       </div>
 
-      {items.length > 0 && (
-        <ActionToolbar onSubmit={handleSubmit} isSubmitting={isSubmitting} />
-      )}
-    </>
+      {/* Sticky Footer Action */}
+      <ActionToolbar
+        onSubmit={handleSubmit}
+        isSubmitting={isSubmitting}
+        totalItems={items.length}
+      />
+    </div>
   );
 };
 

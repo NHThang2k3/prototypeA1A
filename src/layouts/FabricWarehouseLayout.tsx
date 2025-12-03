@@ -14,7 +14,7 @@ import {
   Boxes,
   ScrollText,
   ListPlus,
-  Upload,
+  // Upload,
   ChevronDown,
   ChevronLeft,
   Zap,
@@ -58,12 +58,7 @@ const sidebarNavItems: NavItem[] = [
             icon: LayoutDashboard,
             key: "dashboard",
           },
-          {
-            title: "Inventory",
-            path: "/fabric-warehouse/inventory",
-            icon: Boxes,
-            key: "inventory",
-          },
+
           {
             title: "Kanban Board",
             path: "/fabric-warehouse/kanban",
@@ -83,18 +78,56 @@ const sidebarNavItems: NavItem[] = [
             icon: ListPlus,
             key: "packing-list",
           },
-          {
-            title: "Packing List Form",
-            path: "/fabric-warehouse/packing-list-form",
-            icon: Upload,
-            key: "packing-list-form",
-          },
+          // {
+          //   title: "Packing List Form",
+          //   path: "/fabric-warehouse/packing-list-form",
+          //   icon: Upload,
+          //   key: "packing-list-form",
+          // },
         ],
       },
       {
         title: "Inventory Tracking",
         icon: Boxes,
         key: "productivity-inventory",
+        children: [
+          {
+            title: "Inventory",
+            path: "/fabric-warehouse/inventory",
+            icon: Boxes,
+            key: "inventory",
+          },
+          {
+            title: "Relax Fabric Screen",
+            path: "/fabric-warehouse/relax/fabric",
+            icon: Clock,
+            key: "relax-fabric",
+          },
+        ],
+      },
+      {
+        title: "Delivery transaction",
+        icon: Network,
+        key: "productivity-delivery",
+        children: [
+          {
+            title: "Issue Fabric Form",
+            path: "/fabric-warehouse/issue/fabric",
+            icon: FileOutput,
+            key: "issue-fabric",
+          },
+          {
+            title: "Daily Issue Fabric Report",
+            path: "/fabric-warehouse/reports/issues",
+            icon: ScrollText,
+            key: "reports-issues",
+          },
+        ],
+      },
+      {
+        title: "Scan QR",
+        icon: QrCode,
+        key: "productivity-qr",
         children: [
           {
             title: "Scan QR Location",
@@ -113,43 +146,6 @@ const sidebarNavItems: NavItem[] = [
             path: "/fabric-warehouse/qr-scan-request",
             icon: QrCode,
             key: "qr-scan-request",
-          },
-          {
-            title: "Daily Issue Fabric Report",
-            path: "/fabric-warehouse/reports/issues",
-            icon: ScrollText,
-            key: "reports-issues",
-          },
-          {
-            title: "Stock Taking",
-            path: "/fabric-warehouse/stock-taking",
-            icon: ListPlus,
-            key: "stock-taking",
-          },
-          {
-            title: "Stock Taking Warehouse",
-            path: "/fabric-warehouse/stock-taking-warehouse",
-            icon: ListPlus,
-            key: "stock-taking-warehouse",
-          },
-        ],
-      },
-      {
-        title: "Delivery transaction",
-        icon: Network,
-        key: "productivity-delivery",
-        children: [
-          {
-            title: "Issue Fabric Form",
-            path: "/fabric-warehouse/issue/fabric",
-            icon: FileOutput,
-            key: "issue-fabric",
-          },
-          {
-            title: "Relax Fabric Screen",
-            path: "/fabric-warehouse/relax/fabric",
-            icon: Clock,
-            key: "relax-fabric",
           },
         ],
       },

@@ -1,5 +1,3 @@
-// path: src/pages/packing-list-management/PackingListManagementPage.tsx
-
 import { useState, useEffect, useMemo, useCallback, type FC } from "react";
 import { v4 as uuidv4 } from "uuid";
 import {
@@ -12,8 +10,6 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import { type ColumnDef } from "@tanstack/react-table";
-// Thêm vào phần UI Imports
-import { Checkbox } from "@/components/ui/checkbox";
 
 // --- UI Imports ---
 import { Button } from "@/components/ui/button";
@@ -29,12 +25,12 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Table,
   TableBody,
@@ -52,8 +48,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-// --- START OF TYPES (from types.ts) ---
+// --- IMPORT COMPONENT FORM ---
+import ImportPackingListFormPage from "./ImportPackingListFormPage";
 
+// --- TYPES ---
 export type PrintStatus = "NOT_PRINTED" | "PRINTED";
 export type QCStatus = "Passed" | "Failed" | "Pending";
 
@@ -83,13 +81,7 @@ export interface FabricRollItem {
   printStatus: PrintStatus;
 }
 
-export interface PackingListItem {
-  id: string;
-}
-
-// --- END OF TYPES ---
-
-// --- START OF MOCK DATA ---
+// --- MOCK DATA ---
 const mockFabricRolls: FabricRollItem[] = [
   {
     id: uuidv4(),
@@ -109,7 +101,7 @@ const mockFabricRolls: FabricRollItem[] = [
     width: '68"',
     location: "F2-03-05",
     qrCode: "QR-76433",
-    dateInHouse: "2/18/203",
+    dateInHouse: "2/18/2023",
     qcCheck: false,
     qcDate: "4/29/2023",
     qcBy: "John Doe",
@@ -141,7 +133,6 @@ const mockFabricRolls: FabricRollItem[] = [
     comment: "No issues found",
     printStatus: "NOT_PRINTED",
   },
-  // Thêm dữ liệu mẫu để test filter
   {
     id: uuidv4(),
     poNumber: "TEST-001",
@@ -168,9 +159,8 @@ const mockFabricRolls: FabricRollItem[] = [
     printStatus: "PRINTED",
   },
 ];
-// --- END OF MOCK DATA ---
 
-// --- START OF COMPONENTS ---
+// --- COMPONENTS ---
 
 interface StatusBadgeProps {
   status: PrintStatus;
@@ -210,7 +200,6 @@ const PageHeader: FC<PageHeaderProps> = ({ onImportClick }) => {
   );
 };
 
-// 1. UPDATE: Định nghĩa Props cho Filter Component
 interface PackingListFiltersProps {
   searchTerm: string;
   onSearchChange: (value: string) => void;
@@ -220,7 +209,6 @@ interface PackingListFiltersProps {
   onQcStatusChange: (value: string) => void;
 }
 
-// 2. UPDATE: Nhận props và gắn vào các input/select
 const PackingListFilters: FC<PackingListFiltersProps> = ({
   searchTerm,
   onSearchChange,
@@ -279,7 +267,6 @@ const PackingListFilters: FC<PackingListFiltersProps> = ({
             </Select>
           </div>
         </div>
-        {/* Button Search có thể dùng để trigger force reload nếu cần, ở đây ta dùng reactive filter nên nút này mang tính trang trí hoặc clear filter */}
         <div className="mt-4 flex justify-end gap-2">
           <Button
             variant="outline"
@@ -337,73 +324,45 @@ const TableSkeleton: FC = () => {
             </TableBody>
           </Table>
         </div>
-        <div className="flex items-center justify-between space-x-2 py-4">
-          <Skeleton className="h-5 w-32" />
-          <div className="flex items-center gap-4">
-            <Skeleton className="h-8 w-32" />
-            <Skeleton className="h-8 w-40" />
-          </div>
-        </div>
       </CardContent>
     </Card>
   );
 };
 
-// --- Placeholder Modal Imports ---
-const ImportPackingListFormPage: FC<{
-  items: PackingListItem[];
-  onItemsChange: (items: PackingListItem[]) => void;
-}> = ({ onItemsChange }) => (
-  <div className="text-center p-10 border-2 border-dashed rounded-lg">
-    <p className="text-muted-foreground">Import Packing List Form UI</p>
-    <Button
-      variant="outline"
-      size="sm"
-      className="mt-4"
-      onClick={() => onItemsChange([{ id: "sample-1" }, { id: "sample-2" }])}
-    >
-      Simulate File Upload
-    </Button>
-  </div>
-);
-
+// --- IMPORT MODAL WRAPPER ---
 interface ImportPackingListModalProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
+  onSuccess: () => void;
 }
+
 const ImportPackingListModal: FC<ImportPackingListModalProps> = ({
   isOpen,
   onOpenChange,
+  onSuccess,
 }) => {
-  const [items, setItems] = useState<PackingListItem[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleSubmit = () => {
-    setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
-      onOpenChange(false);
-    }, 1000);
-  };
-
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl">
-        <DialogHeader>
+      <DialogContent className="max-w-7xl h-[90vh] flex flex-col p-0 gap-0 bg-gray-50/50">
+        <DialogHeader className="p-6 border-b bg-background flex-shrink-0">
           <DialogTitle>Import Packing List</DialogTitle>
         </DialogHeader>
-        <ImportPackingListFormPage items={items} onItemsChange={setItems} />
-        <DialogFooter>
-          <Button onClick={handleSubmit} disabled={isSubmitting}>
-            {isSubmitting ? "Submitting..." : "Submit"}
-          </Button>
-        </DialogFooter>
+
+        {/* Form Container */}
+        <div className="flex-1 overflow-hidden">
+          <ImportPackingListFormPage
+            onSuccess={() => {
+              onOpenChange(false);
+              onSuccess();
+            }}
+          />
+        </div>
       </DialogContent>
     </Dialog>
   );
 };
 
-// --- MAIN PAGE COMPONENT: PackingListManagementPage ---
+// --- MAIN PAGE ---
 
 const PackingListManagementPage = () => {
   const [loading, setLoading] = useState(true);
@@ -411,23 +370,32 @@ const PackingListManagementPage = () => {
   const [selectedItems, setSelectedItems] = useState<FabricRollItem[]>([]);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
-  // 3. UPDATE: Thêm state cho Filters
+  // Filter States
   const [searchTerm, setSearchTerm] = useState("");
   const [printStatusFilter, setPrintStatusFilter] = useState("all");
   const [qcStatusFilter, setQcStatusFilter] = useState("all");
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
+  // Mock Fetch Data
+  const fetchData = useCallback(() => {
+    setLoading(true);
+    setTimeout(() => {
       setItems(mockFabricRolls);
       setLoading(false);
-    }, 1000);
-    return () => clearTimeout(timer);
+    }, 800);
   }, []);
 
-  // 4. UPDATE: Logic lọc dữ liệu (useMemo)
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const handleImportSuccess = useCallback(() => {
+    console.log("Import completed, refreshing data...");
+    fetchData();
+  }, [fetchData]);
+
+  // Filtering Logic
   const filteredItems = useMemo(() => {
     return items.filter((item) => {
-      // Lọc theo Search Term (tìm trong PO, Code, Color, Lot)
       const searchLower = searchTerm.toLowerCase();
       const matchesSearch =
         searchTerm === "" ||
@@ -436,11 +404,9 @@ const PackingListManagementPage = () => {
         item.color.toLowerCase().includes(searchLower) ||
         item.lotNo.toLowerCase().includes(searchLower);
 
-      // Lọc theo Print Status
       const matchesPrintStatus =
         printStatusFilter === "all" || item.printStatus === printStatusFilter;
 
-      // Lọc theo QC Status
       let matchesQC = true;
       if (qcStatusFilter === "checked") matchesQC = item.qcCheck === true;
       if (qcStatusFilter === "not-checked") matchesQC = item.qcCheck === false;
@@ -456,30 +422,21 @@ const PackingListManagementPage = () => {
       )
     );
     setSelectedItems([]);
-    // alert("Printed selected items");
   }, []);
 
+  // Table Columns Definition
   const columns: ColumnDef<FabricRollItem>[] = useMemo(
     () => [
-      // --- THÊM CỘT SELECTION VỚI LOGIC TÙY CHỈNH ---
       {
         id: "select",
         header: ({ table }) => {
-          // 1. Lấy tất cả các dòng đang hiển thị (đã qua filter search/status)
           const allRows = table.getRowModel().rows;
-
-          // 2. Lọc ra những dòng có thể chọn (Chỉ chọn dòng NOT_PRINTED)
           const selectableRows = allRows.filter(
             (row) => row.original.printStatus === "NOT_PRINTED"
           );
-
-          // 3. Tính toán trạng thái hiển thị của checkbox header
-          // Checked nếu: Có dòng để chọn VÀ tất cả các dòng đó đã được chọn
           const isAllSelectableSelected =
             selectableRows.length > 0 &&
             selectableRows.every((row) => row.getIsSelected());
-
-          // Indeterminate (gạch ngang) nếu: Có một số dòng được chọn nhưng chưa hết
           const isSomeSelected =
             selectableRows.some((row) => row.getIsSelected()) &&
             !isAllSelectableSelected;
@@ -495,15 +452,12 @@ const PackingListManagementPage = () => {
               }
               onCheckedChange={(value) => {
                 if (value) {
-                  // LOGIC CHÍNH: Nếu check -> Tạo object selection chỉ chứa ID của các dòng NOT_PRINTED
                   const newSelection = selectableRows.reduce((acc, row) => {
                     acc[row.id] = true;
                     return acc;
                   }, {} as Record<string, boolean>);
-
                   table.setRowSelection(newSelection);
                 } else {
-                  // Nếu uncheck -> Bỏ chọn tất cả
                   table.resetRowSelection();
                 }
               }}
@@ -515,22 +469,20 @@ const PackingListManagementPage = () => {
           <Checkbox
             checked={row.getIsSelected()}
             onCheckedChange={(value) => row.toggleSelected(!!value)}
+            disabled={row.original.printStatus === "PRINTED"}
             aria-label="Select row"
           />
         ),
         enableSorting: false,
         enableHiding: false,
       },
-      // --- KẾT THÚC CỘT SELECTION ---
-
       { accessorKey: "poNumber", header: "PO Number" },
       { accessorKey: "itemCode", header: "Item Code" },
       { accessorKey: "color", header: "Color" },
-      // ... Giữ nguyên các cột khác của bạn
       { accessorKey: "rollNo", header: "Roll No" },
       { accessorKey: "lotNo", header: "Lot No" },
       { accessorKey: "yards", header: "Yards" },
-      { accessorKey: "netWeightKgs", header: "Net Weight (Kgs)" },
+      { accessorKey: "netWeightKgs", header: "Net (Kgs)" },
       { accessorKey: "width", header: "Width" },
       {
         accessorKey: "qcCheck",
@@ -546,7 +498,6 @@ const PackingListManagementPage = () => {
         id: "actions",
         header: "Actions",
         cell: ({ row }) => {
-          // ... Giữ nguyên logic actions
           const item = row.original;
           const handlePrintSingle = () => handlePrintItems(new Set([item.id]));
 
@@ -580,10 +531,9 @@ const PackingListManagementPage = () => {
   );
 
   return (
-    <div className="p-4 md:p-6 lg:p-8 bg-gray-50 min-h-full">
+    <div className="p-4 md:p-6 lg:p-8 bg-gray-50 min-h-screen">
       <PageHeader onImportClick={() => setIsImportModalOpen(true)} />
 
-      {/* 5. UPDATE: Truyền props vào Filters */}
       <PackingListFilters
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
@@ -595,7 +545,7 @@ const PackingListManagementPage = () => {
 
       {loading ? (
         <TableSkeleton />
-      ) : filteredItems.length > 0 ? ( // Sử dụng filteredItems để kiểm tra độ dài
+      ) : filteredItems.length > 0 ? (
         <Card>
           <CardHeader>
             <div className="flex justify-between items-center">
@@ -612,11 +562,10 @@ const PackingListManagementPage = () => {
             </div>
           </CardHeader>
           <CardContent>
-            {/* 6. UPDATE: Truyền filteredItems vào Table */}
             <CustomTable
               data={filteredItems}
               columns={columns}
-              showCheckbox={false}
+              showCheckbox={false} // Checkbox được xử lý trong column definition
               onSelectionChange={setSelectedItems}
             />
           </CardContent>
@@ -640,6 +589,7 @@ const PackingListManagementPage = () => {
       <ImportPackingListModal
         isOpen={isImportModalOpen}
         onOpenChange={setIsImportModalOpen}
+        onSuccess={handleImportSuccess}
       />
     </div>
   );

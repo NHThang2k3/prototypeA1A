@@ -27,7 +27,6 @@ import {
   Globe,
   type LucideIcon,
   QrCode,
-  Upload,
   ListPlus,
 } from "lucide-react";
 
@@ -57,12 +56,7 @@ const sidebarNavItems: NavItem[] = [
             icon: LayoutDashboard,
             key: "dashboard",
           },
-          {
-            title: "Inventory",
-            path: "/accessory-warehouse/inventory",
-            icon: Boxes,
-            key: "inventory",
-          },
+
           {
             title: "Kanban Board",
             path: "/accessory-warehouse/kanban",
@@ -82,18 +76,50 @@ const sidebarNavItems: NavItem[] = [
             icon: ListPlus,
             key: "packing-list",
           },
-          {
-            title: "Packing List Form",
-            path: "/accessory-warehouse/packing-list-form",
-            icon: Upload,
-            key: "packing-list-form",
-          },
+          // {
+          //   title: "Packing List Form",
+          //   path: "/accessory-warehouse/packing-list-form",
+          //   icon: Upload,
+          //   key: "packing-list-form",
+          // },
         ],
       },
       {
         title: "Inventory Tracking",
         icon: Boxes,
         key: "productivity-inventory",
+        children: [
+          {
+            title: "Inventory",
+            path: "/accessory-warehouse/inventory",
+            icon: Boxes,
+            key: "inventory",
+          },
+        ],
+      },
+      {
+        title: "Delivery transaction",
+        icon: Network,
+        key: "productivity-delivery",
+        children: [
+          {
+            title: "Issue Accessory Form",
+            path: "/accessory-warehouse/issue/accessory",
+            icon: FileOutput,
+            key: "issue-accessory",
+          },
+          {
+            title: "Daily Issue Accessory Report",
+            path: "/accessory-warehouse/reports/issues",
+            icon: ScrollText,
+            key: "reports-issues",
+          },
+        ],
+      },
+      {
+        title: "Scan QR",
+        icon: QrCode,
+        key: "productivity-qr",
         children: [
           {
             title: "Scan QR Location",
@@ -112,25 +138,6 @@ const sidebarNavItems: NavItem[] = [
             path: "/accessory-warehouse/qr-scan-request",
             icon: QrCode,
             key: "qr-scan-request",
-          },
-          {
-            title: "Daily Issue Accessory Report",
-            path: "/accessory-warehouse/reports/issues",
-            icon: ScrollText,
-            key: "reports-issues",
-          },
-        ],
-      },
-      {
-        title: "Delivery transaction",
-        icon: Network,
-        key: "productivity-delivery",
-        children: [
-          {
-            title: "Issue Accessory Form",
-            path: "/accessory-warehouse/issue/accessory",
-            icon: FileOutput,
-            key: "issue-accessory",
           },
         ],
       },

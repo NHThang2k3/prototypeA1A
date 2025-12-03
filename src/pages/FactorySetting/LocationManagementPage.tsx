@@ -18,7 +18,7 @@ export interface LocationItem {
   factory: string;
   warehouse: string;
   type: "Shelf" | "Machine";
-  shelf: string; // Đổi thành string để lưu dạng "A001", "R005"
+  shelf: string;
   capacity: number;
   currentOccupancy: number;
   lastUpdated: string;
@@ -34,50 +34,50 @@ export interface LocationItem {
 const locationListData: LocationItem[] = [
   // --- Vietnam, Factory A ---
   {
-    id: "F1-A001",
+    id: "F1-A-001",
     country: "Vietnam",
     factory: "Factory A",
     warehouse: "F1",
     type: "Shelf",
-    shelf: "A001", // Format mới
+    shelf: "A-001", // Format mới
     capacity: 200,
     currentOccupancy: 180,
     lastUpdated: "10/18/2025",
     description: "Khu vực vải cotton",
-    qrCode: "LOC-F1-A001",
+    qrCode: "LOC-F1-A-001",
     isQrPrinted: true,
     purpose: "fabric",
     enabled: true,
   },
   {
-    id: "F1-A002",
+    id: "F1-A-002",
     country: "Vietnam",
     factory: "Factory A",
     warehouse: "F1",
     type: "Shelf",
-    shelf: "A002",
+    shelf: "A-002",
     capacity: 160,
     currentOccupancy: 50,
     lastUpdated: "10/18/2025",
     description: "Khu vực vải lụa",
-    qrCode: "LOC-F1-A002",
+    qrCode: "LOC-F1-A-002",
     isQrPrinted: false,
     purpose: "fabric",
     enabled: true,
   },
   // --- Machines ---
   {
-    id: "F1-R001",
+    id: "F1-R-001",
     country: "Vietnam",
     factory: "Factory A",
     warehouse: "F1",
     type: "Machine",
-    shelf: "R001", // Format mới cho Machine
+    shelf: "R-001", // Format mới cho Machine
     capacity: 0,
     currentOccupancy: 0,
     lastUpdated: "10/23/2025",
     description: "Fabric relaxation machine",
-    qrCode: "LOC-F1-R001",
+    qrCode: "LOC-F1-R-001",
     isQrPrinted: true,
     purpose: "fabric",
     enabled: true,
@@ -310,13 +310,13 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
 
     // Format Suffix: Ensure it is 3 digits (e.g., 5 -> 005)
     const formattedSuffix = String(nameSuffix).padStart(3, "0");
-    const combinedName = `${namePrefix}${formattedSuffix}`;
+    const combinedName = `${namePrefix}-${formattedSuffix}`;
 
     let locationId = "";
     if (isEditing) {
       locationId = initialData!.id;
     } else {
-      // ID Format: Warehouse-ShelfName (e.g., F1-A001 or F1-R005)
+      // ID Format: Warehouse-ShelfName (e.g., F1-A-001 or F1-R005)
       locationId = `${warehouse}-${combinedName}`;
     }
 
