@@ -172,7 +172,7 @@ const StatusBadge: FC<{ status: PrintStatus }> = ({ status }) => {
 
 const PageHeader: FC = () => (
   <div className="flex justify-between items-center mb-6">
-    <h1 className="text-3xl font-bold">Accessory Management</h1>
+    <h1 className="text-3xl font-bold">Accessory Packing List Management</h1>
   </div>
 );
 

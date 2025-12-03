@@ -462,7 +462,7 @@ const KanbanBoardPage = () => {
     <div className="p-6 md:p-8 bg-gray-50 min-h-full">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-800">
-          Fabric Issuing Management - Cutting Plan
+          Kanban board for FBWH from cutting office
         </h1>
         <p className="text-gray-500 mt-1">
           Track the progress of preparing and delivering fabric to the cutting

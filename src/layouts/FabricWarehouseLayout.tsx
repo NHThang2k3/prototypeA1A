@@ -98,7 +98,7 @@ const sidebarNavItems: NavItem[] = [
             key: "inventory",
           },
           {
-            title: "Relax Fabric Screen",
+            title: "Fabric Relaxation Management",
             path: "/fabric-warehouse/relax/fabric",
             icon: Clock,
             key: "relax-fabric",
@@ -130,19 +130,19 @@ const sidebarNavItems: NavItem[] = [
         key: "productivity-qr",
         children: [
           {
-            title: "Scan QR Location",
+            title: "Scan to push item into location",
             path: "/fabric-warehouse/qr-scan-location",
             icon: QrCode,
             key: "qr-scan-location",
           },
           {
-            title: "Scan QR Fabric",
+            title: "Scan to move fabric",
             path: "/fabric-warehouse/qr-scan-fabric",
             icon: QrCode,
             key: "qr-scan-fabric",
           },
           {
-            title: "Scan QR Issue Request",
+            title: "Scan to issue fabric",
             path: "/fabric-warehouse/qr-scan-request",
             icon: QrCode,
             key: "qr-scan-request",
@@ -175,7 +175,7 @@ const sidebarNavItems: NavItem[] = [
         key: "material-issue",
       },
       {
-        title: "Relax time standard",
+        title: "Relax time standard management",
         path: "/fabric-warehouse/relax-time-standard",
         icon: Clock,
         key: "relax-time-standard",

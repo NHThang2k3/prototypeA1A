@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 // Thêm các imports cho Dialog
@@ -415,7 +415,9 @@ const PageHeader: React.FC<PageHeaderProps> = ({ selectedCount, onExport }) => {
       <CardHeader>
         <div className="flex justify-between items-center">
           <div>
-            <CardTitle>Issue Fabric Report</CardTitle>
+            <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+              Daily Issue Fabric report
+            </h1>
             <p className="text-sm text-muted-foreground pt-1">
               View, filter, and export fabric roll transaction history.
             </p>

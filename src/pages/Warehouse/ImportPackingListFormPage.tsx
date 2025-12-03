@@ -11,13 +11,29 @@ import {
 import * as XLSX from "xlsx";
 import { ColumnDef } from "@tanstack/react-table";
 
-// Đảm bảo đường dẫn import đúng với dự án của bạn
+// --- UI COMPONENTS (Giả định đường dẫn) ---
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { CustomTable } from "@/components/ui/custom-table";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-// --- TYPE DEFINITIONS ---
+// --- CONSTANTS (Định nghĩa nội bộ để tránh lỗi Fast Refresh) ---
+const FACTORY_OPTIONS = [
+  { value: "Factory A", label: "Factory A" },
+  { value: "Factory B", label: "Factory B" },
+  { value: "Factory C", label: "Factory C" },
+  { value: "Factory D", label: "Factory D" },
+];
+
+// --- TYPE DEFINITIONS (Export type vẫn an toàn với Fast Refresh) ---
 export interface PackingListItem {
   id: string;
   poNumber: string;
@@ -39,7 +55,7 @@ export interface PackingListItem {
   description: string;
 }
 
-// --- LOCAL COMPONENT: ActionToolbar ---
+// --- SUB-COMPONENT: ACTION TOOLBAR ---
 interface ActionToolbarProps {
   onSubmit: () => void;
   isSubmitting: boolean;
@@ -67,7 +83,7 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
   );
 };
 
-// --- LOCAL COMPONENT: FileUploadZone ---
+// --- SUB-COMPONENT: FILE UPLOAD ZONE ---
 type FileStatus = "parsing" | "success" | "error";
 
 interface ProcessedFile {
@@ -80,12 +96,14 @@ interface ProcessedFile {
 interface FileUploadZoneProps {
   onFileAdded: (items: PackingListItem[]) => void;
   onFileRemoved: (fileName: string) => void;
+  selectedFactory: string;
 }
 
-const headerMapping: { [key: string]: keyof Omit<PackingListItem, "id"> } = {
+const headerMapping: {
+  [key: string]: keyof Omit<PackingListItem, "id" | "factory">;
+} = {
   "PO Number": "poNumber",
   "Item Code": "itemCode",
-  Factory: "factory",
   Supplier: "supplier",
   "Invoice No": "invoiceNo",
   "Color Code": "colorCode",
@@ -101,92 +119,106 @@ const headerMapping: { [key: string]: keyof Omit<PackingListItem, "id"> } = {
   "Date In House": "dateInHouse",
   Description: "description",
 };
+
 const requiredHeaders = Object.keys(headerMapping);
 
 const FileUploadZone: React.FC<FileUploadZoneProps> = ({
   onFileAdded,
   onFileRemoved,
+  selectedFactory,
 }) => {
   const [processedFiles, setProcessedFiles] = useState<ProcessedFile[]>([]);
 
-  const parseFile = async (file: File): Promise<PackingListItem[]> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        try {
-          const data = event.target?.result;
-          if (!data) throw new Error("Could not read file.");
-          const workbook = XLSX.read(data, { type: "array" });
-          const sheetName = workbook.SheetNames[0];
-          if (!sheetName) throw new Error("Excel file has no sheets.");
-          const worksheet = workbook.Sheets[sheetName];
+  // Fix ESLint: Truyền factory vào tham số để hàm không phụ thuộc state bên ngoài
+  const parseFile = useCallback(
+    async (file: File, factoryToUse: string): Promise<PackingListItem[]> => {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          try {
+            const data = event.target?.result;
+            if (!data) throw new Error("Could not read file.");
+            const workbook = XLSX.read(data, { type: "array" });
+            const sheetName = workbook.SheetNames[0];
+            if (!sheetName) throw new Error("Excel file has no sheets.");
+            const worksheet = workbook.Sheets[sheetName];
 
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const json: any[] = XLSX.utils.sheet_to_json(worksheet, {
-            raw: false,
-            defval: "",
-          });
-
-          if (json.length === 0) {
-            throw new Error("File has no data or the first sheet is empty.");
-          }
-          const fileHeaders = Object.keys(json[0] || {});
-          const missingHeaders = requiredHeaders.filter(
-            (h) => !fileHeaders.includes(h)
-          );
-          if (missingHeaders.length > 0) {
-            throw new Error(
-              `Missing required columns: ${missingHeaders.join(", ")}`
-            );
-          }
-          const parsedItems: PackingListItem[] = json
-            .map((row, index) => {
-              if (Object.values(row).every((val) => val === "")) return null;
-              const newItem: Partial<PackingListItem> = {
-                id: `${file.name}-${index}-${Date.now()}`,
-              };
-              for (const header of requiredHeaders) {
-                const key = headerMapping[header];
-                const value = row[header];
-                if (
-                  key === "yards" ||
-                  key === "netWeight" ||
-                  key === "grossWeight"
-                ) {
-                  const numValue = parseFloat(String(value));
-                  if (isNaN(numValue)) {
-                    // Fallback to 0 or throw error strictly
-                    newItem[key] = 0;
-                  } else {
-                    newItem[key] = numValue;
-                  }
-                } else {
-                  newItem[key] = String(value ?? "");
-                }
+            // Fix ESLint: Loại bỏ eslint-disable thừa
+            const json: Record<string, unknown>[] = XLSX.utils.sheet_to_json(
+              worksheet,
+              {
+                raw: false,
+                defval: "",
               }
-              return newItem as PackingListItem;
-            })
-            .filter((item): item is PackingListItem => item !== null);
+            );
 
-          if (parsedItems.length === 0) {
-            throw new Error("No valid data found in the file.");
+            if (json.length === 0) {
+              throw new Error("File has no data or the first sheet is empty.");
+            }
+            const fileHeaders = Object.keys(json[0] || {});
+            const missingHeaders = requiredHeaders.filter(
+              (h) => !fileHeaders.includes(h)
+            );
+
+            if (missingHeaders.length > 0) {
+              throw new Error(
+                `Missing required columns: ${missingHeaders.join(", ")}`
+              );
+            }
+
+            const parsedItems: PackingListItem[] = json
+              .map((row, index) => {
+                if (Object.values(row).every((val) => val === "")) return null;
+
+                const newItem: Partial<PackingListItem> = {
+                  id: `${file.name}-${index}-${Date.now()}`,
+                  factory: factoryToUse,
+                };
+
+                for (const header of requiredHeaders) {
+                  const key = headerMapping[header] as keyof PackingListItem;
+                  const value = row[header];
+
+                  if (
+                    key === "yards" ||
+                    key === "netWeight" ||
+                    key === "grossWeight"
+                  ) {
+                    const numValue = parseFloat(String(value));
+                    newItem[key] = isNaN(numValue) ? 0 : numValue;
+                  } else {
+                    newItem[key] = String(value ?? "");
+                  }
+                }
+                return newItem as PackingListItem;
+              })
+              .filter((item): item is PackingListItem => item !== null);
+
+            if (parsedItems.length === 0) {
+              throw new Error("No valid data found in the file.");
+            }
+            resolve(parsedItems);
+          } catch (e: unknown) {
+            let message = "An error occurred while processing the file.";
+            if (e instanceof Error) message = e.message;
+            reject(new Error(message));
           }
-          resolve(parsedItems);
-        } catch (e: unknown) {
-          let message = "An error occurred while processing the file.";
-          if (e instanceof Error) message = e.message;
-          reject(new Error(message));
-        }
-      };
-      reader.onerror = () => {
-        reject(new Error("Could not read the file. Please try again."));
-      };
-      reader.readAsArrayBuffer(file);
-    });
-  };
+        };
+        reader.onerror = () => {
+          reject(new Error("Could not read the file. Please try again."));
+        };
+        reader.readAsArrayBuffer(file);
+      });
+    },
+    [] // Không còn phụ thuộc vào selectedFactory
+  );
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
+      if (!selectedFactory) {
+        return;
+      }
+
       const newFilesToProcess = acceptedFiles.filter(
         (file) =>
           !processedFiles.some(
@@ -199,7 +231,8 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({
           ...prev,
           { file, status: "parsing", parsedItems: [] },
         ]);
-        parseFile(file)
+        // Truyền selectedFactory vào hàm parseFile tại thời điểm gọi
+        parseFile(file, selectedFactory)
           .then((parsedItems) => {
             setProcessedFiles((prev) =>
               prev.map((pf) =>
@@ -221,7 +254,7 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({
           });
       });
     },
-    [processedFiles, onFileAdded]
+    [processedFiles, onFileAdded, selectedFactory, parseFile]
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -233,6 +266,7 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({
       ],
     },
     multiple: true,
+    disabled: !selectedFactory,
   });
 
   const handleRemoveFile = (fileName: string) => {
@@ -241,22 +275,25 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({
   };
 
   return (
-    <div className="flex flex-col items-center w-full">
+    <div className="flex flex-col items-center w-full space-y-4">
       <div
         {...getRootProps()}
         className={cn(
-          "w-full border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors bg-muted/20",
-          isDragActive
+          "w-full border-2 border-dashed rounded-lg p-8 text-center transition-colors bg-muted/20",
+          !selectedFactory ? "cursor-not-allowed opacity-50" : "cursor-pointer",
+          isDragActive && selectedFactory
             ? "border-primary bg-primary/10"
             : "border-input hover:border-primary/50",
-          processedFiles.length > 0 && "mb-6"
+          processedFiles.length > 0 && "mb-0"
         )}
       >
         <input {...getInputProps()} />
         <div className="flex flex-col items-center text-muted-foreground">
           <UploadCloud className="w-10 h-10 mb-3" />
           <p className="font-semibold text-foreground">
-            Drag & drop files here, or click to select
+            {!selectedFactory
+              ? "Please select a Factory first"
+              : "Drag & drop files here, or click to select"}
           </p>
           <p className="text-xs mt-1">Supports .xlsx, .xls</p>
         </div>
@@ -311,14 +348,13 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({
   );
 };
 
-// --- LOCAL COMPONENT: PreviewTable ---
+// --- PREVIEW TABLE ---
 const columns: ColumnDef<PackingListItem>[] = [
   { accessorKey: "poNumber", header: "PO Number" },
   { accessorKey: "itemCode", header: "Item Code" },
   { accessorKey: "factory", header: "Factory" },
+  { accessorKey: "invoiceNo", header: "Invoice No" },
   { accessorKey: "color", header: "Color" },
-  { accessorKey: "rollNo", header: "Roll No" },
-  { accessorKey: "lotNo", header: "Lot No" },
   {
     accessorKey: "yards",
     header: "Yards",
@@ -329,15 +365,10 @@ const columns: ColumnDef<PackingListItem>[] = [
     header: "Net (Kgs)",
     cell: ({ row }) => row.original.netWeight.toFixed(2),
   },
-  { accessorKey: "width", header: "Width" },
-  { accessorKey: "location", header: "Location" },
+  { accessorKey: "dateInHouse", header: "Date In House" },
 ];
 
-interface PreviewTableProps {
-  items: PackingListItem[];
-}
-
-const PreviewTable: React.FC<PreviewTableProps> = ({ items }) => {
+const PreviewTable: React.FC<{ items: PackingListItem[] }> = ({ items }) => {
   return (
     <Card className="border-0 shadow-none">
       <CardHeader className="px-0 pt-0">
@@ -360,6 +391,7 @@ const ImportPackingListFormPage: React.FC<ImportPackingListFormPageProps> = ({
 }) => {
   const [items, setItems] = useState<PackingListItem[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedFactory, setSelectedFactory] = useState<string>("");
 
   const handleFileAdded = useCallback((newItems: PackingListItem[]) => {
     setItems((prevItems) => [...prevItems, ...newItems]);
@@ -375,30 +407,47 @@ const ImportPackingListFormPage: React.FC<ImportPackingListFormPageProps> = ({
     if (items.length === 0) return;
 
     setIsSubmitting(true);
-    console.log("Submitting items:", items);
-
-    // Giả lập API call
     setTimeout(() => {
-      console.log("Submission successful!");
+      console.log("Submitting items to API:", items);
       setIsSubmitting(false);
       setItems([]);
-      alert(`Successfully imported ${items.length} items!`);
-
-      if (onSuccess) {
-        onSuccess();
-      }
+      alert(
+        `Successfully imported ${items.length} items for ${selectedFactory}!`
+      );
+      if (onSuccess) onSuccess();
     }, 1500);
   };
 
   return (
     <div className="flex flex-col h-full bg-background">
-      {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
         <div>
-          <h2 className="text-lg font-semibold mb-2">1. Upload Files</h2>
+          <h2 className="text-lg font-semibold mb-4">
+            1. Select Factory & Upload
+          </h2>
+
+          <div className="mb-4 max-w-xs space-y-2">
+            <Label>
+              Target Factory <span className="text-red-500">*</span>
+            </Label>
+            <Select value={selectedFactory} onValueChange={setSelectedFactory}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a factory..." />
+              </SelectTrigger>
+              <SelectContent>
+                {FACTORY_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <FileUploadZone
             onFileAdded={handleFileAdded}
             onFileRemoved={handleFileRemoved}
+            selectedFactory={selectedFactory}
           />
         </div>
 
@@ -409,7 +458,6 @@ const ImportPackingListFormPage: React.FC<ImportPackingListFormPageProps> = ({
         )}
       </div>
 
-      {/* Sticky Footer Action */}
       <ActionToolbar
         onSubmit={handleSubmit}
         isSubmitting={isSubmitting}

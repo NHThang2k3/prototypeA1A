@@ -549,7 +549,7 @@ const SewingTrimsKanbanPage = () => {
     <div className="p-6 md:p-8 bg-background min-h-screen flex flex-col">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-foreground">
-          Sewing Line - Trims Request
+          Kanban board for ACC and Packing WH from sewing lines
         </h1>
         <p className="text-muted-foreground mt-1">
           Track and manage material requests from sewing lines.

@@ -473,7 +473,7 @@ const IssuePackagingFormPage: React.FC = () => {
     <div className="p-4 md:p-6 bg-gray-50 min-h-screen font-sans space-y-6">
       <header>
         <h1 className="text-3xl font-bold text-gray-800">
-          Issue Packaging From Request
+          Issue Packaging Form
         </h1>
         <p className="text-gray-600">
           Multi-select JOBs to auto-allocate packaging materials from warehouse.

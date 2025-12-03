@@ -24,13 +24,13 @@ interface PermissionNode {
 interface RoleData {
   id?: number;
   name: string;
+  factories: string[]; // 1. NEW: Thêm thuộc tính factories
   departments: string[];
   type: string;
   description: string;
   permissions: string[];
 }
 
-// 1. CẬP NHẬT: Thêm prop 'size' vào Interface
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "outline" | "ghost" | "danger";
   size?: "default" | "sm" | "lg" | "icon";
@@ -63,16 +63,14 @@ interface MultiSelectProps {
 
 // --- UI Components ---
 
-// 2. CẬP NHẬT: Component Button xử lý size chuẩn
 const Button = ({
   children,
   variant = "primary",
-  size = "default", // Mặc định là default
+  size = "default",
   className = "",
   onClick,
   ...props
 }: ButtonProps) => {
-  // Bỏ px-4 py-2 h-10 khỏi baseStyle vì sẽ được xử lý bởi size
   const baseStyle =
     "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none disabled:opacity-50";
 
@@ -84,12 +82,11 @@ const Button = ({
     danger: "bg-red-50 text-red-600 hover:bg-red-100 border border-red-200",
   };
 
-  // Định nghĩa các size khác nhau
   const sizes: Record<string, string> = {
     default: "h-10 px-4 py-2",
     sm: "h-9 rounded-md px-3",
     lg: "h-11 rounded-md px-8",
-    icon: "h-8 w-8 p-0", // Quan trọng: p-0 giúp icon không bị padding đè mất
+    icon: "h-8 w-8 p-0",
   };
 
   return (
@@ -147,8 +144,6 @@ const Badge = ({ children, className = "", onRemove }: BadgeProps) => (
 
 // --- COMPONENT: MULTI-SELECT ---
 
-// --- COMPONENT: MULTI-SELECT (UPDATED - COMBINED SEARCH) ---
-
 const MultiSelect = ({
   options,
   value = [],
@@ -162,7 +157,6 @@ const MultiSelect = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Xử lý click outside để đóng dropdown
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -176,7 +170,6 @@ const MultiSelect = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Lọc options dựa trên input
   const filteredOptions = options.filter((opt) => {
     const matchesSearch = opt.label
       .toLowerCase()
@@ -187,8 +180,7 @@ const MultiSelect = ({
 
   const selectOption = (optionValue: string) => {
     onChange([...value, optionValue]);
-    setInputValue(""); // Reset ô tìm kiếm sau khi chọn
-    // Giữ focus vào input để chọn tiếp
+    setInputValue("");
     setTimeout(() => {
       inputRef.current?.focus();
     }, 0);
@@ -201,21 +193,18 @@ const MultiSelect = ({
     }
   };
 
-  // Xử lý xóa bằng phím Backspace
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Backspace" && inputValue === "" && value.length > 0) {
-      // const lastValue = value[value.length - 1];
       onChange(value.slice(0, -1));
     }
     if (e.key === "Enter" && inputValue !== "" && filteredOptions.length > 0) {
-      e.preventDefault(); // Ngăn submit form
+      e.preventDefault();
       selectOption(filteredOptions[0].value);
     }
   };
 
   return (
     <div className={`relative ${className}`} ref={containerRef}>
-      {/* Main Container - Giờ đây bao gồm cả Input */}
       <div
         className={`min-h-10 w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm 
         focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 
@@ -226,7 +215,6 @@ const MultiSelect = ({
         }`}
         onClick={() => !disabled && inputRef.current?.focus()}
       >
-        {/* Render các mục đã chọn (Badges) */}
         {value.map((val) => {
           const label = options.find((o) => o.value === val)?.label || val;
           return (
@@ -243,7 +231,6 @@ const MultiSelect = ({
           );
         })}
 
-        {/* Input tìm kiếm trực tiếp (Thay thế placeholder tĩnh) */}
         <input
           ref={inputRef}
           type="text"
@@ -259,7 +246,6 @@ const MultiSelect = ({
           className="flex-1 bg-transparent outline-none border-none focus:ring-0 p-0 min-w-[80px] h-7 text-sm placeholder:text-slate-400 disabled:cursor-not-allowed"
         />
 
-        {/* Icon mũi tên ở góc phải */}
         <div className="absolute right-2 top-2.5 sm:top-3">
           <ChevronDown
             className={`h-4 w-4 text-slate-400 transition-transform ${
@@ -269,11 +255,8 @@ const MultiSelect = ({
         </div>
       </div>
 
-      {/* Dropdown Menu */}
       {isOpen && !disabled && (
         <div className="absolute z-50 mt-1 w-full rounded-md border border-slate-200 bg-white shadow-lg animate-in fade-in zoom-in-95 duration-100 overflow-hidden">
-          {/* Không cần thanh search riêng ở đây nữa */}
-
           <div className="max-h-60 overflow-y-auto p-1">
             {filteredOptions.length === 0 ? (
               <div className="py-2 text-center text-sm text-slate-500">
@@ -285,7 +268,6 @@ const MultiSelect = ({
                   key={opt.value}
                   className="flex cursor-pointer select-none items-center rounded-sm px-2 py-2 text-sm outline-none hover:bg-slate-100 text-slate-700 transition-colors"
                   onMouseDown={(e) => {
-                    // Dùng onMouseDown thay vì onClick để tránh mất focus input trước khi click chạy
                     e.preventDefault();
                     selectOption(opt.value);
                   }}
@@ -302,6 +284,12 @@ const MultiSelect = ({
 };
 
 // --- DATA CONSTANTS ---
+
+// 2. NEW: Thêm danh sách Factory
+const FACTORIES_LIST: Option[] = [
+  { value: "fac_bentre", label: "Bến Tre Factory" },
+  { value: "fac_binhduong", label: "Bình Dương Factory" },
+];
 
 const DEPARTMENTS_LIST: Option[] = [
   { value: "warehouse", label: "Warehouse" },
@@ -468,21 +456,6 @@ const RoleFormContent = ({
 
         <div className="space-y-2">
           <label className="text-sm font-semibold text-slate-900">
-            Department Access <span className="text-red-500">*</span>
-          </label>
-          <MultiSelect
-            options={DEPARTMENTS_LIST}
-            value={formData.departments}
-            onChange={(val: string[]) =>
-              setFormData({ ...formData, departments: val })
-            }
-            placeholder="Select departments..."
-            disabled={isEditMode}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <label className="text-sm font-semibold text-slate-900">
             Type <span className="text-red-500">*</span>
           </label>
           <div className="relative">
@@ -508,7 +481,40 @@ const RoleFormContent = ({
           </div>
         </div>
 
+        {/* 3. NEW: Trường chọn Factory */}
         <div className="space-y-2">
+          <label className="text-sm font-semibold text-slate-900">
+            Factory Access <span className="text-red-500">*</span>
+          </label>
+          <MultiSelect
+            options={FACTORIES_LIST}
+            value={formData.factories}
+            onChange={(val: string[]) =>
+              setFormData({ ...formData, factories: val })
+            }
+            placeholder="Select factories..."
+            // Disabled trong edit mode nếu bạn muốn logic giống Departments,
+            // bỏ disabled={isEditMode} nếu cho phép sửa.
+            disabled={isEditMode}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-sm font-semibold text-slate-900">
+            Department Access <span className="text-red-500">*</span>
+          </label>
+          <MultiSelect
+            options={DEPARTMENTS_LIST}
+            value={formData.departments}
+            onChange={(val: string[]) =>
+              setFormData({ ...formData, departments: val })
+            }
+            placeholder="Select departments..."
+            disabled={isEditMode}
+          />
+        </div>
+
+        <div className="space-y-2 md:col-span-2">
           <label className="text-sm font-semibold text-slate-900">
             Description
           </label>
@@ -649,8 +655,9 @@ const RoleManagementPage = () => {
     {
       id: 1,
       name: "Manager Warehouse",
+      factories: ["fac_bentre", "fac_binhduong"], // Data mẫu
       departments: ["warehouse"],
-      type: "Warehouse",
+      type: "Manager",
       description: "Quản lý kho tổng",
       permissions: [
         "packing_mgmt:packing_list",
@@ -661,10 +668,11 @@ const RoleManagementPage = () => {
     },
     {
       id: 2,
-      name: "Staff Packing",
+      name: "Staff Packing HCM",
+      factories: ["fac_bentre"], // Data mẫu
       departments: ["Finished Goods WH"],
       type: "Staff",
-      description: "Nhân viên đóng gói",
+      description: "Nhân viên Bến Tre",
       permissions: ["packing_mgmt:qr_code"],
     },
   ]);
@@ -675,6 +683,7 @@ const RoleManagementPage = () => {
 
   const initialFormState: RoleData = {
     name: "",
+    factories: [], // Init state
     departments: [],
     type: "",
     description: "",
@@ -692,6 +701,7 @@ const RoleManagementPage = () => {
   const handleEdit = (role: RoleData) => {
     setFormData({
       name: role.name,
+      factories: role.factories || [], // Đảm bảo fallback array
       departments: role.departments,
       type: role.type,
       description: role.description,
@@ -704,8 +714,10 @@ const RoleManagementPage = () => {
 
   const handleSave = () => {
     if (!formData.name) return alert("Please enter Role Name");
+    if (formData.factories.length === 0)
+      return alert("Please select at least one Factory"); // Validate Factory
     if (formData.departments.length === 0)
-      return alert("Please select at least one department");
+      return alert("Please select at least one Department");
     if (!formData.type) return alert("Please select Type");
 
     if (isEditMode && editingRoleId) {
@@ -749,6 +761,8 @@ const RoleManagementPage = () => {
           <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium">
             <tr>
               <th className="px-6 py-4">Role Name</th>
+              <th className="px-6 py-4">Factory Access</th>{" "}
+              {/* 4. NEW Column */}
               <th className="px-6 py-4">Department Access</th>
               <th className="px-6 py-4">Type</th>
               <th className="px-6 py-4">Description</th>
@@ -761,8 +775,21 @@ const RoleManagementPage = () => {
                 <td className="px-6 py-4 font-semibold text-slate-900">
                   {role.name}
                 </td>
+
+                {/* 4. NEW: Cell hiển thị Factory */}
                 <td className="px-6 py-4">
-                  <div className="flex flex-wrap gap-1">
+                  <div className="flex flex-wrap gap-1 max-w-[200px]">
+                    {role.factories?.map((f) => {
+                      const label =
+                        FACTORIES_LIST.find((fac) => fac.value === f)?.label ||
+                        f;
+                      return <Badge key={f}>{label}</Badge>;
+                    })}
+                  </div>
+                </td>
+
+                <td className="px-6 py-4">
+                  <div className="flex flex-wrap gap-1 max-w-[200px]">
                     {role.departments.map((d) => {
                       const label =
                         DEPARTMENTS_LIST.find((dep) => dep.value === d)
@@ -777,7 +804,6 @@ const RoleManagementPage = () => {
                 </td>
                 <td className="px-6 py-4 ">
                   <div className="flex justify-end gap-2">
-                    {/* 3. CẬP NHẬT: Dùng size="icon" */}
                     <Button
                       variant="ghost"
                       size="icon"

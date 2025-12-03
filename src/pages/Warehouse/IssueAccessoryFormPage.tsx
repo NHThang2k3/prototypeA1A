@@ -496,7 +496,7 @@ const IssueAccessoryFormPage: React.FC = () => {
     <div className="p-4 md:p-6 bg-gray-50 min-h-screen font-sans space-y-6">
       <header>
         <h1 className="text-3xl font-bold text-gray-800">
-          Issue Accessories From Request
+          Issue Accessories Form
         </h1>
         <p className="text-gray-600">
           Multi-select JOBs to auto-allocate items from warehouse locations.

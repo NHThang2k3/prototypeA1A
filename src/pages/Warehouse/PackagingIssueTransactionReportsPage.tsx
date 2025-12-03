@@ -444,7 +444,7 @@ const PackagingIssueTransactionReportsPage = () => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">
-            Packaging Issue Report
+            Daily Issue Packaging Report
           </h1>
           <p className="text-sm text-gray-500">
             View, filter, and export packaging transaction history.

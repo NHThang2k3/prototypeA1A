@@ -6,9 +6,11 @@ import {
   Trash2,
   PlusCircle,
   CheckCircle2,
-  FileUp,
   Search,
   Info,
+  XCircle,
+  MinusCircle,
+  Check, // [NEW] Added Check icon for Progress Bar
 } from "lucide-react";
 import { ColumnDef, Row } from "@tanstack/react-table";
 
@@ -35,7 +37,6 @@ import { Badge } from "@/components/ui/badge";
 
 // --- START OF INLINED FILE: src/pages/issue-fabric-form/types.ts ---
 
-// Data for a Cutting Plan JOB
 interface CuttingPlanJob {
   ID: string;
   PlanName: string;
@@ -47,7 +48,7 @@ interface CuttingPlanJob {
   PONumber: string;
   ItemCode: string;
   Color: string;
-  ColorCode: string; // Added field
+  ColorCode: string;
   RequestQuantity: number;
   IssuedQuantity: number;
   Status: "Planned" | "In Progress" | "Completed";
@@ -58,7 +59,6 @@ interface CuttingPlanJob {
   qcChecked: boolean;
 }
 
-// Data for an Inventory Roll
 interface InventoryRoll {
   PONumber: string;
   ItemCode: string;
@@ -91,7 +91,6 @@ interface InventoryRoll {
   ParentQRCode: string | null;
 }
 
-// Data for a Selected Roll
 interface SelectedInventoryRoll extends InventoryRoll {
   issuedYards: number;
 }
@@ -100,7 +99,6 @@ interface SelectedInventoryRoll extends InventoryRoll {
 
 // --- START OF INLINED FILE: src/pages/issue-fabric-form/data.ts ---
 
-// --- MOCK DATA FOR CUTTING PLAN (English & Color Codes) ---
 const MOCK_CUTTING_PLAN_JOBS: CuttingPlanJob[] = [
   {
     ID: "CP001",
@@ -113,7 +111,7 @@ const MOCK_CUTTING_PLAN_JOBS: CuttingPlanJob[] = [
     PONumber: "PO-KD-9981",
     ItemCode: "CTN-005",
     Color: "White",
-    ColorCode: "11-0601 TCX", // Pantone-like code
+    ColorCode: "11-0601 TCX",
     RequestQuantity: 500,
     IssuedQuantity: 0,
     Status: "Planned",
@@ -142,7 +140,7 @@ const MOCK_CUTTING_PLAN_JOBS: CuttingPlanJob[] = [
     CreatedBy: "an.nguyen",
     Remarks: "Denim fabric needs shrinkage test.",
     erpChecked: true,
-    qcChecked: false, // QC not checked
+    qcChecked: false,
   },
   {
     ID: "CP003",
@@ -162,7 +160,7 @@ const MOCK_CUTTING_PLAN_JOBS: CuttingPlanJob[] = [
     QCStatus: "Pass",
     CreatedBy: "bao.tran",
     Remarks: "Fabric received fully.",
-    erpChecked: false, // ERP not checked
+    erpChecked: false,
     qcChecked: true,
   },
   {
@@ -186,9 +184,29 @@ const MOCK_CUTTING_PLAN_JOBS: CuttingPlanJob[] = [
     erpChecked: true,
     qcChecked: true,
   },
+  {
+    ID: "CP005",
+    PlanName: "Test Fail QC",
+    Factory: "F2",
+    PlanDate: "2025-10-24",
+    Style: "TEST-005",
+    JOB: "JOB-105",
+    Lot: "L-2025-05",
+    PONumber: "PO-TEST-005",
+    ItemCode: "TST-005",
+    Color: "Black",
+    ColorCode: "19-0000 TCX",
+    RequestQuantity: 100,
+    IssuedQuantity: 0,
+    Status: "Planned",
+    QCStatus: "Fail",
+    CreatedBy: "system",
+    Remarks: "Failed QC test.",
+    erpChecked: true,
+    qcChecked: true,
+  },
 ];
 
-// --- MOCK DATA FOR INVENTORY (English & Matching Color Codes) ---
 const MOCK_INVENTORY_ROLLS: InventoryRoll[] = [
   {
     PONumber: "POPU0018251",
@@ -196,7 +214,7 @@ const MOCK_INVENTORY_ROLLS: InventoryRoll[] = [
     Factory: "Factory A",
     Supplier: "Supplier Y",
     InvoiceNo: "INV-001",
-    ColorCode: "19-4050 TCX", // Matches Job 2
+    ColorCode: "19-4050 TCX",
     Color: "Dark Blue",
     RollNo: "1",
     LotNo: "225628091",
@@ -208,29 +226,12 @@ const MOCK_INVENTORY_ROLLS: InventoryRoll[] = [
     DateInHouse: "2023-06-08",
   },
   {
-    PONumber: "POPU0018252",
-    ItemCode: "DNM-003",
-    Factory: "Factory A",
-    Supplier: "Supplier Y",
-    InvoiceNo: "INV-001",
-    ColorCode: "19-4050 TCX",
-    Color: "Dark Blue",
-    RollNo: "2",
-    LotNo: "225628092",
-    Yards: 80,
-    BalanceYards: 80,
-    Location: "A1-02",
-    QCStatus: "Passed",
-    QRCode: "QR-33961",
-    DateInHouse: "2023-06-08",
-  },
-  {
     PONumber: "SSPU0002939",
     ItemCode: "CTN-005",
     Factory: "Factory C",
     Supplier: "Supplier Y",
     InvoiceNo: "INV-009",
-    ColorCode: "11-0601 TCX", // Matches Job 1
+    ColorCode: "11-0601 TCX",
     Color: "White",
     RollNo: "1",
     LotNo: "225628091",
@@ -240,40 +241,6 @@ const MOCK_INVENTORY_ROLLS: InventoryRoll[] = [
     QCStatus: "Passed",
     QRCode: "QR-16812",
     DateInHouse: "2023-05-05",
-  },
-  {
-    PONumber: "SSPU0002940",
-    ItemCode: "CTN-005",
-    Factory: "Factory C",
-    Supplier: "Supplier Y",
-    InvoiceNo: "INV-010",
-    ColorCode: "11-0601 TCX",
-    Color: "White",
-    RollNo: "2",
-    LotNo: "225628093",
-    Yards: 120,
-    BalanceYards: 120,
-    Location: "C3-12",
-    QCStatus: "Passed",
-    QRCode: "QR-16813",
-    DateInHouse: "2023-05-05",
-  },
-  {
-    PONumber: "SSPU0002942",
-    ItemCode: "POP-002",
-    Factory: "Factory C",
-    Supplier: "Supplier Y",
-    InvoiceNo: "INV-010",
-    ColorCode: "14-4115 TCX", // Matches Job 4
-    Color: "Light Blue",
-    RollNo: "4",
-    LotNo: "225628093",
-    Yards: 500,
-    BalanceYards: 500,
-    Location: "C4-01",
-    QCStatus: "Passed",
-    QRCode: "QR-16815",
-    DateInHouse: "2023-05-06",
   },
 ].map((roll) => ({
   ...roll,
@@ -365,6 +332,19 @@ const IssueFabricFromJobPage: React.FC = () => {
   // State for Job Detail Popup
   const [viewingJob, setViewingJob] = useState<CuttingPlanJob | null>(null);
 
+  // [NEW] Logic for Progress Bar
+  const currentStep = useMemo(() => {
+    if (isFinishing) return 3;
+    if (isIssuing) return 2;
+    return 1;
+  }, [isIssuing, isFinishing]);
+
+  const steps = [
+    { id: 1, name: "Step 1", description: "Select JOBs" },
+    { id: 2, name: "Step 2", description: "Review & Issue" },
+    { id: 3, name: "Finish", description: "Complete" },
+  ];
+
   useEffect(() => {
     getCuttingPlanJobs().then((data) => {
       setAllJobs(data);
@@ -383,7 +363,6 @@ const IssueFabricFromJobPage: React.FC = () => {
     return allJobs.filter((job) => selectedJobIds.has(job.ID));
   }, [allJobs, selectedJobIds]);
 
-  // Calculate fabric requirements, grouped by ItemCode + Color
   const fabricRequirements = useMemo(() => {
     const requirements = new Map<
       string,
@@ -414,20 +393,16 @@ const IssueFabricFromJobPage: React.FC = () => {
   }, [fabricRequirements]);
 
   const displayAvailableRolls = useMemo(() => {
-    // 1. Lấy phần dư từ các cuộn đang nằm trong bảng Selected
     const splitRemainders = selectedRolls
-      .filter((roll) => roll.BalanceYards > roll.issuedYards) // Chỉ lấy cuộn còn dư
+      .filter((roll) => roll.BalanceYards > roll.issuedYards)
       .map((roll) => ({
         ...roll,
-        // Hiển thị Balance là phần còn lại (Balance gốc - Số lượng đã Issue)
         BalanceYards: parseFloat(
           (roll.BalanceYards - roll.issuedYards).toFixed(2)
         ),
-        // Đánh dấu đây là phần dư (nếu cần style riêng sau này)
         isRemainder: true,
       })) as InventoryRoll[];
 
-    // 2. Gộp với danh sách Available gốc và sắp xếp
     return [...availableInventoryRolls, ...splitRemainders].sort((a, b) =>
       a.RollNo.localeCompare(b.RollNo)
     );
@@ -444,7 +419,6 @@ const IssueFabricFromJobPage: React.FC = () => {
         let finalAvailableRolls: InventoryRoll[] = [];
         let foundShortage = null;
 
-        // Loop through each fabric requirement
         for (const req of fabricRequirements) {
           const { itemCode, color, requiredYards } = req;
 
@@ -456,7 +430,6 @@ const IssueFabricFromJobPage: React.FC = () => {
           let yardsToFulfill = requiredYards;
           const currentTypeSelectedRolls: SelectedInventoryRoll[] = [];
 
-          // Auto-pick logic
           for (const roll of sortedRolls) {
             if (yardsToFulfill <= 0) break;
             const yardsToIssue = Math.min(roll.BalanceYards, yardsToFulfill);
@@ -510,20 +483,6 @@ const IssueFabricFromJobPage: React.FC = () => {
     }
   }, [isIssuing, fabricRequirements, totalRequiredYards]);
 
-  const handleSimulateImport = useCallback(
-    (jobId: string, type: "erp" | "qc") => {
-      alert(
-        `Successfully imported ${type.toUpperCase()} data for JOB: ${jobId}.`
-      );
-      setAllJobs((prevJobs) =>
-        prevJobs.map((job) =>
-          job.ID === jobId ? { ...job, [`${type}Checked`]: true } : job
-        )
-      );
-    },
-    []
-  );
-
   const handleProceedToIssue = useCallback(() => {
     if (selectedJobIds.size > 0) {
       setIsIssuing(true);
@@ -560,14 +519,11 @@ const IssueFabricFromJobPage: React.FC = () => {
 
   const handleAddRollFromInventory = useCallback((rollToAdd: InventoryRoll) => {
     setSelectedRolls((prev) => {
-      // Kiểm tra xem cuộn này đã có trong Selected Rolls chưa (dựa vào QRCode)
       const existingIndex = prev.findIndex(
         (r) => r.QRCode === rollToAdd.QRCode
       );
 
       if (existingIndex >= 0) {
-        // CASE: Bấm cộng vào dòng phần dư (Split Remainder)
-        // Hành động: Cập nhật Issued Yards của cuộn đang chọn lên tối đa (bằng BalanceYards gốc)
         const updatedRolls = [...prev];
         updatedRolls[existingIndex] = {
           ...updatedRolls[existingIndex],
@@ -575,12 +531,10 @@ const IssueFabricFromJobPage: React.FC = () => {
         };
         return updatedRolls;
       } else {
-        // CASE: Bấm cộng vào cuộn hoàn toàn mới từ kho
         return [...prev, { ...rollToAdd, issuedYards: rollToAdd.BalanceYards }];
       }
     });
 
-    // Chỉ xóa khỏi danh sách gốc nếu nó thực sự nằm trong đó (không phải là remainder)
     setAvailableInventoryRolls((prev) =>
       prev.filter((r) => r.QRCode !== rollToAdd.QRCode)
     );
@@ -618,12 +572,6 @@ const IssueFabricFromJobPage: React.FC = () => {
     }
 
     setIsFinishing(true);
-    console.log("--- START ISSUANCE PROCESS ---");
-    console.log("Processed JOBs:", selectedJobs);
-    console.log("Issued Rolls:", selectedRolls);
-    console.log("Total Required:", totalRequiredYards);
-    console.log("Total Issued:", totalIssuedYards);
-
     setTimeout(() => {
       alert("Fabric issuance successful!");
       setIsFinishing(false);
@@ -631,13 +579,7 @@ const IssueFabricFromJobPage: React.FC = () => {
       setSelectedJobIds(new Set());
       setIsIssuing(false);
     }, 2000);
-  }, [
-    selectedJobs,
-    selectedRolls,
-    totalIssuedYards,
-    totalRequiredYards,
-    selectedJobIds,
-  ]);
+  }, [totalIssuedYards, totalRequiredYards, selectedJobIds]);
 
   const handleViewJobDetails = useCallback((job: CuttingPlanJob) => {
     setViewingJob(job);
@@ -666,55 +608,43 @@ const IssueFabricFromJobPage: React.FC = () => {
       {
         accessorKey: "ItemCode",
         header: "Item Code",
-        // Thay đổi: Nếu chưa ERP Check thì hiện "-"
         cell: ({ row }) =>
           row.original.erpChecked ? row.original.ItemCode : "-",
       },
       {
         accessorKey: "Color",
         header: "Color",
-        // Thay đổi: Nếu chưa ERP Check thì hiện "-"
         cell: ({ row }) => (row.original.erpChecked ? row.original.Color : "-"),
       },
       {
         accessorKey: "ColorCode",
         header: "Color Code",
-        // Thay đổi: Nếu chưa ERP Check thì hiện "-"
         cell: ({ row }) =>
           row.original.erpChecked ? row.original.ColorCode : "-",
       },
       {
         accessorKey: "RequestQuantity",
         header: "Required Qty",
-        // Thay đổi: Nếu chưa ERP Check thì hiện "-"
         cell: ({ row }) =>
           row.original.erpChecked ? row.original.RequestQuantity : "-",
       },
       {
         accessorKey: "Lot",
         header: "Lot",
-        // Thay đổi: Nếu chưa ERP Check thì hiện "-"
         cell: ({ row }) => (row.original.erpChecked ? row.original.Lot : "-"),
       },
       {
         accessorKey: "erpChecked",
         header: () => <div className="text-center">ERP Check</div>,
         cell: ({ row }) => (
-          <div className="flex justify-center">
+          <div
+            className="flex justify-center"
+            title={row.original.erpChecked ? "Have data" : "No data"}
+          >
             {row.original.erpChecked ? (
               <CheckCircle2 className="h-6 w-6 text-green-600" />
             ) : (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleSimulateImport(row.original.ID, "erp");
-                }}
-              >
-                <FileUp className="h-4 w-4 mr-2" />
-                Import
-              </Button>
+              <MinusCircle className="h-6 w-6 text-gray-300" />
             )}
           </div>
         ),
@@ -722,28 +652,31 @@ const IssueFabricFromJobPage: React.FC = () => {
       {
         accessorKey: "qcChecked",
         header: () => <div className="text-center">QC Check</div>,
-        cell: ({ row }) => (
-          <div className="flex justify-center">
-            {row.original.qcChecked ? (
+        cell: ({ row }) => {
+          const { qcChecked, QCStatus } = row.original;
+          if (!qcChecked) {
+            return (
+              <div className="flex justify-center" title="QC Null">
+                <MinusCircle className="h-6 w-6 text-gray-300" />
+              </div>
+            );
+          }
+          if (QCStatus === "Fail") {
+            return (
+              <div className="flex justify-center" title="QC Fail">
+                <XCircle className="h-6 w-6 text-red-600" />
+              </div>
+            );
+          }
+          return (
+            <div className="flex justify-center" title="QC Pass">
               <CheckCircle2 className="h-6 w-6 text-green-600" />
-            ) : (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleSimulateImport(row.original.ID, "qc");
-                }}
-              >
-                <FileUp className="h-4 w-4 mr-2" />
-                Import
-              </Button>
-            )}
-          </div>
-        ),
+            </div>
+          );
+        },
       },
     ],
-    [handleSimulateImport, handleViewJobDetails]
+    [handleViewJobDetails]
   );
 
   const selectedRollsColumns = useMemo<ColumnDef<SelectedInventoryRoll>[]>(
@@ -843,12 +776,89 @@ const IssueFabricFromJobPage: React.FC = () => {
 
   return (
     <div className="p-4 md:p-6 bg-gray-50 min-h-screen font-sans space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+          Issue fabric form
+        </h1>
+      </div>
+
+      {/* --- START: PROGRESS BAR UI --- */}
+      <div className="w-full mx-auto mb-8">
+        <nav aria-label="Progress">
+          <ol role="list" className="flex items-center w-full">
+            {steps.map((step, stepIdx) => {
+              const isCompleted = currentStep > step.id;
+              const isCurrent = currentStep === step.id;
+
+              return (
+                <li
+                  key={step.name}
+                  // [CHANGE] Xóa padding cố định (pr-8...), thêm flex-1 để chia đều chiều rộng
+                  className="relative flex flex-col items-center flex-1"
+                >
+                  {stepIdx !== steps.length - 1 && (
+                    // [CHANGE] Chỉnh left-1/2 và w-full để đường kẻ nối từ tâm vòng tròn này sang tâm vòng tròn kia
+                    <div
+                      className="absolute top-4 left-1/2 w-full h-0.5 bg-gray-200 -ml-px"
+                      aria-hidden="true"
+                    >
+                      <div
+                        className={`h-full transition-all duration-500 ease-in-out ${
+                          currentStep > step.id ? "bg-blue-600" : "bg-gray-200"
+                        }`}
+                        style={{ width: "100%" }}
+                      />
+                    </div>
+                  )}
+                  <div className="group relative flex flex-col items-center group z-10">
+                    {" "}
+                    {/* Thêm z-10 để icon đè lên đường kẻ */}
+                    <span className="flex h-9 items-center" aria-hidden="true">
+                      {isCompleted ? (
+                        <span className="relative z-10 flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 hover:bg-blue-700 transition">
+                          <Check
+                            className="h-5 w-5 text-white"
+                            aria-hidden="true"
+                          />
+                        </span>
+                      ) : isCurrent ? (
+                        <span className="relative z-10 flex h-8 w-8 items-center justify-center rounded-full border-2 border-blue-600 bg-white">
+                          <span className="h-2.5 w-2.5 rounded-full bg-blue-600" />
+                        </span>
+                      ) : (
+                        <span className="relative z-10 flex h-8 w-8 items-center justify-center rounded-full border-2 border-gray-300 bg-white group-hover:border-gray-400 transition">
+                          <span className="h-2.5 w-2.5 rounded-full bg-transparent group-hover:bg-gray-300" />
+                        </span>
+                      )}
+                    </span>
+                    <span className="mt-2 flex flex-col items-center min-w-[100px]">
+                      <span
+                        className={`text-xs font-semibold uppercase tracking-wide ${
+                          isCurrent || isCompleted
+                            ? "text-blue-600"
+                            : "text-gray-500"
+                        }`}
+                      >
+                        {step.name}
+                      </span>
+                      <span className="text-xs text-gray-500 font-medium">
+                        {step.description}
+                      </span>
+                    </span>
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+        </nav>
+      </div>
+      {/* --- END: PROGRESS BAR UI --- */}
+
       <Card>
         <CardHeader>
           <CardTitle>Step 1: Select JOBs to Process</CardTitle>
           <CardDescription>
-            Import data for ERP/QC checks. Select multiple valid JOBs to issue
-            fabric.
+            Select valid JOBs (ERP Checked & QC Passed) to issue fabric.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -880,7 +890,9 @@ const IssueFabricFromJobPage: React.FC = () => {
               onSelectionChange={handleJobSelectionChange}
               showColumnVisibility={false}
               enableRowSelection={(row: Row<CuttingPlanJob>) =>
-                row.original.erpChecked && row.original.qcChecked
+                row.original.erpChecked &&
+                row.original.qcChecked &&
+                row.original.QCStatus === "Pass"
               }
             />
           )}
@@ -1036,7 +1048,6 @@ const IssueFabricFromJobPage: React.FC = () => {
 
           {viewingJob && (
             <>
-              {/* If ERP not checked, show minimal info */}
               {!viewingJob.erpChecked ? (
                 <div className="py-6 flex flex-col items-center justify-center space-y-2 text-muted-foreground">
                   <Info className="h-10 w-10 text-gray-300" />
@@ -1044,7 +1055,6 @@ const IssueFabricFromJobPage: React.FC = () => {
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-4 py-4">
-                  {/* PO Number */}
                   <div className="space-y-1">
                     <span className="text-sm font-medium text-muted-foreground">
                       PO Number
@@ -1067,7 +1077,6 @@ const IssueFabricFromJobPage: React.FC = () => {
                     <p className="text-sm font-medium">{viewingJob.ItemCode}</p>
                   </div>
 
-                  {/* Color Code */}
                   <div className="space-y-1">
                     <span className="text-sm font-medium text-muted-foreground">
                       Color Code
@@ -1092,7 +1101,6 @@ const IssueFabricFromJobPage: React.FC = () => {
                     </p>
                   </div>
 
-                  {/* QC Status displayed only if checked */}
                   {viewingJob.qcChecked && (
                     <div className="space-y-1">
                       <span className="text-sm font-medium text-muted-foreground">
