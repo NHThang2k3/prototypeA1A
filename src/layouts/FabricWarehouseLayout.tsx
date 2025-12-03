@@ -73,17 +73,11 @@ const sidebarNavItems: NavItem[] = [
         key: "productivity-receipt",
         children: [
           {
-            title: "Packing List/Print QR",
+            title: "Packing List Management",
             path: "/fabric-warehouse/packing-list",
             icon: ListPlus,
             key: "packing-list",
           },
-          // {
-          //   title: "Packing List Form",
-          //   path: "/fabric-warehouse/packing-list-form",
-          //   icon: Upload,
-          //   key: "packing-list-form",
-          // },
         ],
       },
       {
@@ -92,7 +86,7 @@ const sidebarNavItems: NavItem[] = [
         key: "productivity-inventory",
         children: [
           {
-            title: "Inventory",
+            title: "Fabric Inventory",
             path: "/fabric-warehouse/inventory",
             icon: Boxes,
             key: "inventory",
@@ -130,19 +124,19 @@ const sidebarNavItems: NavItem[] = [
         key: "productivity-qr",
         children: [
           {
-            title: "Scan to push item into location",
+            title: "Scan to put item into location",
             path: "/fabric-warehouse/qr-scan-location",
             icon: QrCode,
             key: "qr-scan-location",
           },
           {
-            title: "Scan to move fabric",
+            title: "Scan to move item",
             path: "/fabric-warehouse/qr-scan-fabric",
             icon: QrCode,
             key: "qr-scan-fabric",
           },
           {
-            title: "Scan to issue fabric",
+            title: "Scan to issue item",
             path: "/fabric-warehouse/qr-scan-request",
             icon: QrCode,
             key: "qr-scan-request",

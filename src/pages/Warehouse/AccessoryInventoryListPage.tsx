@@ -367,7 +367,7 @@ const AccessoryInventoryHeader: FC<AccessoryInventoryHeaderProps> = ({
   return (
     <div className="flex flex-col md:flex-row justify-between md:items-center">
       <div>
-        <h1 className="text-3xl font-bold">Accessory Inventory Management</h1>
+        <h1 className="text-3xl font-bold">Accessory Inventory</h1>
         {hasSelection && (
           <p className="text-sm text-muted-foreground mt-1">
             {selectedRowCount} item(s) selected.

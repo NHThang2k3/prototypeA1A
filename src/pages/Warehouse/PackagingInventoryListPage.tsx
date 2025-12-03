@@ -703,7 +703,7 @@ const PackagingInventoryListPage = () => {
       <div className="flex flex-col md:flex-row justify-between md:items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">
-            Packaging Inventory Management
+            Packaging Inventory
           </h1>
           {selectedRows.length > 0 && (
             <p className="text-sm text-gray-500 mt-1">

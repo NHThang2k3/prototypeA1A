@@ -72,7 +72,7 @@ const sidebarNavItems: NavItem[] = [
         key: "productivity-receipt",
         children: [
           {
-            title: "Packing List/Print QR",
+            title: "Packing List Management",
             path: "/packaging-warehouse/packing-list",
             icon: ListPlus,
             key: "packing-list",
@@ -91,7 +91,7 @@ const sidebarNavItems: NavItem[] = [
         key: "productivity-inventory",
         children: [
           {
-            title: "Inventory",
+            title: "Packaging Inventory",
             path: "/packaging-warehouse/inventory",
             icon: Boxes,
             key: "inventory",
@@ -123,19 +123,19 @@ const sidebarNavItems: NavItem[] = [
         key: "productivity-qr",
         children: [
           {
-            title: "Scan QR Location",
+            title: "Scan to put item into location",
             path: "/packaging-warehouse/qr-scan-location",
             icon: QrCode,
             key: "qr-scan-location",
           },
           {
-            title: "Scan QR Packaging",
+            title: "Scan to move item",
             path: "/packaging-warehouse/qr-scan-packaging",
             icon: QrCode,
             key: "qr-scan-packaging",
           },
           {
-            title: "Scan QR Issue Request",
+            title: "Scan to issue item",
             path: "/packaging-warehouse/qr-scan-request",
             icon: QrCode,
             key: "qr-scan-request",
