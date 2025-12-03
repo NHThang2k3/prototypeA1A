@@ -692,7 +692,7 @@ const FabricRollDetailModal: FC<{
               />
               <DetailRow label="QC Date" value={roll.qcDate} />
               <DetailRow label="QC By" value={roll.qcBy} />
-              <DetailRow label="Comment" value={roll.comment} />
+              <DetailRow label="Remark" value={roll.comment} />
             </div>
           </div>
 
@@ -890,6 +890,15 @@ const InventoryListPage = () => {
         accessorKey: "qcStatus",
         header: "QC Status",
         cell: ({ row }) => <StatusBadge status={row.original.qcStatus} />,
+      },
+      {
+        accessorKey: "comment",
+        header: "Remark",
+        cell: ({ row }) => (
+          <div className="max-w-[80px] truncate" title={row.original.comment}>
+            {row.original.comment || ""}
+          </div>
+        ),
       },
       { accessorKey: "location", header: "Location" },
       { accessorKey: "factory", header: "Factory" },

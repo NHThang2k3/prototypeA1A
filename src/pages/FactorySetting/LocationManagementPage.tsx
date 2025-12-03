@@ -29,17 +29,16 @@ export interface LocationItem {
   enabled: boolean;
 }
 
-// --- DATA (Cập nhật dữ liệu mẫu cho phù hợp format mới) ---
+// --- DATA ---
 
 const locationListData: LocationItem[] = [
-  // --- Vietnam, Factory A ---
   {
     id: "F1-A-001",
     country: "Vietnam",
     factory: "Factory A",
     warehouse: "F1",
     type: "Shelf",
-    shelf: "A-001", // Format mới
+    shelf: "A-001",
     capacity: 200,
     currentOccupancy: 180,
     lastUpdated: "10/18/2025",
@@ -65,14 +64,13 @@ const locationListData: LocationItem[] = [
     purpose: "fabric",
     enabled: true,
   },
-  // --- Machines ---
   {
     id: "F1-R-001",
     country: "Vietnam",
     factory: "Factory A",
     warehouse: "F1",
     type: "Machine",
-    shelf: "R-001", // Format mới cho Machine
+    shelf: "R-001",
     capacity: 0,
     currentOccupancy: 0,
     lastUpdated: "10/23/2025",
@@ -220,11 +218,8 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
   const [factory, setFactory] = useState(FACTORIES_BY_COUNTRY["Vietnam"][0]);
   const [warehouse, setWarehouse] = useState("F1");
   const [type, setType] = useState<"Shelf" | "Machine">("Shelf");
-
-  // New State for Split Inputs
   const [namePrefix, setNamePrefix] = useState("A");
-  const [nameSuffix, setNameSuffix] = useState(""); // Stores "001", "1", etc.
-
+  const [nameSuffix, setNameSuffix] = useState("");
   const [capacity, setCapacity] = useState<number | "">("");
   const [currentOccupancy, setCurrentOccupancy] = useState<number>(0);
   const [description, setDescription] = useState("");
@@ -232,9 +227,7 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
   const [enabled, setEnabled] = useState(false);
 
   const isEditing = !!initialData;
-  const hasQrCode = isEditing && initialData?.qrCode;
 
-  // Reset or Load Data
   useEffect(() => {
     if (isOpen) {
       if (initialData) {
@@ -243,25 +236,29 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
         setWarehouse(initialData.warehouse);
         setType(initialData.type);
 
-        // Parse existing shelf name (e.g., "A001" -> "A", "001")
+        // --- SỬA LOGIC PARSE DỮ LIỆU ---
         const shelfStr = String(initialData.shelf);
-        const match = shelfStr.match(/^([A-Z])(\d+)$/);
+        // Regex cũ: /^([A-Z])(\d+)$/ (chỉ khớp A001)
+        // Regex mới: /^([A-Z])[-]?(\d+)$/ (khớp cả A001 và A-001)
+        const match = shelfStr.match(/^([A-Z])[-]?(\d+)$/);
+
         if (match) {
           setNamePrefix(match[1]);
           setNameSuffix(match[2]);
         } else {
-          // Fallback for legacy/messy data
           setNamePrefix(initialData.type === "Machine" ? "R" : "A");
           setNameSuffix("");
         }
+        // -------------------------------
 
         setCapacity(initialData.capacity);
         setCurrentOccupancy(initialData.currentOccupancy);
         setDescription(initialData.description);
         setPurpose(initialData.purpose);
+
+        // Load trạng thái enabled
         setEnabled(initialData.enabled);
       } else {
-        // Create New
         setCountry("Vietnam");
         setFactory(FACTORIES_BY_COUNTRY["Vietnam"][0]);
         setWarehouse("F1");
@@ -277,13 +274,11 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
     }
   }, [isOpen, initialData, defaultPurpose]);
 
-  // Adjust Prefix when Type changes
   useEffect(() => {
     if (purpose !== "fabric") setType("Shelf");
   }, [purpose]);
 
   useEffect(() => {
-    // Reset prefix to default valid value when type changes
     if (type === "Machine" && !MACHINE_PREFIXES.includes(namePrefix)) {
       setNamePrefix("R");
     } else if (type === "Shelf" && !ALPHABET.includes(namePrefix)) {
@@ -308,7 +303,6 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
       return;
     }
 
-    // Format Suffix: Ensure it is 3 digits (e.g., 5 -> 005)
     const formattedSuffix = String(nameSuffix).padStart(3, "0");
     const combinedName = `${namePrefix}-${formattedSuffix}`;
 
@@ -316,7 +310,6 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
     if (isEditing) {
       locationId = initialData!.id;
     } else {
-      // ID Format: Warehouse-ShelfName (e.g., F1-A-001 or F1-R005)
       locationId = `${warehouse}-${combinedName}`;
     }
 
@@ -326,7 +319,7 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
       factory,
       warehouse,
       type,
-      shelf: combinedName, // Store combined string
+      shelf: combinedName,
       capacity: type === "Shelf" ? Number(capacity) : 0,
       currentOccupancy,
       description,
@@ -442,13 +435,11 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
               </select>
             </div>
 
-            {/* MODIFIED: Shelf/Machine Name Input */}
             <div className="col-span-2">
               <label className="block text-sm font-medium text-gray-700">
                 {type === "Shelf" ? "Shelf Name" : "Machine Name"} *
               </label>
               <div className="mt-1 flex space-x-2">
-                {/* Dropdown for Prefix (A-Z or R/C) */}
                 <select
                   disabled={isEditing}
                   value={namePrefix}
@@ -462,7 +453,6 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
                   ))}
                 </select>
 
-                {/* Input for Number (000-999) */}
                 <input
                   disabled={isEditing}
                   required
@@ -484,7 +474,6 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
               </p>
             </div>
 
-            {/* CAPACITY FIELD */}
             {type === "Shelf" && (
               <div className="col-span-2">
                 <label className="block text-sm font-medium text-gray-700">
@@ -514,22 +503,19 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
               ></textarea>
             </div>
 
-            <div className="col-span-2 flex items-center">
+            <div className="col-span-2 flex items-center p-2 border border-gray-100 rounded bg-gray-50">
               <input
                 type="checkbox"
                 id="enabled"
                 checked={enabled}
                 onChange={(e) => setEnabled(e.target.checked)}
-                disabled={!hasQrCode}
-                className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+                className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
               />
               <label
                 htmlFor="enabled"
-                className={`ml-2 block text-sm ${
-                  !hasQrCode ? "text-gray-400" : "text-gray-900"
-                }`}
+                className="ml-2 block text-sm font-medium text-gray-900 cursor-pointer"
               >
-                Enable location {!hasQrCode && "(Requires QR Code)"}
+                Enable location
               </label>
             </div>
           </div>
@@ -551,6 +537,7 @@ interface LocationTableProps {
   locations: LocationItem[];
   onEdit: (location: LocationItem) => void;
   onDelete: (locationId: string) => void;
+  onPrintSingle: (locationId: string) => void;
   onViewItems: (location: LocationItem) => void;
   selectedIds: Set<string>;
   onSelectionChange: (newSelectedIds: Set<string>) => void;
@@ -560,6 +547,7 @@ const LocationTable: React.FC<LocationTableProps> = ({
   locations,
   onEdit,
   onDelete,
+  onPrintSingle,
   onViewItems,
   selectedIds,
   onSelectionChange,
@@ -591,7 +579,6 @@ const LocationTable: React.FC<LocationTableProps> = ({
     return warehouses;
   }, [locations]);
 
-  // Default expand all
   useEffect(() => {
     setExpandedWarehouses(new Set(Object.keys(groupedData)));
   }, [groupedData]);
@@ -686,7 +673,6 @@ const LocationTable: React.FC<LocationTableProps> = ({
 
               return (
                 <React.Fragment key={wh}>
-                  {/* Warehouse Row */}
                   <tr className="bg-gray-100 font-bold">
                     <td className="px-6 py-3 text-sm text-gray-800 flex items-center">
                       <input
@@ -720,7 +706,6 @@ const LocationTable: React.FC<LocationTableProps> = ({
                     </td>
                     <td colSpan={3}></td>
                   </tr>
-                  {/* Items Rows */}
                   {expandedWarehouses.has(wh) &&
                     data.items.map((loc) => (
                       <tr
@@ -745,7 +730,6 @@ const LocationTable: React.FC<LocationTableProps> = ({
                               onClick={() => onViewItems(loc)}
                             >
                               <span>{loc.id}</span>
-                              {/* Hiển thị Shelf Name/Machine Name */}
                               <span className="text-xs text-gray-400 font-normal">
                                 {loc.type === "Shelf"
                                   ? `Shelf ${loc.shelf}`
@@ -783,7 +767,7 @@ const LocationTable: React.FC<LocationTableProps> = ({
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => alert(loc.qrCode)}
+                            onClick={() => onPrintSingle(loc.id)}
                           >
                             <Printer className="h-4 w-4" />
                           </Button>
@@ -875,6 +859,35 @@ const LocationManagementPage = () => {
     }
   };
 
+  // --- HÀM XỬ LÝ IN ẤN (Cập nhật QR Status = Yes) ---
+
+  const handlePrintSelected = () => {
+    alert(`Printing ${selectedIds.size} QR Codes...`);
+    setLocations((prev) => {
+      if (!prev) return null;
+      return prev.map((loc) => {
+        if (selectedIds.has(loc.id)) {
+          return { ...loc, isQrPrinted: true };
+        }
+        return loc;
+      });
+    });
+  };
+
+  const handlePrintSingle = (id: string) => {
+    alert(`Printing QR for ${id}...`);
+    setLocations((prev) => {
+      if (!prev) return null;
+      return prev.map((loc) => {
+        if (loc.id === id) {
+          return { ...loc, isQrPrinted: true };
+        }
+        return loc;
+      });
+    });
+  };
+  // ---------------------------------------------------
+
   const filteredLocations = useMemo(() => {
     if (!locations) return [];
     return locations.filter((loc) => {
@@ -906,7 +919,7 @@ const LocationManagementPage = () => {
           setIsFormOpen(true);
         }}
         onDeleteSelected={handleBulkDelete}
-        onPrintSelected={() => alert("Printing...")}
+        onPrintSelected={handlePrintSelected}
         selectedCount={selectedIds.size}
       />
 
@@ -956,6 +969,7 @@ const LocationManagementPage = () => {
         <LocationTable
           locations={filteredLocations}
           onDelete={handleDelete}
+          onPrintSingle={handlePrintSingle}
           onEdit={(loc) => {
             setEditingLoc(loc);
             setIsFormOpen(true);
