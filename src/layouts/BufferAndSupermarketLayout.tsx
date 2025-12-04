@@ -157,8 +157,8 @@ const MenuItem = ({ item }: { item: NavItem }) => {
 
   const commonClasses =
     "flex items-center w-full text-sm p-2.5 rounded-md transition-colors duration-200";
-  const activeClasses = "bg-gray-700 font-semibold text-white";
-  const inactiveClasses = "text-gray-300 hover:bg-gray-700 hover:text-white";
+  const activeClasses = "bg-blue-700 font-semibold text-white";
+  const inactiveClasses = "text-white hover:bg-blue-700";
 
   if (hasChildren) {
     return (
@@ -186,7 +186,7 @@ const MenuItem = ({ item }: { item: NavItem }) => {
           )}
         </button>
         {!isCollapsed && isOpen && (
-          <div className="pl-6 space-y-1 border-l border-gray-600 ml-3.5">
+          <div className="pl-6 space-y-1 border-l border-blue-400 ml-3.5">
             {item.children?.map((child) => (
               <MenuItem key={child.key} item={child} />
             ))}
@@ -306,11 +306,11 @@ const Sidebar = ({ isForMobile = false }: { isForMobile?: boolean }) => {
       }}
     >
       <aside
-        className={`bg-gray-800 text-white h-full flex flex-col transition-all duration-300 ${
+        className={`bg-blue-600 text-white h-full flex flex-col transition-all duration-300 ${
           isForMobile ? "w-80" : effectiveIsCollapsed ? "w-20" : "w-80"
         }`}
       >
-        <div className="px-4 py-5 flex items-center justify-between border-b border-gray-700">
+        <div className="px-4 py-5 flex items-center justify-between border-b border-blue-500">
           <span
             className={`text-2xl font-bold whitespace-nowrap ${
               effectiveIsCollapsed ? "hidden" : ""
@@ -328,10 +328,10 @@ const Sidebar = ({ isForMobile = false }: { isForMobile?: boolean }) => {
         </nav>
 
         {!isForMobile && (
-          <div className="p-2 border-t border-gray-700">
+          <div className="p-2 border-t border-blue-500">
             <button
               onClick={() => setIsCollapsed(!isCollapsed)}
-              className="flex items-center w-full p-2.5 rounded-md text-gray-300 hover:bg-gray-700"
+              className="flex items-center w-full p-2.5 rounded-md text-white hover:bg-blue-700"
             >
               <ChevronLeft
                 className={`w-6 h-6 transition-transform duration-300 ${
@@ -478,7 +478,7 @@ const BufferAndSupermarketLayout = () => {
           <Sidebar isForMobile={true} />
           <button
             onClick={() => setSidebarOpen(false)}
-            className="absolute top-4 left-[20.5rem] text-white p-1 rounded-full bg-gray-800/50 hover:bg-gray-700/70 transition-colors"
+            className="absolute top-4 left-[20.5rem] text-white p-1 rounded-full bg-blue-800/50 hover:bg-blue-700/70 transition-colors"
           >
             <X className="w-7 h-7" />
           </button>

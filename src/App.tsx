@@ -81,17 +81,13 @@ import ScanQRAccessory from "./pages/Warehouse/ScanQRAccessory";
 import ScanQRWarehouseLocationAccessory from "./pages/Warehouse/ScanQRWarehouseLocationAccessory";
 import ScanQRIssueRequestAccessory from "./pages/Warehouse/ScanQRIssueRequestAccessory";
 import PackingListManagementPageAccessory from "./pages/Warehouse/PackingListManagementPageAccessory";
-import ImportPackingListFormPageAccessory from "./pages/Warehouse/ImportPackingListFormPageAccessory";
 import ScanQRWarehouseLocationPackaging from "./pages/Warehouse/ScanQRWarehouseLocationPackaging";
 import ScanQRPackaging from "./pages/Warehouse/ScanQRPackaging";
 import ScanQRIssueRequestPackaging from "./pages/Warehouse/ScanQRIssueRequestPackaging";
 import PackingListManagementPagePackaging from "./pages/Warehouse/PackingListManagementPagePackaging";
-import ImportPackingListFormPagePackaging from "./pages/Warehouse/ImportPackingListFormPagePackaging";
 import ScanInBufferPage from "./pages/Buffer/ScanInBufferPage";
 import ScanOutBufferPage from "./pages/Buffer/ScanOutBufferPage";
 import RelaxTimeStandardPage from "./pages/Warehouse/RelaxTimeStandardPage";
-import StockTaking from "./pages/Warehouse/StockTaking";
-import StockTakingWarehouse from "./pages/Warehouse/StockTakingWarehouse";
 import PermissionManagementPage from "./pages/FactorySetting/RoleManagementPage";
 
 function App() {
@@ -133,11 +129,7 @@ function App() {
             element={<RelaxTimeStandardPage />}
           />
           <Route path="action-plan" element={<ActionPlanPage />} />
-          <Route path="stock-taking" element={<StockTaking />} />
-          <Route
-            path="stock-taking-warehouse"
-            element={<StockTakingWarehouse />}
-          />
+          
         </Route>
 
         {/* === Module Kho Phụ Liệu (Ví dụ) === */}
@@ -169,10 +161,7 @@ function App() {
             path="packing-list"
             element={<PackingListManagementPageAccessory />}
           />
-          <Route
-            path="packing-list-form"
-            element={<ImportPackingListFormPageAccessory />}
-          />
+          
         </Route>
 
         {/* === Module Kho Đóng Gói (Ví dụ) === */}
@@ -204,10 +193,7 @@ function App() {
             path="packing-list"
             element={<PackingListManagementPagePackaging />}
           />
-          <Route
-            path="packing-list-form"
-            element={<ImportPackingListFormPagePackaging />}
-          />
+          
         </Route>
 
         {/* === Module Cutting === */}

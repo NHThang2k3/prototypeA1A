@@ -82,6 +82,7 @@ import SewingTrimsKanbanPage from "../Warehouse/SewingTrimsKanbanPage";
 // FactorySetting
 import LocationManagementPage from "../FactorySetting/LocationManagementPage";
 import AuditLogPage from "../FactorySetting/AuditLogPage";
+import RoleManagementPage from "../FactorySetting/RoleManagementPage";
 
 // overall-dashboard
 // import OverallDashboardPage from "../overall-dashboard/OverallDashboardPage";
@@ -222,6 +223,7 @@ const AllScreens: React.FC = () => {
     // FactorySetting
     { name: "LocationManagementPage", component: LocationManagementPage },
     { name: "AuditLogPage", component: AuditLogPage },
+    { name: "RoleManagementPage", component: RoleManagementPage },
 
     // overall-dashboard
     // { name: "OverallDashboardPage", component: OverallDashboardPage },
