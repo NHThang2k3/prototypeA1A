@@ -1,4 +1,5 @@
 export type RequestStatus =
+  | "Pending" // Added for "Chưa sửa"
   | "Pending Approval"
   | "Approved"
   | "In Progress"
@@ -7,6 +8,16 @@ export type RequestStatus =
 
 export interface RepairRequest {
   id: string;
+  // New fields
+  jobNo: string;
+  bundleNo: string;
+  issueDescription?: string; // đang bị cái gì
+  proposedAction?: string; // đề nghị làm gì
+  startRepairTime?: string; // thời gian ghi nhận đang sửa
+  endRepairTime?: string; // thời gian sửa xong
+  recordDate?: string; // Replaces or aliases creationDate
+
+  // Existing fields
   creationDate: string;
   poCode: string;
   productCode: string;

@@ -155,29 +155,29 @@ const sidebarNavItems: NavItem[] = [
         key: "productivity-damaged-goods-repair",
         children: [
           {
-            title: "Display data list",
-            path: "/decoration/productivity/display-data-list",
+            title: "Repair Request List",
+            path: "/decoration/productivity/repair-request-list",
             icon: FileOutput,
-            key: "display-data-list",
+            key: "repair-request-list",
           },
-          {
-            title: "Create data entry",
-            path: "/decoration/productivity/create-data-entry",
-            icon: Sun,
-            key: "create-data-entry",
-          },
-          {
-            title: "Approve data",
-            path: "/decoration/productivity/approve-data",
-            icon: DraftingCompass,
-            key: "approve-data",
-          },
-          {
-            title: "Record result information",
-            path: "/decoration/productivity/record-result-information",
-            icon: Printer,
-            key: "record-result-information",
-          },
+          // {
+          //   title: "Create data entry",
+          //   path: "/decoration/productivity/create-data-entry",
+          //   icon: Sun,
+          //   key: "create-data-entry",
+          // },
+          // {
+          //   title: "Approve data",
+          //   path: "/decoration/productivity/approve-data",
+          //   icon: DraftingCompass,
+          //   key: "approve-data",
+          // },
+          // {
+          //   title: "Record result information",
+          //   path: "/decoration/productivity/record-result-information",
+          //   icon: Printer,
+          //   key: "record-result-information",
+          // },
         ],
       },
     ],
@@ -224,6 +224,12 @@ const sidebarNavItems: NavItem[] = [
         icon: TimerOff,
         key: "availability-downtime",
         path: "/decoration/availability/machine-downtime",
+      },
+      {
+        title: "Dashboard Downtime",
+        icon: Gauge,
+        key: "availability-downtime-dashboard",
+        path: "/decoration/availability/downtime-dashboard",
       },
       {
         title: "Machine Location",

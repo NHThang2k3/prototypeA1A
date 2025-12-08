@@ -150,55 +150,51 @@ const PrintQRModal = ({ isOpen, onOpenChange }: PrintQRModalProps) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl bg-slate-50 border-slate-300 shadow-xl">
-        
-        
+      <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
-          <DialogTitle className="hidden">Print QR Code</DialogTitle>
+          <DialogTitle>Print QR Code</DialogTitle>
         </DialogHeader>
 
-        <div className="flex flex-col gap-6 p-4">
+        <div className="grid gap-6 py-4">
           {/* Radio Buttons Group */}
           <RadioGroup 
             defaultValue="both" 
             onValueChange={setPrintType} 
-            className="flex flex-wrap gap-6 items-center"
+            className="grid grid-cols-1 md:grid-cols-3 gap-4"
           >
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 border p-3 rounded-lg hover:bg-accent/50 cursor-pointer transition-colors">
               <RadioGroupItem value="both" id="r1" />
-              <Label htmlFor="r1" className="text-blue-700 font-bold underline cursor-pointer text-base">
-                In hàng nhà và hàng trang trí
+              <Label htmlFor="r1" className="cursor-pointer font-normal">
+                Print buffer and supermarket
               </Label>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 border p-3 rounded-lg hover:bg-accent/50 cursor-pointer transition-colors">
               <RadioGroupItem value="home" id="r2" />
-              <Label htmlFor="r2" className="text-blue-700 font-bold underline cursor-pointer text-base">
-                In hàng nhà
+              <Label htmlFor="r2" className="cursor-pointer font-normal">
+                Print buffer
               </Label>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 border p-3 rounded-lg hover:bg-accent/50 cursor-pointer transition-colors">
               <RadioGroupItem value="decoration" id="r3" />
-              <Label htmlFor="r3" className="text-blue-700 font-bold underline cursor-pointer text-base">
-                In hàng trang trí
+              <Label htmlFor="r3" className="cursor-pointer font-normal">
+                Print supermarket
               </Label>
             </div>
           </RadioGroup>
 
           {/* Main Input */}
-          <div>
-            <Input className="h-10 border-blue-200 focus-visible:ring-blue-400" />
+          <div className="space-y-2">
+            <Label htmlFor="main-input">Job No / Style No</Label>
+            <Input id="main-input" placeholder="Enter Job No or Style No..." />
           </div>
 
-          {/* Controls Grid */}
-          <div className="grid grid-cols-12 gap-4">
-            
-            {/* Left Column: Inputs */}
-            <div className="col-span-12 md:col-span-8 space-y-6">
-              
-              {/* CutNo Row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* CutNo Section */}
+            <div className="space-y-4 p-4 border rounded-lg bg-gray-50/50">
+              <h4 className="font-semibold text-sm text-gray-700">Cut Configuration</h4>
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <Label className="font-bold underline text-black">CutNo Start</Label>
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">CutNo Start</Label>
                   <Select>
                     <SelectTrigger className="bg-white">
                       <SelectValue placeholder="Select" />
@@ -208,8 +204,8 @@ const PrintQRModal = ({ isOpen, onOpenChange }: PrintQRModalProps) => {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-1">
-                  <Label className="font-bold underline text-black">CutNo End</Label>
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">CutNo End</Label>
                   <Select>
                     <SelectTrigger className="bg-white">
                       <SelectValue placeholder="Select" />
@@ -220,84 +216,76 @@ const PrintQRModal = ({ isOpen, onOpenChange }: PrintQRModalProps) => {
                   </Select>
                 </div>
               </div>
-
-              {/* Bundle Row */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <Label className="font-bold underline text-black">Bundle Start</Label>
-                  <Select>
-                    <SelectTrigger className="bg-white">
-                      <SelectValue placeholder="Select" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {bundleNos.map((n) => <SelectItem key={n} value={n}>{n}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1">
-                  <Label className="font-bold underline text-black">Bundle End</Label>
-                  <Select>
-                    <SelectTrigger className="bg-white">
-                      <SelectValue placeholder="Select" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {bundleNos.map((n) => <SelectItem key={n} value={n}>{n}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
+              <Button variant="secondary" className="w-full">
+                 Load Cut Data
+              </Button>
             </div>
 
-            {/* Right Column: Buttons */}
-            <div className="col-span-12 md:col-span-4 flex flex-col justify-between gap-4">
-              
-              {/* LOAD Buttons aligned with input rows generally */}
-              <div className="flex flex-col gap-6 mt-6">
-                 <Button 
-                   className="w-full bg-gradient-to-b from-white to-gray-200 hover:from-gray-100 hover:to-gray-300 text-blue-700 font-bold border border-gray-400 shadow-sm"
-                 >
-                   LOAD
-                 </Button>
-                 <Button 
-                   className="w-full bg-gradient-to-b from-white to-gray-200 hover:from-gray-100 hover:to-gray-300 text-blue-700 font-bold border border-gray-400 shadow-sm"
-                 >
-                   LOAD
-                 </Button>
+            {/* Bundle Section */}
+            <div className="space-y-4 p-4 border rounded-lg bg-gray-50/50">
+               <h4 className="font-semibold text-sm text-gray-700">Bundle Configuration</h4>
+               <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Bundle Start</Label>
+                  <Select>
+                    <SelectTrigger className="bg-white">
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {bundleNos.map((n) => <SelectItem key={n} value={n}>{n}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Bundle End</Label>
+                  <Select>
+                    <SelectTrigger className="bg-white">
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {bundleNos.map((n) => <SelectItem key={n} value={n}>{n}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-
-              {/* PRINT Button */}
-              <Button 
-                className="w-full h-16 bg-[#FFFFE0] hover:bg-[#FFFACD] text-blue-700 text-3xl font-bold border-2 border-gray-400 shadow-md"
-              >
-                PRINT
+              <Button variant="secondary" className="w-full">
+                 Load Bundle Data
               </Button>
-
             </div>
           </div>
 
           {/* Footer Options */}
-          <div className="flex justify-end items-center gap-6 mt-2">
+          <div className="flex flex-wrap items-center gap-6">
             <div className="flex items-center space-x-2">
               <Checkbox id="printAgain" />
-              <Label htmlFor="printAgain" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+              <Label htmlFor="printAgain" className="text-sm font-medium leading-none cursor-pointer">
                 Print Again
               </Label>
             </div>
             <div className="flex items-center space-x-2">
               <Checkbox id="showData" />
-              <Label htmlFor="showData" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+              <Label htmlFor="showData" className="text-sm font-medium leading-none cursor-pointer">
                 Show Data
               </Label>
             </div>
             <div className="flex items-center space-x-2">
               <Checkbox id="emb" />
-              <Label htmlFor="emb" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+              <Label htmlFor="emb" className="text-sm font-medium leading-none cursor-pointer">
                 EMB
               </Label>
             </div>
           </div>
         </div>
+
+        <DialogFooter className="gap-2 sm:gap-0">
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button onClick={() => onOpenChange(false)}>
+            <Printer className="mr-2 h-4 w-4" />
+            Print QR Code
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

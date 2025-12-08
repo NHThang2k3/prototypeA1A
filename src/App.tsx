@@ -40,8 +40,8 @@ import BufferScanOutPage from "./pages/Decoration/BufferScanOutPage";
 import DecorationDashboardPage from "./pages/Decoration/DecorationDashboardPage";
 import ActionPlanPage from "./pages/Warehouse/ActionPlanPage";
 import MachineLocationPage from "./pages/Decoration/MachineLocationPage";
+import DowntimeDashboardPage from "./pages/Decoration/DowntimeDashboardPage";
 import KanbanReportPage from "./pages/Buffer/KanbanReportPage";
-// import BufferScanPage from "./pages/Buffer/BufferScanPage";
 import BufferReportPage from "./pages/Buffer/BufferReportPage";
 import SupermarketScanPage from "./pages/Buffer/SupermarketScanPage";
 import SupermarketReportPage from "./pages/Buffer/SupermarketReportPage";
@@ -276,7 +276,7 @@ function App() {
             element={<DecorationDashboardPage />} // Có thể tái sử dụng
           />
           <Route
-            path="productivity/display-data-list"
+            path="productivity/repair-request-list"
             element={<RepairRequestListPage />}
           />
           <Route
@@ -307,6 +307,10 @@ function App() {
           <Route
             path="availability/machine-downtime"
             element={<div>Machine Downtime Page (Reuse)</div>}
+          />
+          <Route
+            path="availability/downtime-dashboard"
+            element={<DowntimeDashboardPage />}
           />
           <Route
             path="availability/machine-location"
