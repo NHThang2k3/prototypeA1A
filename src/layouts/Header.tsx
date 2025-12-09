@@ -144,7 +144,7 @@ const Header = ({ onMenuClick }: HeaderProps) => {
         <div className="flex items-center space-x-2">
           <User className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 p-1" />
           <span className="text-sm font-medium text-gray-700">
-            {userInfo?.username || userInfo?.ip}
+            {userInfo?.ip}
           </span>
         </div>
       </div>
