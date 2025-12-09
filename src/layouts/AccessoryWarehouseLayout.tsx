@@ -1,12 +1,9 @@
 // Path: src/layouts/AccessoryWarehouseLayout.tsx
-import { useState, createContext, useContext, useEffect, useRef } from "react";
-import { NavLink, Outlet, useLocation, Link } from "react-router-dom";
+import { useState, createContext, useContext, useEffect } from "react";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 import {
-  Menu,
   X,
   LayoutDashboard,
-  Bell,
-  User,
   KanbanSquare,
   Network,
   FileOutput,
@@ -23,12 +20,12 @@ import {
   BellRing,
   Settings,
   MoreHorizontal,
-  ArrowLeft,
-  Globe,
   type LucideIcon,
   QrCode,
   ListPlus,
 } from "lucide-react";
+
+import Header from "./Header";
 
 type NavItem = {
   title: string;
@@ -395,104 +392,7 @@ const Sidebar = ({ isForMobile = false }: { isForMobile?: boolean }) => {
   );
 };
 
-// --- UPDATED: Thêm dropdown chọn ngôn ngữ vào Header ---
-const Header = ({ onMenuClick }: { onMenuClick: () => void }) => {
-  const [selectedLang, setSelectedLang] = useState<"en" | "vi">("en");
-  const [isDropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  // Hook để đóng dropdown khi click ra ngoài
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
-        setDropdownOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
-
-  return (
-    <header className="bg-white border-b border-gray-200 p-4 flex justify-between items-center">
-      <div className="flex items-center gap-4">
-        <button onClick={onMenuClick} className="lg:hidden text-gray-600">
-          <Menu className="w-6 h-6" />
-        </button>
-        <Link
-          to="/"
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          <span className="font-medium hidden sm:block">Select Module</span>
-        </Link>
-      </div>
-
-      <div className="flex items-center space-x-4">
-        {/* --- NEW: Language Dropdown --- */}
-        <div className="relative" ref={dropdownRef}>
-          <button
-            onClick={() => setDropdownOpen(!isDropdownOpen)}
-            className="flex items-center space-x-1 text-gray-500 hover:text-gray-700 p-2 rounded-md hover:bg-gray-100 transition-colors"
-          >
-            <Globe className="w-5 h-5" />
-            <span className="text-sm font-medium uppercase">
-              {selectedLang}
-            </span>
-            <ChevronDown
-              className={`w-4 h-4 transition-transform ${
-                isDropdownOpen ? "rotate-180" : ""
-              }`}
-            />
-          </button>
-          {isDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-36 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
-              <button
-                onClick={() => {
-                  setSelectedLang("en");
-                  setDropdownOpen(false);
-                }}
-                className={`w-full text-left px-4 py-2 text-sm ${
-                  selectedLang === "en"
-                    ? "bg-gray-100 text-gray-900 font-semibold"
-                    : "text-gray-700"
-                } hover:bg-gray-100`}
-              >
-                English
-              </button>
-              <button
-                onClick={() => {
-                  setSelectedLang("vi");
-                  setDropdownOpen(false);
-                }}
-                className={`w-full text-left px-4 py-2 text-sm ${
-                  selectedLang === "vi"
-                    ? "bg-gray-100 text-gray-900 font-semibold"
-                    : "text-gray-700"
-                } hover:bg-gray-100`}
-              >
-                Vietnamese
-              </button>
-            </div>
-          )}
-        </div>
-        {/* --- End Language Dropdown --- */}
-
-        <button className="text-gray-500 hover:text-gray-700">
-          <Bell className="w-6 h-6" />
-        </button>
-        <div className="flex items-center space-x-2">
-          <User className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 p-1" />
-          <span className="text-sm font-medium text-gray-700">Admin</span>
-        </div>
-      </div>
-    </header>
-  );
-};
+// Header component is now imported from ./Header.tsx
 
 const AccessoryWarehouseLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);

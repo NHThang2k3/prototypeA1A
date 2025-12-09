@@ -456,7 +456,7 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
   const [capacity, setCapacity] = useState<number | "">("");
   const [currentOccupancy, setCurrentOccupancy] = useState<number>(0);
   const [description, setDescription] = useState("");
-  const [purpose, setPurpose] = useState(defaultPurpose);
+  const [purpose, setPurpose] = useState<"fabric" | "accessories" | "packaging" | "temp warehouse">(defaultPurpose);
   const [enabled, setEnabled] = useState(false);
 
   const isEditing = !!initialData;

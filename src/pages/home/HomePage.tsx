@@ -177,6 +177,9 @@ const HomePage = () => {
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
             Please select a module to get started
           </p>
+          <p className="text-lg text-gray-50 max-w-2xl mx-auto">
+            <a href="/ip-tracking">IP Tracking</a>
+          </p>
         </header>
 
         <main className={`grid ${gridCols} gap-8`}>
