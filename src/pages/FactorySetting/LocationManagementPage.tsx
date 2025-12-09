@@ -25,7 +25,7 @@ export interface LocationItem {
   description: string;
   qrCode: string;
   isQrPrinted: boolean;
-  purpose: "fabric" | "accessories" | "packaging";
+  purpose: "fabric" | "accessories" | "packaging" | "temp warehouse";
   enabled: boolean;
 }
 
@@ -93,24 +93,7 @@ const warehouseListData: WarehouseData[] = [
     description: "Main fabric warehouse",
     enabled: true,
   },
-  {
-    id: "F2",
-    name: "F2",
-    country: "Vietnam",
-    factory: "Factory A",
-    purpose: "accessories",
-    description: "Accessories storage",
-    enabled: true,
-  },
-  {
-    id: "WH-A",
-    name: "WH-A",
-    country: "Cambodia",
-    factory: "Factory C",
-    purpose: "packaging",
-    description: "Packaging materials warehouse",
-    enabled: false,
-  },
+  
 ];
 
 // --- UTILS ---
@@ -452,7 +435,7 @@ interface LocationFormModalProps {
   onClose: () => void;
   onSave: (locationData: LocationItem) => void;
   initialData?: LocationItem | null;
-  defaultPurpose: "fabric" | "accessories" | "packaging";
+  defaultPurpose: "fabric" | "accessories" | "packaging" | "temp warehouse";
   warehouses: WarehouseData[];
 }
 
@@ -1104,7 +1087,7 @@ const LocationManagementPage = () => {
   const [locations, setLocations] = useState<LocationItem[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<
-    "fabric" | "accessories" | "packaging"
+    "fabric" | "accessories" | "packaging" |"temp warehouse"
   >("fabric");
   const [fabricSubTab, setFabricSubTab] = useState<"Shelf" | "Machine">(
     "Shelf"
@@ -1301,7 +1284,7 @@ const LocationManagementPage = () => {
       <div className="bg-white rounded-lg shadow-sm p-4 mb-4">
         <div className="flex justify-between items-center border-b pb-3">
           <div className="flex space-x-4">
-            {(["fabric", "accessories", "packaging"] as const).map((tab) => (
+            {(["fabric", "accessories", "packaging", "temp warehouse"] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
