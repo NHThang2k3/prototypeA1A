@@ -3,13 +3,23 @@ import { ref, set, onValue, onDisconnect, remove, runTransaction } from 'firebas
 import { db } from './firebase';
 import type { DetailedUserInfo, GeoLocation } from './IPService';
 
-export interface LiveVisitor extends DetailedUserInfo {
-  id: string;
-  isCurrentUser: boolean;
-  status: 'active' | 'idle';
-  lastActive: string;
+// --- 1. INTERFACES (Cập nhật thêm thông tin thiết bị) ---
+export interface DeviceInfo {
+  os: string;
+  browser: string;
+  type: 'mobile' | 'desktop' | 'tablet';
 }
 
+export interface LiveVisitor extends DetailedUserInfo {
+  id: string;              // Key trên Firebase (IP + DeviceID)
+  isCurrentUser: boolean;  // Xác định xem có phải là máy mình không
+  status: 'active' | 'idle';
+  lastActive: string;
+  deviceId?: string;       // ID riêng của thiết bị
+  deviceInfo?: DeviceInfo; // Thông tin OS/Browser
+}
+
+// --- 2. CONSTANTS & HELPERS ---
 const sanitizeIP = (ip: string) => ip.replace(/\./g, '_');
 
 const SAFE_LOCATION: GeoLocation = {
@@ -18,49 +28,87 @@ const SAFE_LOCATION: GeoLocation = {
 };
 
 /**
- * Tạo hoặc lấy Session ID duy nhất cho phiên làm việc hiện tại của trình duyệt.
- * Giúp phân biệt các thiết bị/tab khác nhau dù có cùng Public IP.
+ * Tạo hoặc lấy Device ID duy nhất.
+ * Lưu vào localStorage để định danh người dùng lâu dài (kể cả khi tắt trình duyệt).
  */
-const getSessionId = () => {
-  const STORAGE_KEY = 'visitor_session_id';
-  let sessionId = sessionStorage.getItem(STORAGE_KEY);
-  if (!sessionId) {
-    // Tạo ID ngẫu nhiên: timestamp + random string
-    sessionId = Date.now().toString(36) + Math.random().toString(36).substring(2);
-    sessionStorage.setItem(STORAGE_KEY, sessionId);
+const getDeviceId = (): string => {
+  const STORAGE_KEY = 'unique_device_id';
+  try {
+    let deviceId = localStorage.getItem(STORAGE_KEY);
+    if (!deviceId) {
+      // Tạo ID: prefix + timestamp + random string
+      deviceId = 'dev_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 9);
+      localStorage.setItem(STORAGE_KEY, deviceId);
+    }
+    return deviceId;
+  } catch (e) {
+    return 'unknown_' + Date.now();
   }
-  return sessionId;
 };
 
-// --- LOGIC MỚI: LIVE USER (FIX LỖI TRÙNG IP) ---
+/**
+ * Phân tích UserAgent để lấy thông tin thiết bị
+ */
+const getSystemInfo = (): DeviceInfo => {
+  const ua = navigator.userAgent;
+  let os = 'Unknown OS';
+  let browser = 'Unknown Browser';
+  let type: 'mobile' | 'desktop' | 'tablet' = 'desktop';
+
+  // Detect OS
+  if (ua.indexOf('Win') !== -1) os = 'Windows';
+  else if (ua.indexOf('Mac') !== -1) os = 'macOS';
+  else if (ua.indexOf('Linux') !== -1) os = 'Linux';
+  else if (ua.indexOf('Android') !== -1) os = 'Android';
+  else if (ua.indexOf('like Mac') !== -1) os = 'iOS';
+
+  // Detect Browser
+  if (ua.indexOf('Chrome') !== -1) browser = 'Chrome';
+  else if (ua.indexOf('Firefox') !== -1) browser = 'Firefox';
+  else if (ua.indexOf('Safari') !== -1) browser = 'Safari';
+  else if (ua.indexOf('Edge') !== -1) browser = 'Edge';
+
+  // Detect Mobile Type
+  if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua)) {
+    type = 'mobile';
+  }
+
+  return { os, browser, type };
+};
+
+// --- 3. CORE LOGIC: LIVE TRAFFIC MONITOR ---
+
 export async function registerPresence(userInfo: DetailedUserInfo) {
   if (!userInfo.ip) return;
 
   const safeIP = sanitizeIP(userInfo.ip);
-  const sessionId = getSessionId();
+  const deviceId = getDeviceId();
 
-  // Key kết hợp IP và SessionID để tránh xung đột khi dùng chung mạng
-  const uniqueVisitorKey = `${safeIP}_${sessionId}`;
+  // TẠO KEY KẾT HỢP: Giúp phân biệt nhiều thiết bị trên cùng 1 IP mạng
+  const uniqueVisitorKey = `${safeIP}_${deviceId}`;
 
   const userRef = ref(db, `visitors/${uniqueVisitorKey}`);
   const locationToSave = userInfo.location || SAFE_LOCATION;
+  const systemInfo = getSystemInfo();
 
   const visitorData: LiveVisitor = {
     ip: userInfo.ip,
     username: userInfo.username,
     accessTime: userInfo.accessTime,
     location: locationToSave,
-    id: uniqueVisitorKey, // ID unique
-    isCurrentUser: false, // Client sẽ tự check lại khi subscribe
+    id: uniqueVisitorKey,
+    deviceId: deviceId,
+    deviceInfo: systemInfo, // Lưu thông tin thiết bị
+    isCurrentUser: false,   // Client sẽ tự check lại khi subscribe
     status: 'active',
     lastActive: new Date().toISOString()
   };
 
   try {
-    // Ghi dữ liệu người dùng
+    // Ghi đè dữ liệu mới nhất
     await set(userRef, visitorData);
 
-    // Tự động xóa khi mất kết nối (đóng tab/tắt mạng)
+    // Tự động xóa khỏi Firebase khi mất kết nối (đóng tab/tắt mạng)
     await onDisconnect(userRef).remove();
   } catch (error) {
     console.error("Lỗi Firebase:", error);
@@ -68,10 +116,11 @@ export async function registerPresence(userInfo: DetailedUserInfo) {
 }
 
 export function subscribeToVisitors(
+  currentUserInfo: DetailedUserInfo,
   callback: (visitors: LiveVisitor[]) => void
 ) {
   const visitorsRef = ref(db, 'visitors');
-  const currentSessionId = getSessionId(); // Lấy session ID của chính mình
+  const currentDeviceId = getDeviceId(); // Lấy ID của máy đang chạy code này
 
   return onValue(visitorsRef, (snapshot) => {
     const data = snapshot.val();
@@ -80,14 +129,22 @@ export function subscribeToVisitors(
     if (data) {
       Object.keys(data).forEach((key) => {
         const visitor = data[key];
-        if (visitor && visitor.ip) {
-          // Kiểm tra xem visitor này có phải là mình không dựa trên SessionID có trong Key
-          visitor.isCurrentUser = key.includes(currentSessionId);
 
+        if (visitor && visitor.ip) {
+          // LOGIC CHECK NGƯỜI DÙNG HIỆN TẠI:
+          // So sánh xem key trên DB có chứa DeviceID của máy này không
+          visitor.isCurrentUser = key.includes(currentDeviceId);
+
+          // Format thời gian hiển thị
           const lastActive = visitor.lastActive || new Date().toISOString();
           visitor.accessTime = new Date(lastActive).toLocaleTimeString('vi-VN');
 
           if (!visitor.location) visitor.location = SAFE_LOCATION;
+
+          // Fallback nếu thiếu thông tin thiết bị (dữ liệu cũ)
+          if (!visitor.deviceInfo) {
+            visitor.deviceInfo = { os: 'Unknown', browser: 'Unknown', type: 'desktop' };
+          }
 
           visitorList.push(visitor);
         }
@@ -100,16 +157,21 @@ export function subscribeToVisitors(
 export async function goOffline(ip: string) {
   if (!ip) return;
   const safeIP = sanitizeIP(ip);
-  const sessionId = getSessionId();
+  const deviceId = getDeviceId();
 
-  // Xóa đúng key của session hiện tại
-  const uniqueVisitorKey = `${safeIP}_${sessionId}`;
-  await remove(ref(db, `visitors/${uniqueVisitorKey}`));
+  // Chỉ xóa đúng key của thiết bị này
+  const uniqueVisitorKey = `${safeIP}_${deviceId}`;
+
+  try {
+    await remove(ref(db, `visitors/${uniqueVisitorKey}`));
+  } catch (error) {
+    console.error("Error going offline:", error);
+  }
 }
 
 
-// --- LOGIC THỐNG KÊ (DAILY STATS) ---
-// Helper: Lấy key ngày hôm nay (YYYY-MM-DD)
+// --- 4. LOGIC THỐNG KÊ (DAILY STATS CHART) ---
+
 const getTodayKey = () => {
   const now = new Date();
   const year = now.getFullYear();
@@ -118,34 +180,30 @@ const getTodayKey = () => {
   return `${year}-${month}-${day}`;
 };
 
-// Helper: Lấy giờ hiện tại (0-23)
 const getCurrentHourKey = () => {
   return new Date().getHours().toString();
 };
 
 /**
- * Tăng bộ đếm lượt truy cập cho giờ hiện tại.
- * Sử dụng Session Storage để tránh spam đếm khi F5 trang.
+ * Tăng bộ đếm lượt truy cập.
+ * Dùng SessionStorage để mỗi phiên làm việc (mở trình duyệt) chỉ tính 1 lần.
  */
 export async function incrementVisitCount() {
-  // Kiểm tra xem session này đã được tính chưa
-  const hasRecorded = sessionStorage.getItem('has_recorded_visit_v2');
-  if (hasRecorded) return; // Nếu đã tính rồi thì thôi
+  const SESSION_KEY = 'has_recorded_visit_v2';
+  const hasRecorded = sessionStorage.getItem(SESSION_KEY);
+
+  if (hasRecorded) return;
 
   const dateKey = getTodayKey();
   const hourKey = getCurrentHourKey();
-
-  // Đường dẫn: daily_stats/2023-10-27/14 (Ví dụ ngày 27, lúc 14h)
   const statsRef = ref(db, `daily_stats/${dateKey}/${hourKey}`);
 
   try {
-    // Transaction giúp tăng số an toàn khi nhiều người cùng vào
     await runTransaction(statsRef, (currentValue) => {
       return (currentValue || 0) + 1;
     });
 
-    // Đánh dấu là đã tính cho phiên này
-    sessionStorage.setItem('has_recorded_visit_v2', 'true');
+    sessionStorage.setItem(SESSION_KEY, 'true');
     console.log("Recorded visit for daily stats 📈");
   } catch (error) {
     console.error("Failed to update daily stats:", error);
@@ -153,7 +211,7 @@ export async function incrementVisitCount() {
 }
 
 /**
- * Lắng nghe thay đổi dữ liệu biểu đồ realtime
+ * Lắng nghe dữ liệu biểu đồ
  */
 export function subscribeToDailyStats(
   callback: (hourlyData: number[], total: number) => void
@@ -164,11 +222,10 @@ export function subscribeToDailyStats(
   return onValue(statsRef, (snapshot) => {
     const data = snapshot.val() || {};
 
-    // Tạo mảng 24 số 0
+    // Tạo mảng 24 giờ (0-23)
     const hourlyData = new Array(24).fill(0);
     let total = 0;
 
-    // Fill dữ liệu từ Firebase vào mảng
     Object.keys(data).forEach((hourKey) => {
       const count = data[hourKey];
       const hourIndex = parseInt(hourKey, 10);
