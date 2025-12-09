@@ -116,7 +116,6 @@ export async function registerPresence(userInfo: DetailedUserInfo) {
 }
 
 export function subscribeToVisitors(
-  currentUserInfo: DetailedUserInfo,
   callback: (visitors: LiveVisitor[]) => void
 ) {
   const visitorsRef = ref(db, 'visitors');

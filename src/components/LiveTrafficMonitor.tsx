@@ -17,7 +17,7 @@ function LiveTrafficMonitor({ currentUser }: LiveTrafficMonitorProps) {
   useEffect(() => {
     registerPresence(currentUser);
 
-    const unsubscribe = subscribeToVisitors(currentUser, (realData) => {
+    const unsubscribe = subscribeToVisitors((realData) => {
       setVisitors(realData);
     });
 
