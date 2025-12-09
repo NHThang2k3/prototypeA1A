@@ -1,7 +1,8 @@
-import { useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Menu, Bell, User, Globe, ChevronDown, ArrowLeft } from "lucide-react";
-// import { getUserInfo } from '../services/IPService';
+import { getDetailedUserInfo, type DetailedUserInfo } from '../services/IPService';
+
 
 // interface UserInfo {
 //   ip: string;
@@ -16,63 +17,42 @@ const Header = ({ onMenuClick }: HeaderProps) => {
   const [selectedLang, setSelectedLang] = useState<"en" | "vi">("en");
   const [isDropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  // const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
-  // const [loading, setLoading] = useState(true);
-  // const [error, setError] = useState<string | null>(null);
+  const [userInfo, setUserInfo] = useState<DetailedUserInfo | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // // Hook 1: Fetch User Info
-  // useEffect(() => {
-  //   async function fetchUserInfo() {
-  //     try {
-  //       setLoading(true);
-  //       const info = await getUserInfo();
-  //       setUserInfo(info);
-  //     } catch (err) {
-  //       setError('Không thể lấy thông tin người dùng');
-  //       console.error(err);
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   }
-  //   fetchUserInfo();
-  // }, []);
+  // Hook 1: Fetch User Info
+  useEffect(() => {
+    async function fetchUserInfo() {
+      try {
+        setLoading(true);
+        // Use getDetailedUserInfo to match IPTrackingDashboardPage logic
+        const info = await getDetailedUserInfo();
+        setUserInfo(info);
+      } catch (err) {
+        console.error("Failed to fetch user info", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchUserInfo();
+  }, []);
 
-  // // Hook 2: Click Outside
-  // useEffect(() => {
-  //   const handleClickOutside = (event: MouseEvent) => {
-  //     if (
-  //       dropdownRef.current &&
-  //       !dropdownRef.current.contains(event.target as Node)
-  //     ) {
-  //       setDropdownOpen(false);
-  //     }
-  //   };
-  //   document.addEventListener("mousedown", handleClickOutside);
-  //   return () => {
-  //     document.removeEventListener("mousedown", handleClickOutside);
-  //   };
-  // }, []);
+  // Hook 2: Click Outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
-  // if (loading) {
-  //   return (
-  //     <div className="min-h-screen flex items-center justify-center pt-16">
-  //       <div className="text-center animate-fade-in">
-  //         <div className="inline-block h-16 w-16 animate-spin rounded-full border-8 border-solid border-white border-r-transparent"></div>
-  //         <p className="mt-4 text-white text-xl font-medium">Đang tải...</p>
-  //       </div>
-  //     </div>
-  //   );
-  // }
-
-  // if (error) {
-  //   return (
-  //     <div className="min-h-screen flex items-center justify-center pt-16">
-  //       <div className="bg-white/20 backdrop-blur-lg rounded-3xl p-8 shadow-2xl animate-fade-in">
-  //         <p className="text-white text-xl font-medium">⚠️ {error}</p>
-  //       </div>
-  //     </div>
-  //   );
-  // }
 
   return (
     <header className="bg-white border-b border-gray-200 p-4 flex justify-between items-center">
@@ -144,7 +124,11 @@ const Header = ({ onMenuClick }: HeaderProps) => {
         <div className="flex items-center space-x-2">
           <User className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 p-1" />
           <span className="text-sm font-medium text-gray-700">
-           Admin
+            {loading ? (
+                <span className="animate-pulse">Loading...</span>
+            ) : (
+                userInfo?.ip || "Non-IP"
+            )}
           </span>
         </div>
       </div>
