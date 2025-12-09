@@ -2,7 +2,6 @@
 //
 const IP_USERNAME_MAP: Record<string, string> = {
   '127.0.0.1': 'Admin Local',
-  '113.161.44.119': 'Thang Nguyen'
 };
 
 const DEFAULT_USERNAME = 'Khách';
