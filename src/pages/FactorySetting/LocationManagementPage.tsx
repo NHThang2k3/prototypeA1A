@@ -82,6 +82,37 @@ const locationListData: LocationItem[] = [
   },
 ];
 
+// --- WAREHOUSE DATA ---
+const warehouseListData: WarehouseData[] = [
+  {
+    id: "F1",
+    name: "F1",
+    country: "Vietnam",
+    factory: "Factory A",
+    purpose: "fabric",
+    description: "Main fabric warehouse",
+    enabled: true,
+  },
+  {
+    id: "F2",
+    name: "F2",
+    country: "Vietnam",
+    factory: "Factory A",
+    purpose: "accessories",
+    description: "Accessories storage",
+    enabled: true,
+  },
+  {
+    id: "WH-A",
+    name: "WH-A",
+    country: "Cambodia",
+    factory: "Factory C",
+    purpose: "packaging",
+    description: "Packaging materials warehouse",
+    enabled: false,
+  },
+];
+
 // --- UTILS ---
 const ALPHABET = Array.from({ length: 26 }, (_, i) =>
   String.fromCharCode(65 + i)
@@ -101,7 +132,6 @@ const DetailSkeleton = () => (
 
 // --- HEADER COMPONENT ---
 interface PageHeaderProps {
-  onAddLocation: () => void;
   onPrintSelected: () => void;
   onDeleteSelected: () => void;
   onCreateWarehouse: () => void;
@@ -112,7 +142,6 @@ interface PageHeaderProps {
 }
 
 const PageHeader: React.FC<PageHeaderProps> = ({
-  onAddLocation,
   onPrintSelected,
   onDeleteSelected,
   onCreateWarehouse,
@@ -168,6 +197,11 @@ const PageHeader: React.FC<PageHeaderProps> = ({
           ))}
         </select>
 
+        <Button variant="outline" onClick={onCreateWarehouse}>
+          <Plus className="w-4 h-4 mr-2" />
+          Create Warehouse
+        </Button>
+
         {hasSelection && (
           <>
             <Button variant="outline" onClick={onPrintSelected}>
@@ -180,14 +214,6 @@ const PageHeader: React.FC<PageHeaderProps> = ({
             </Button>
           </>
         )}
-        <Button variant="outline" onClick={onCreateWarehouse}>
-          <Plus className="w-4 h-4 mr-2" />
-          Create Warehouse
-        </Button>
-        <Button onClick={onAddLocation}>
-          <Plus className="w-4 h-4 mr-2" />
-          Add Location
-        </Button>
       </div>
     </div>
   );
@@ -211,7 +237,7 @@ export interface WarehouseData {
   name: string;
   country: LocationItem["country"];
   factory: string;
-  purpose: "fabric" | "accessories" | "packaging";
+  purpose: "fabric" | "accessories" | "packaging" | "temp warehouse";
   description: string;
   enabled: boolean;
 }
@@ -220,37 +246,50 @@ interface WarehouseFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (warehouseData: WarehouseData) => void;
+  initialData?: WarehouseData | null;
 }
 
 const WarehouseFormModal: React.FC<WarehouseFormModalProps> = ({
   isOpen,
   onClose,
   onSave,
+  initialData,
 }) => {
   const [country, setCountry] = useState<LocationItem["country"]>("Vietnam");
   const [factory, setFactory] = useState(FACTORIES_BY_COUNTRY["Vietnam"][0]);
   const [warehouseName, setWarehouseName] = useState("");
-  const [purpose, setPurpose] = useState<"fabric" | "accessories" | "packaging">("fabric");
+  const [purpose, setPurpose] = useState<"fabric" | "accessories" | "packaging" | "temp warehouse">("fabric");
   const [description, setDescription] = useState("");
   const [enabled, setEnabled] = useState(true);
 
-  useEffect(() => {
-    if (isOpen) {
-      setCountry("Vietnam");
-      setFactory(FACTORIES_BY_COUNTRY["Vietnam"][0]);
-      setWarehouseName("");
-      setPurpose("fabric");
-      setDescription("");
-      setEnabled(true);
-    }
-  }, [isOpen]);
+  const isEditing = !!initialData;
 
   useEffect(() => {
     if (isOpen) {
+      if (initialData) {
+        setCountry(initialData.country);
+        setFactory(initialData.factory);
+        setWarehouseName(initialData.name);
+        setPurpose(initialData.purpose);
+        setDescription(initialData.description);
+        setEnabled(initialData.enabled);
+      } else {
+        setCountry("Vietnam");
+        setFactory(FACTORIES_BY_COUNTRY["Vietnam"][0]);
+        setWarehouseName("");
+        setPurpose("fabric");
+        setDescription("");
+        setEnabled(true);
+      }
+    }
+  }, [isOpen, initialData]);
+
+  useEffect(() => {
+    if (isOpen && !isEditing) {
       const factories = FACTORIES_BY_COUNTRY[country];
       if (!factories.includes(factory)) setFactory(factories[0]);
     }
-  }, [country, isOpen, factory]);
+  }, [country, isOpen, factory, isEditing]);
 
   if (!isOpen) return null;
 
@@ -280,7 +319,9 @@ const WarehouseFormModal: React.FC<WarehouseFormModalProps> = ({
       <div className="bg-white rounded-lg shadow-xl w-full max-w-lg m-4">
         <form onSubmit={handleSubmit}>
           <div className="flex justify-between items-center p-4 border-b">
-            <h2 className="text-lg font-semibold">Create New Warehouse</h2>
+            <h2 className="text-lg font-semibold">
+              {isEditing ? "Edit Warehouse" : "Create New Warehouse"}
+            </h2>
             <Button variant="ghost" size="icon" type="button" onClick={onClose}>
               <X className="h-4 w-4" />
             </Button>
@@ -297,7 +338,8 @@ const WarehouseFormModal: React.FC<WarehouseFormModalProps> = ({
                 value={warehouseName}
                 onChange={(e) => setWarehouseName(e.target.value)}
                 placeholder="e.g., F1, F2, WH-A"
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                disabled={isEditing}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md disabled:bg-gray-100"
               />
               <p className="text-xs text-gray-500 mt-1">
                 Enter a unique warehouse identifier
@@ -310,14 +352,16 @@ const WarehouseFormModal: React.FC<WarehouseFormModalProps> = ({
               </label>
               <select
                 value={purpose}
+                disabled={isEditing}
                 onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                  setPurpose(e.target.value as LocationItem["purpose"])
+                  setPurpose(e.target.value as WarehouseData["purpose"])
                 }
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md disabled:bg-gray-100"
               >
                 <option value="fabric">Fabric</option>
                 <option value="accessories">Accessories</option>
                 <option value="packaging">Packaging</option>
+                <option value="temp warehouse">Temp Warehouse</option>
               </select>
             </div>
 
@@ -327,10 +371,11 @@ const WarehouseFormModal: React.FC<WarehouseFormModalProps> = ({
               </label>
               <select
                 value={country}
+                disabled={isEditing}
                 onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
                   setCountry(e.target.value as LocationItem["country"])
                 }
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md disabled:bg-gray-100"
               >
                 {COUNTRIES.map((c) => (
                   <option key={c} value={c}>
@@ -346,8 +391,9 @@ const WarehouseFormModal: React.FC<WarehouseFormModalProps> = ({
               </label>
               <select
                 value={factory}
+                disabled={isEditing}
                 onChange={(e) => setFactory(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md disabled:bg-gray-100"
               >
                 {FACTORIES_BY_COUNTRY[country].map((f) => (
                   <option key={f} value={f}>
@@ -391,7 +437,9 @@ const WarehouseFormModal: React.FC<WarehouseFormModalProps> = ({
             <Button variant="outline" type="button" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit">Create Warehouse</Button>
+            <Button type="submit">
+              {isEditing ? "Save Changes" : "Create Warehouse"}
+            </Button>
           </div>
         </form>
       </div>
@@ -405,6 +453,7 @@ interface LocationFormModalProps {
   onSave: (locationData: LocationItem) => void;
   initialData?: LocationItem | null;
   defaultPurpose: "fabric" | "accessories" | "packaging";
+  warehouses: WarehouseData[];
 }
 
 const LocationFormModal: React.FC<LocationFormModalProps> = ({
@@ -413,6 +462,7 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
   onSave,
   initialData,
   defaultPurpose,
+  warehouses,
 }) => {
   const [country, setCountry] = useState<LocationItem["country"]>("Vietnam");
   const [factory, setFactory] = useState(FACTORIES_BY_COUNTRY["Vietnam"][0]);
@@ -503,6 +553,11 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
       return;
     }
 
+    if (!enabled && currentOccupancy > 0) {
+      alert("Cannot disable location while it has occupancy > 0.");
+      return;
+    }
+
     const formattedSuffix = String(nameSuffix).padStart(3, "0");
     const combinedName = `${namePrefix}-${formattedSuffix}`;
 
@@ -547,23 +602,7 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
           </div>
 
           <div className="p-6 grid grid-cols-2 gap-4">
-            <div className="col-span-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Purpose
-              </label>
-              <select
-                disabled={isEditing}
-                value={purpose}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                  setPurpose(e.target.value as LocationItem["purpose"])
-                }
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-              >
-                <option value="fabric">Fabric</option>
-                <option value="accessories">Accessories</option>
-                <option value="packaging">Packaging</option>
-              </select>
-            </div>
+            
 
             <div>
               <label className="block text-sm font-medium text-gray-700">
@@ -607,13 +646,25 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
               <label className="block text-sm font-medium text-gray-700">
                 Warehouse
               </label>
-              <input
+              <select
                 disabled={isEditing}
-                type="text"
                 value={warehouse}
                 onChange={(e) => setWarehouse(e.target.value)}
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md disabled:bg-gray-100"
-              />
+              >
+                {warehouses
+                  .filter(
+                    (wh) =>
+                      (wh.purpose === purpose ||
+                        wh.purpose === "temp warehouse") &&
+                      wh.enabled
+                  )
+                  .map((wh) => (
+                    <option key={wh.id} value={wh.id}>
+                      {wh.name} - {wh.description || wh.country}
+                    </option>
+                  ))}
+              </select>
             </div>
 
             <div>
@@ -735,22 +786,28 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
 // --- TABLE COMPONENT ---
 interface LocationTableProps {
   locations: LocationItem[];
+  warehouses: WarehouseData[];
   onEdit: (location: LocationItem) => void;
   onDelete: (locationId: string) => void;
   onPrintSingle: (locationId: string) => void;
   onViewItems: (location: LocationItem) => void;
   selectedIds: Set<string>;
   onSelectionChange: (newSelectedIds: Set<string>) => void;
+  onWarehouseEdit: (warehouse: WarehouseData) => void;
+  onWarehouseDelete: (warehouseId: string) => void;
 }
 
 const LocationTable: React.FC<LocationTableProps> = ({
   locations,
+  warehouses,
   onEdit,
   onDelete,
   onPrintSingle,
   onViewItems,
   selectedIds,
   onSelectionChange,
+  onWarehouseEdit,
+  onWarehouseDelete,
 }) => {
   const [expandedWarehouses, setExpandedWarehouses] = useState<Set<string>>(
     new Set()
@@ -904,7 +961,49 @@ const LocationTable: React.FC<LocationTableProps> = ({
                         data.totals.capacity
                       )}
                     </td>
-                    <td colSpan={3}></td>
+                    <td className="px-6 py-3">
+                      {/* Empty QR Status for warehouse */}
+                    </td>
+                    <td className="px-6 py-3">
+                      {(() => {
+                        const warehouse = warehouses.find((w) => w.id === wh);
+                        return warehouse ? (
+                          warehouse.enabled ? (
+                            <span className="text-green-600 text-sm flex items-center">
+                              ● Enabled
+                            </span>
+                          ) : (
+                            <span className="text-red-500 text-sm flex items-center">
+                              ● Disabled
+                            </span>
+                          )
+                        ) : null;
+                      })()}
+                    </td>
+                    <td className="px-6 py-3 text-right space-x-2">
+                      {(() => {
+                        const warehouse = warehouses.find((w) => w.id === wh);
+                        return warehouse ? (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => onWarehouseEdit(warehouse)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-red-500 hover:text-red-700"
+                              onClick={() => onWarehouseDelete(wh)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </>
+                        ) : null;
+                      })()}
+                    </td>
                   </tr>
                   {expandedWarehouses.has(wh) &&
                     data.items.map((loc) => (
@@ -1016,10 +1115,13 @@ const LocationManagementPage = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingLoc, setEditingLoc] = useState<LocationItem | null>(null);
   const [isWarehouseFormOpen, setIsWarehouseFormOpen] = useState(false);
+  const [editingWarehouse, setEditingWarehouse] = useState<WarehouseData | null>(null);
+  const [warehouses, setWarehouses] = useState<WarehouseData[] | null>(null);
 
   useEffect(() => {
     setTimeout(() => {
       setLocations(locationListData);
+      setWarehouses(warehouseListData);
       setIsLoading(false);
     }, 800);
   }, []);
@@ -1038,11 +1140,64 @@ const LocationManagementPage = () => {
   };
 
   const handleWarehouseSave = (data: WarehouseData) => {
-    // In a real application, you would save the warehouse to the backend
-    // For now, we'll just show a success message
-    alert(`Warehouse "${data.name}" created successfully!\n\nDetails:\n- Purpose: ${data.purpose}\n- Country: ${data.country}\n- Factory: ${data.factory}\n- Enabled: ${data.enabled ? 'Yes' : 'No'}`);
+    // Validation: Cannot disable warehouse if it has occupancy
+    if (!data.enabled) {
+      const warehouseOccupancy =
+        locations
+          ?.filter((l) => l.warehouse === data.id)
+          .reduce((sum, l) => sum + l.currentOccupancy, 0) || 0;
+
+      if (warehouseOccupancy > 0) {
+        alert(
+          `Cannot disable warehouse "${data.name}" because it contains items (Occupancy: ${warehouseOccupancy}).`
+        );
+        return;
+      }
+    }
+
+    setWarehouses((prev) => {
+      if (!prev) return [data];
+      const exists = prev.some((w) => w.id === data.id);
+      if (exists) {
+        return prev.map((w) => (w.id === data.id ? data : w));
+      }
+      return [...prev, data];
+    });
     setIsWarehouseFormOpen(false);
+    setEditingWarehouse(null);
   };
+
+  const handleWarehouseEdit = (warehouse: WarehouseData) => {
+    setEditingWarehouse(warehouse);
+    setIsWarehouseFormOpen(true);
+  };
+
+  const handleWarehouseDelete = (id: string) => {
+    const warehouseOccupancy =
+      locations
+        ?.filter((l) => l.warehouse === id)
+        .reduce((sum, l) => sum + l.currentOccupancy, 0) || 0;
+
+    if (warehouseOccupancy > 0) {
+      alert(
+        `Cannot delete warehouse "${id}" because it contains items (Occupancy: ${warehouseOccupancy}).\nPlease empty the warehouse first.`
+      );
+      return;
+    }
+
+    if (
+      confirm(
+        `Delete warehouse "${id}"? This will also remove all locations in this warehouse.`
+      )
+    ) {
+      setWarehouses((prev) => (prev ? prev.filter((w) => w.id !== id) : null));
+      // Also remove all locations in this warehouse
+      setLocations((prev) =>
+        prev ? prev.filter((l) => l.warehouse !== id) : null
+      );
+    }
+  };
+
 
   const handleDelete = (id: string) => {
     const loc = locations?.find((l) => l.id === id);
@@ -1059,6 +1214,18 @@ const LocationManagementPage = () => {
   };
 
   const handleBulkDelete = () => {
+    const selectedLocations = locations?.filter((l) => selectedIds.has(l.id));
+    const nonEmptyLocations = selectedLocations?.filter(
+      (l) => l.currentOccupancy > 0
+    );
+
+    if (nonEmptyLocations && nonEmptyLocations.length > 0) {
+      alert(
+        `Cannot delete ${nonEmptyLocations.length} selected location(s) because they are not empty.\nPlease empty them first.`
+      );
+      return;
+    }
+
     if (confirm(`Delete ${selectedIds.size} locations?`)) {
       setLocations((prev) =>
         prev ? prev.filter((l) => !selectedIds.has(l.id)) : null
@@ -1122,31 +1289,41 @@ const LocationManagementPage = () => {
         allLocations={locations || []}
         currentFilter={filter}
         onFilterChange={setFilter}
-        onAddLocation={() => {
-          setEditingLoc(null);
-          setIsFormOpen(true);
+        onCreateWarehouse={() => {
+          setEditingWarehouse(null);
+          setIsWarehouseFormOpen(true);
         }}
-        onCreateWarehouse={() => setIsWarehouseFormOpen(true)}
         onDeleteSelected={handleBulkDelete}
         onPrintSelected={handlePrintSelected}
         selectedCount={selectedIds.size}
       />
 
       <div className="bg-white rounded-lg shadow-sm p-4 mb-4">
-        <div className="flex space-x-4 border-b">
-          {(["fabric", "accessories", "packaging"] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`py-2 px-4 font-medium border-b-2 capitalize ${
-                activeTab === tab
-                  ? "border-blue-500 text-blue-600"
-                  : "border-transparent text-gray-500"
-              }`}
-            >
-              {tab} Warehouse
-            </button>
-          ))}
+        <div className="flex justify-between items-center border-b pb-3">
+          <div className="flex space-x-4">
+            {(["fabric", "accessories", "packaging"] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`py-2 px-4 font-medium border-b-2 capitalize ${
+                  activeTab === tab
+                    ? "border-blue-500 text-blue-600"
+                    : "border-transparent text-gray-500"
+                }`}
+              >
+                {tab} Warehouse
+              </button>
+            ))}
+          </div>
+          <div className="flex space-x-2">
+            <Button onClick={() => {
+              setEditingLoc(null);
+              setIsFormOpen(true);
+            }}>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Location
+            </Button>
+          </div>
         </div>
         {activeTab === "fabric" && (
           <div className="flex space-x-4 mt-3">
@@ -1177,6 +1354,7 @@ const LocationManagementPage = () => {
       <div className="flex-1 overflow-hidden">
         <LocationTable
           locations={filteredLocations}
+          warehouses={warehouses || []}
           onDelete={handleDelete}
           onPrintSingle={handlePrintSingle}
           onEdit={(loc) => {
@@ -1186,6 +1364,8 @@ const LocationManagementPage = () => {
           onViewItems={(loc) => console.log(loc)}
           selectedIds={selectedIds}
           onSelectionChange={setSelectedIds}
+          onWarehouseEdit={handleWarehouseEdit}
+          onWarehouseDelete={handleWarehouseDelete}
         />
       </div>
 
@@ -1195,12 +1375,17 @@ const LocationManagementPage = () => {
         onSave={handleSave}
         initialData={editingLoc}
         defaultPurpose={activeTab}
+        warehouses={warehouses || []}
       />
 
       <WarehouseFormModal
         isOpen={isWarehouseFormOpen}
-        onClose={() => setIsWarehouseFormOpen(false)}
+        onClose={() => {
+          setIsWarehouseFormOpen(false);
+          setEditingWarehouse(null);
+        }}
         onSave={handleWarehouseSave}
+        initialData={editingWarehouse}
       />
     </div>
   );
