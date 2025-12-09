@@ -1,5 +1,5 @@
-src/pages/overall-dashboard/IPTrackingDashboardPage.tsx filter=git-crypt diff=git-crypt
-src/services/** filter=git-crypt diff=git-crypt
-src/components/DailyTrafficChart.tsx filter=git-crypt diff=git-crypt
-src/components/GlobalTrafficTracker.tsx filter=git-crypt diff=git-crypt
-src/components/LiveTrafficMonitor.tsx filter=git-crypt diff=git-crypt
+; src/pages/overall-dashboard/IPTrackingDashboardPage.tsx filter=git-crypt diff=git-crypt
+; src/services/** filter=git-crypt diff=git-crypt
+; src/components/DailyTrafficChart.tsx filter=git-crypt diff=git-crypt
+; src/components/GlobalTrafficTracker.tsx filter=git-crypt diff=git-crypt
+; src/components/LiveTrafficMonitor.tsx filter=git-crypt diff=git-crypt
