@@ -87,10 +87,13 @@ import ScanInBufferPage from "./pages/Buffer/ScanInBufferPage";
 import ScanOutBufferPage from "./pages/Buffer/ScanOutBufferPage";
 import RelaxTimeStandardPage from "./pages/Warehouse/RelaxTimeStandardPage";
 import PermissionManagementPage from "./pages/FactorySetting/RoleManagementPage";
+import IPTrackingDashboardPage from "./pages/overall-dashboard/IPTrackingDashboardPage";
+import GlobalTrafficTracker from "./components/GlobalTrafficTracker";
 
 function App() {
   return (
     <BrowserRouter>
+    <GlobalTrafficTracker />
       <Routes>
         {/* Route chính để chọn module */}
         {/* <Route path="/home" element={<HomePage />} /> */}
@@ -525,6 +528,7 @@ function App() {
 
         {/* === MODULE DASHBOARD TỔNG (MỚI) === */}
         <Route path="/dashboard" element={<OverallDashboardPage />} />
+        <Route path="/ip-tracking" element={<IPTrackingDashboardPage />} />
 
         <Route path="/all-screens" element={<AllScreens />} />
 
