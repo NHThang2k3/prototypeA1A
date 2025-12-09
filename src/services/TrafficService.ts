@@ -3,7 +3,7 @@ import { ref, set, onValue, onDisconnect, remove, runTransaction } from 'firebas
 import { db } from './firebase';
 import type { DetailedUserInfo, GeoLocation } from './IPService';
 
-// --- 1. INTERFACES (Cập nhật thêm thông tin thiết bị) ---
+// --- 1. 接口 (更新设备信息) ---
 export interface DeviceInfo {
   os: string;
   browser: string;
@@ -11,32 +11,32 @@ export interface DeviceInfo {
 }
 
 export interface LiveVisitor extends DetailedUserInfo {
-  id: string;              // Key trên Firebase (IP + DeviceID)
-  isCurrentUser: boolean;  // Xác định xem có phải là máy mình không
+  id: string;              // Firebase 上的 Key (IP + DeviceID)
+  isCurrentUser: boolean;  // 确认是否为本机
   status: 'active' | 'idle';
   lastActive: string;
-  deviceId?: string;       // ID riêng của thiết bị
-  deviceInfo?: DeviceInfo; // Thông tin OS/Browser
+  deviceId?: string;       // 设备唯一 ID
+  deviceInfo?: DeviceInfo; // 操作系统/浏览器信息
 }
 
 // --- 2. CONSTANTS & HELPERS ---
 const sanitizeIP = (ip: string) => ip.replace(/\./g, '_');
 
 const SAFE_LOCATION: GeoLocation = {
-  country: 'Unknown', countryCode: 'UN', region: '', regionName: '',
-  city: 'Hidden', zip: '', lat: 0, lon: 0, timezone: '', isp: '', org: '', as: ''
+  country: '未知', countryCode: 'UN', region: '', regionName: '',
+  city: '隐藏', zip: '', lat: 0, lon: 0, timezone: '', isp: '', org: '', as: ''
 };
 
 /**
- * Tạo hoặc lấy Device ID duy nhất.
- * Lưu vào localStorage để định danh người dùng lâu dài (kể cả khi tắt trình duyệt).
+ * 创建或获取唯一设备 ID。
+ * 保存到 localStorage 以长期标识用户（即使关闭浏览器）。
  */
 const getDeviceId = (): string => {
   const STORAGE_KEY = 'unique_device_id';
   try {
     let deviceId = localStorage.getItem(STORAGE_KEY);
     if (!deviceId) {
-      // Tạo ID: prefix + timestamp + random string
+      // 创建 ID: 前缀 + 时间戳 + 随机字符串
       deviceId = 'dev_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 9);
       localStorage.setItem(STORAGE_KEY, deviceId);
     }
@@ -47,12 +47,12 @@ const getDeviceId = (): string => {
 };
 
 /**
- * Phân tích UserAgent để lấy thông tin thiết bị
+ * 解析 UserAgent 以获取设备信息
  */
 const getSystemInfo = (): DeviceInfo => {
   const ua = navigator.userAgent;
-  let os = 'Unknown OS';
-  let browser = 'Unknown Browser';
+  let os = '未知操作系统';
+  let browser = '未知浏览器';
   let type: 'mobile' | 'desktop' | 'tablet' = 'desktop';
 
   // Detect OS
@@ -76,7 +76,7 @@ const getSystemInfo = (): DeviceInfo => {
   return { os, browser, type };
 };
 
-// --- 3. CORE LOGIC: LIVE TRAFFIC MONITOR ---
+// --- 3. 核心逻辑：实时流量监控 ---
 
 export async function registerPresence(userInfo: DetailedUserInfo) {
   if (!userInfo.ip) return;
@@ -84,7 +84,7 @@ export async function registerPresence(userInfo: DetailedUserInfo) {
   const safeIP = sanitizeIP(userInfo.ip);
   const deviceId = getDeviceId();
 
-  // TẠO KEY KẾT HỢP: Giúp phân biệt nhiều thiết bị trên cùng 1 IP mạng
+  // 创建组合 KEY：帮助区分同一 IP 网络上的多个设备
   const uniqueVisitorKey = `${safeIP}_${deviceId}`;
 
   const userRef = ref(db, `visitors/${uniqueVisitorKey}`);
@@ -98,20 +98,20 @@ export async function registerPresence(userInfo: DetailedUserInfo) {
     location: locationToSave,
     id: uniqueVisitorKey,
     deviceId: deviceId,
-    deviceInfo: systemInfo, // Lưu thông tin thiết bị
-    isCurrentUser: false,   // Client sẽ tự check lại khi subscribe
+    deviceInfo: systemInfo, // 保存设备信息
+    isCurrentUser: false,   // Client 订阅时会自动重检
     status: 'active',
     lastActive: new Date().toISOString()
   };
 
   try {
-    // Ghi đè dữ liệu mới nhất
+    // 覆盖最新数据
     await set(userRef, visitorData);
 
-    // Tự động xóa khỏi Firebase khi mất kết nối (đóng tab/tắt mạng)
+    // 断开连接时自动从 Firebase 删除（关闭标签页/断网）
     await onDisconnect(userRef).remove();
   } catch (error) {
-    console.error("Lỗi Firebase:", error);
+    console.error("Firebase 错误:", error);
   }
 }
 
@@ -119,7 +119,7 @@ export function subscribeToVisitors(
   callback: (visitors: LiveVisitor[]) => void
 ) {
   const visitorsRef = ref(db, 'visitors');
-  const currentDeviceId = getDeviceId(); // Lấy ID của máy đang chạy code này
+  const currentDeviceId = getDeviceId(); // 获取运行此代码的机器 ID
 
   return onValue(visitorsRef, (snapshot) => {
     const data = snapshot.val();
@@ -130,19 +130,19 @@ export function subscribeToVisitors(
         const visitor = data[key];
 
         if (visitor && visitor.ip) {
-          // LOGIC CHECK NGƯỜI DÙNG HIỆN TẠI:
-          // So sánh xem key trên DB có chứa DeviceID của máy này không
+          // 逻辑检查当前用户：
+          // 比较 DB 上的 key 是否包含此机器的 DeviceID
           visitor.isCurrentUser = key.includes(currentDeviceId);
 
-          // Format thời gian hiển thị
+          // 格式化显示时间
           const lastActive = visitor.lastActive || new Date().toISOString();
           visitor.accessTime = new Date(lastActive).toLocaleTimeString('vi-VN');
 
           if (!visitor.location) visitor.location = SAFE_LOCATION;
 
-          // Fallback nếu thiếu thông tin thiết bị (dữ liệu cũ)
+          // Fallback 如果缺少设备信息（旧数据）
           if (!visitor.deviceInfo) {
-            visitor.deviceInfo = { os: 'Unknown', browser: 'Unknown', type: 'desktop' };
+            visitor.deviceInfo = { os: '未知', browser: '未知', type: 'desktop' };
           }
 
           visitorList.push(visitor);
@@ -158,18 +158,18 @@ export async function goOffline(ip: string) {
   const safeIP = sanitizeIP(ip);
   const deviceId = getDeviceId();
 
-  // Chỉ xóa đúng key của thiết bị này
+  // 仅删除此设备的 Key
   const uniqueVisitorKey = `${safeIP}_${deviceId}`;
 
   try {
     await remove(ref(db, `visitors/${uniqueVisitorKey}`));
   } catch (error) {
-    console.error("Error going offline:", error);
+    console.error("下线错误:", error);
   }
 }
 
 
-// --- 4. LOGIC THỐNG KÊ (DAILY STATS CHART) ---
+// --- 4. 统计逻辑 (每日统计图表) ---
 
 const getTodayKey = () => {
   const now = new Date();
@@ -184,8 +184,8 @@ const getCurrentHourKey = () => {
 };
 
 /**
- * Tăng bộ đếm lượt truy cập.
- * Dùng SessionStorage để mỗi phiên làm việc (mở trình duyệt) chỉ tính 1 lần.
+ * 增加访问计数。
+ * 使用 SessionStorage 确保每个会话（打开浏览器）只计算一次。
  */
 export async function incrementVisitCount() {
   const SESSION_KEY = 'has_recorded_visit_v2';
@@ -203,14 +203,14 @@ export async function incrementVisitCount() {
     });
 
     sessionStorage.setItem(SESSION_KEY, 'true');
-    console.log("Recorded visit for daily stats 📈");
+    console.log("记录每日统计访问 📈");
   } catch (error) {
-    console.error("Failed to update daily stats:", error);
+    console.error("更新每日统计失败:", error);
   }
 }
 
 /**
- * Lắng nghe dữ liệu biểu đồ
+ * 监听图表数据
  */
 export function subscribeToDailyStats(
   callback: (hourlyData: number[], total: number) => void
@@ -221,7 +221,7 @@ export function subscribeToDailyStats(
   return onValue(statsRef, (snapshot) => {
     const data = snapshot.val() || {};
 
-    // Tạo mảng 24 giờ (0-23)
+    // 创建 24 小时数组 (0-23)
     const hourlyData = new Array(24).fill(0);
     let total = 0;
 

@@ -27,7 +27,7 @@ function LiveTrafficMonitor({ currentUser }: LiveTrafficMonitorProps) {
     };
   }, [currentUser]);
 
-  // Helper function để chọn icon thiết bị
+  // 选择设备图标的辅助函数
   const getDeviceIcon = (type?: string) => {
     if (type === 'mobile') return '📱';
     if (type === 'tablet') return '📟';
@@ -47,13 +47,13 @@ function LiveTrafficMonitor({ currentUser }: LiveTrafficMonitorProps) {
           </div>
           <div>
             <h2 className="text-2xl font-bold text-white">Live Traffic</h2>
-            <p className="text-gray-400 text-sm">Thiết bị đang truy cập</p>
+            <p className="text-gray-400 text-sm">正在访问的设备</p>
           </div>
         </div>
         
         <div className="bg-white/10 px-5 py-2 rounded-xl border border-white/10 text-center">
           <span className="block text-3xl font-bold text-white">{visitors.length}</span>
-          <span className="text-xs text-gray-400 uppercase font-bold tracking-wider">Online</span>
+          <span className="text-xs text-gray-400 uppercase font-bold tracking-wider">在线</span>
         </div>
       </div>
 
@@ -80,12 +80,12 @@ function LiveTrafficMonitor({ currentUser }: LiveTrafficMonitorProps) {
                   </p>
                   {visitor.isCurrentUser && (
                     <span className="px-2 py-0.5 bg-blue-600 text-white text-[10px] rounded-full uppercase font-bold shadow-sm shadow-blue-500/30">
-                      Bạn
+                      你
                     </span>
                   )}
                 </div>
                 
-                {/* Hiển thị chi tiết thiết bị */}
+                {/* 显示设备详细信息 */}
                 <div className="flex items-center text-xs text-gray-400 mt-1 space-x-2">
                   {visitor.deviceInfo ? (
                     <>
@@ -98,7 +98,7 @@ function LiveTrafficMonitor({ currentUser }: LiveTrafficMonitorProps) {
                       </span>
                     </>
                   ) : (
-                    <span className="text-gray-500">Thiết bị ẩn danh</span>
+                    <span className="text-gray-500">匿名设备</span>
                   )}
                 </div>
                 
@@ -112,7 +112,7 @@ function LiveTrafficMonitor({ currentUser }: LiveTrafficMonitorProps) {
               {visitor.isCurrentUser ? (
                  <div className="flex items-center justify-end space-x-1.5">
                     <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                    <span className="text-green-400 text-xs font-semibold">Đang hoạt động</span>
+                    <span className="text-green-400 text-xs font-semibold">正在活跃</span>
                  </div>
               ) : (
                 <p className="text-xs text-gray-500 font-mono">
@@ -125,7 +125,7 @@ function LiveTrafficMonitor({ currentUser }: LiveTrafficMonitorProps) {
         
         {visitors.length === 0 && (
           <div className="text-center py-8 text-gray-500 italic">
-            Chưa có ai truy cập...
+            尚无任何访问...
           </div>
         )}
       </div>

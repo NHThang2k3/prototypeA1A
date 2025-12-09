@@ -88,9 +88,9 @@ function IPTrackingDashboardPage() {
     <div style={pageStyle} className="overflow-y-auto h-screen pt-24 pb-12 px-4 text-gray-200">
       <div className="max-w-6xl mx-auto">
         
-        {/* User Info Cards Grid */}
+        {/* 用户信息卡片网格 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          {/* User Identity Card */}
+          {/* 用户身份卡片 */}
           <div className="bg-[#16213e]/80 backdrop-blur-sm rounded-3xl p-8 shadow-xl shadow-black/20 border border-white/10 animate-fade-in hover:shadow-2xl transition-all duration-300">
             <div className="flex items-center mb-6">
               <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-purple-700 rounded-2xl shadow-lg shadow-blue-500/20 flex items-center justify-center mr-4">
@@ -123,7 +123,7 @@ function IPTrackingDashboardPage() {
             </div>
           </div>
 
-          {/* Location Card */}
+          {/* 地理位置卡片 */}
           <div className="bg-[#16213e]/80 backdrop-blur-sm rounded-3xl p-8 shadow-xl shadow-black/20 border border-white/10 animate-fade-in hover:shadow-2xl transition-all duration-300" style={{ animationDelay: '0.1s' }}>
             <div className="flex items-center mb-6">
               <div className="w-12 h-12 bg-gradient-to-br from-green-600 to-emerald-700 rounded-2xl shadow-lg shadow-green-500/20 flex items-center justify-center mr-4">
@@ -165,7 +165,7 @@ function IPTrackingDashboardPage() {
           </div>
         </div>
 
-        {/* Network Info Card */}
+        {/* 网络信息卡片 */}
         <div className="bg-[#16213e]/80 backdrop-blur-sm rounded-3xl p-8 shadow-xl shadow-black/20 border border-white/10 animate-fade-in hover:shadow-2xl transition-all duration-300" style={{ animationDelay: '0.2s' }}>
           <div className="flex items-center mb-6">
             <div className="w-12 h-12 bg-gradient-to-br from-orange-600 to-red-600 rounded-2xl shadow-lg shadow-orange-500/20 flex items-center justify-center mr-4">
@@ -207,12 +207,12 @@ function IPTrackingDashboardPage() {
           <DailyTrafficChart />
         </div>
 
-        {/* Live Traffic Monitor Section */}
+        {/* 实时流量监控部分 */}
         <div className="mt-6">
             {userInfo && <LiveTrafficMonitor currentUser={userInfo} />}
         </div>
 
-        {/* Refresh Button */}
+        {/* 刷新按钮 */}
         <div className="text-center mt-10 pb-10">
           <button
             onClick={handleRefresh}
