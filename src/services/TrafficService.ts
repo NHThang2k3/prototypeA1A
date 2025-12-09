@@ -11,16 +11,38 @@ export interface LiveVisitor extends DetailedUserInfo {
 }
 
 const sanitizeIP = (ip: string) => ip.replace(/\./g, '_');
+
 const SAFE_LOCATION: GeoLocation = {
   country: 'Unknown', countryCode: 'UN', region: '', regionName: '',
   city: 'Hidden', zip: '', lat: 0, lon: 0, timezone: '', isp: '', org: '', as: ''
 };
 
-// --- LOGIC CŨ: LIVE USER ---
+/**
+ * Tạo hoặc lấy Session ID duy nhất cho phiên làm việc hiện tại của trình duyệt.
+ * Giúp phân biệt các thiết bị/tab khác nhau dù có cùng Public IP.
+ */
+const getSessionId = () => {
+  const STORAGE_KEY = 'visitor_session_id';
+  let sessionId = sessionStorage.getItem(STORAGE_KEY);
+  if (!sessionId) {
+    // Tạo ID ngẫu nhiên: timestamp + random string
+    sessionId = Date.now().toString(36) + Math.random().toString(36).substring(2);
+    sessionStorage.setItem(STORAGE_KEY, sessionId);
+  }
+  return sessionId;
+};
+
+// --- LOGIC MỚI: LIVE USER (FIX LỖI TRÙNG IP) ---
 export async function registerPresence(userInfo: DetailedUserInfo) {
   if (!userInfo.ip) return;
+
   const safeIP = sanitizeIP(userInfo.ip);
-  const userRef = ref(db, `visitors/${safeIP}`);
+  const sessionId = getSessionId();
+
+  // Key kết hợp IP và SessionID để tránh xung đột khi dùng chung mạng
+  const uniqueVisitorKey = `${safeIP}_${sessionId}`;
+
+  const userRef = ref(db, `visitors/${uniqueVisitorKey}`);
   const locationToSave = userInfo.location || SAFE_LOCATION;
 
   const visitorData: LiveVisitor = {
@@ -28,14 +50,17 @@ export async function registerPresence(userInfo: DetailedUserInfo) {
     username: userInfo.username,
     accessTime: userInfo.accessTime,
     location: locationToSave,
-    id: safeIP,
-    isCurrentUser: false,
+    id: uniqueVisitorKey, // ID unique
+    isCurrentUser: false, // Client sẽ tự check lại khi subscribe
     status: 'active',
     lastActive: new Date().toISOString()
   };
 
   try {
+    // Ghi dữ liệu người dùng
     await set(userRef, visitorData);
+
+    // Tự động xóa khi mất kết nối (đóng tab/tắt mạng)
     await onDisconnect(userRef).remove();
   } catch (error) {
     console.error("Lỗi Firebase:", error);
@@ -43,21 +68,27 @@ export async function registerPresence(userInfo: DetailedUserInfo) {
 }
 
 export function subscribeToVisitors(
-  currentUserInfo: DetailedUserInfo,
   callback: (visitors: LiveVisitor[]) => void
 ) {
   const visitorsRef = ref(db, 'visitors');
+  const currentSessionId = getSessionId(); // Lấy session ID của chính mình
+
   return onValue(visitorsRef, (snapshot) => {
     const data = snapshot.val();
     const visitorList: LiveVisitor[] = [];
+
     if (data) {
       Object.keys(data).forEach((key) => {
         const visitor = data[key];
         if (visitor && visitor.ip) {
-          visitor.isCurrentUser = (visitor.ip === currentUserInfo.ip);
+          // Kiểm tra xem visitor này có phải là mình không dựa trên SessionID có trong Key
+          visitor.isCurrentUser = key.includes(currentSessionId);
+
           const lastActive = visitor.lastActive || new Date().toISOString();
           visitor.accessTime = new Date(lastActive).toLocaleTimeString('vi-VN');
+
           if (!visitor.location) visitor.location = SAFE_LOCATION;
+
           visitorList.push(visitor);
         }
       });
@@ -69,10 +100,15 @@ export function subscribeToVisitors(
 export async function goOffline(ip: string) {
   if (!ip) return;
   const safeIP = sanitizeIP(ip);
-  await remove(ref(db, `visitors/${safeIP}`));
+  const sessionId = getSessionId();
+
+  // Xóa đúng key của session hiện tại
+  const uniqueVisitorKey = `${safeIP}_${sessionId}`;
+  await remove(ref(db, `visitors/${uniqueVisitorKey}`));
 }
 
 
+// --- LOGIC THỐNG KÊ (DAILY STATS) ---
 // Helper: Lấy key ngày hôm nay (YYYY-MM-DD)
 const getTodayKey = () => {
   const now = new Date();
