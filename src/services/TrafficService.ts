@@ -1,8 +1,9 @@
 // src/services/TrafficService.ts
-import { ref, set, onValue, onDisconnect, remove } from 'firebase/database';
+import { ref, set, onValue, onDisconnect, remove, runTransaction } from 'firebase/database';
 import { db } from './firebase';
 import type { DetailedUserInfo, GeoLocation } from './IPService';
 
+// ... (Giữ nguyên phần Interface LiveVisitor và sanitizeIP cũ) ...
 export interface LiveVisitor extends DetailedUserInfo {
   id: string;
   isCurrentUser: boolean;
@@ -11,28 +12,23 @@ export interface LiveVisitor extends DetailedUserInfo {
 }
 
 const sanitizeIP = (ip: string) => ip.replace(/\./g, '_');
-
-// Dữ liệu location an toàn để fallback
 const SAFE_LOCATION: GeoLocation = {
   country: 'Unknown', countryCode: 'UN', region: '', regionName: '',
   city: 'Hidden', zip: '', lat: 0, lon: 0, timezone: '', isp: '', org: '', as: ''
 };
 
+// --- LOGIC CŨ: LIVE USER ---
 export async function registerPresence(userInfo: DetailedUserInfo) {
   if (!userInfo.ip) return;
-
   const safeIP = sanitizeIP(userInfo.ip);
   const userRef = ref(db, `visitors/${safeIP}`);
-
-  // QUAN TRỌNG: Đảm bảo location không bao giờ là undefined
-  // Nếu userInfo.location bị lỗi/null -> Dùng SAFE_LOCATION
   const locationToSave = userInfo.location || SAFE_LOCATION;
 
   const visitorData: LiveVisitor = {
     ip: userInfo.ip,
     username: userInfo.username,
     accessTime: userInfo.accessTime,
-    location: locationToSave, // Dùng biến đã đảm bảo an toàn
+    location: locationToSave,
     id: safeIP,
     isCurrentUser: false,
     status: 'active',
@@ -40,7 +36,6 @@ export async function registerPresence(userInfo: DetailedUserInfo) {
   };
 
   try {
-    // Bây giờ visitorData đảm bảo sạch, không có field undefined
     await set(userRef, visitorData);
     await onDisconnect(userRef).remove();
   } catch (error) {
@@ -53,38 +48,102 @@ export function subscribeToVisitors(
   callback: (visitors: LiveVisitor[]) => void
 ) {
   const visitorsRef = ref(db, 'visitors');
-
-  const unsubscribe = onValue(visitorsRef, (snapshot) => {
+  return onValue(visitorsRef, (snapshot) => {
     const data = snapshot.val();
     const visitorList: LiveVisitor[] = [];
-
     if (data) {
       Object.keys(data).forEach((key) => {
         const visitor = data[key];
-        // Chỉ thêm vào list nếu visitor hợp lệ
         if (visitor && visitor.ip) {
           visitor.isCurrentUser = (visitor.ip === currentUserInfo.ip);
-
-          // Fix lỗi hiển thị thời gian nếu thiếu
           const lastActive = visitor.lastActive || new Date().toISOString();
           visitor.accessTime = new Date(lastActive).toLocaleTimeString('vi-VN');
-
-          // Fix lỗi location khi đọc về nếu thiếu
           if (!visitor.location) visitor.location = SAFE_LOCATION;
-
           visitorList.push(visitor);
         }
       });
     }
-
     callback(visitorList);
   });
-
-  return unsubscribe;
 }
 
 export async function goOffline(ip: string) {
   if (!ip) return;
   const safeIP = sanitizeIP(ip);
   await remove(ref(db, `visitors/${safeIP}`));
+}
+
+// --- LOGIC MỚI: THỐNG KÊ TRUY CẬP THEO GIỜ (DAILY STATS) ---
+
+// Helper: Lấy key ngày hôm nay (YYYY-MM-DD)
+const getTodayKey = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+// Helper: Lấy giờ hiện tại (0-23)
+const getCurrentHourKey = () => {
+  return new Date().getHours().toString();
+};
+
+/**
+ * Tăng bộ đếm lượt truy cập cho giờ hiện tại.
+ * Sử dụng Session Storage để tránh spam đếm khi F5 trang.
+ */
+export async function incrementVisitCount() {
+  // Kiểm tra xem session này đã được tính chưa
+  const hasRecorded = sessionStorage.getItem('has_recorded_visit_v2');
+  if (hasRecorded) return; // Nếu đã tính rồi thì thôi
+
+  const dateKey = getTodayKey();
+  const hourKey = getCurrentHourKey();
+
+  // Đường dẫn: daily_stats/2023-10-27/14 (Ví dụ ngày 27, lúc 14h)
+  const statsRef = ref(db, `daily_stats/${dateKey}/${hourKey}`);
+
+  try {
+    // Transaction giúp tăng số an toàn khi nhiều người cùng vào
+    await runTransaction(statsRef, (currentValue) => {
+      return (currentValue || 0) + 1;
+    });
+
+    // Đánh dấu là đã tính cho phiên này
+    sessionStorage.setItem('has_recorded_visit_v2', 'true');
+    console.log("Recorded visit for daily stats 📈");
+  } catch (error) {
+    console.error("Failed to update daily stats:", error);
+  }
+}
+
+/**
+ * Lắng nghe thay đổi dữ liệu biểu đồ realtime
+ */
+export function subscribeToDailyStats(
+  callback: (hourlyData: number[], total: number) => void
+) {
+  const dateKey = getTodayKey();
+  const statsRef = ref(db, `daily_stats/${dateKey}`);
+
+  return onValue(statsRef, (snapshot) => {
+    const data = snapshot.val() || {};
+
+    // Tạo mảng 24 số 0
+    const hourlyData = new Array(24).fill(0);
+    let total = 0;
+
+    // Fill dữ liệu từ Firebase vào mảng
+    Object.keys(data).forEach((hourKey) => {
+      const count = data[hourKey];
+      const hourIndex = parseInt(hourKey, 10);
+      if (hourIndex >= 0 && hourIndex < 24) {
+        hourlyData[hourIndex] = count;
+        total += count;
+      }
+    });
+
+    callback(hourlyData, total);
+  });
 }
