@@ -104,6 +104,7 @@ interface PageHeaderProps {
   onAddLocation: () => void;
   onPrintSelected: () => void;
   onDeleteSelected: () => void;
+  onCreateWarehouse: () => void;
   selectedCount: number;
   allLocations: LocationItem[];
   currentFilter: { country: string; factory: string };
@@ -114,6 +115,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({
   onAddLocation,
   onPrintSelected,
   onDeleteSelected,
+  onCreateWarehouse,
   selectedCount,
   allLocations,
   currentFilter,
@@ -178,6 +180,10 @@ const PageHeader: React.FC<PageHeaderProps> = ({
             </Button>
           </>
         )}
+        <Button variant="outline" onClick={onCreateWarehouse}>
+          <Plus className="w-4 h-4 mr-2" />
+          Create Warehouse
+        </Button>
         <Button onClick={onAddLocation}>
           <Plus className="w-4 h-4 mr-2" />
           Add Location
@@ -197,6 +203,200 @@ const FACTORIES_BY_COUNTRY: Record<LocationItem["country"], string[]> = {
   Vietnam: ["Factory A", "Factory B"],
   Cambodia: ["Factory C"],
   Thailand: ["Factory D"],
+};
+
+// --- WAREHOUSE FORM MODAL ---
+export interface WarehouseData {
+  id: string;
+  name: string;
+  country: LocationItem["country"];
+  factory: string;
+  purpose: "fabric" | "accessories" | "packaging";
+  description: string;
+  enabled: boolean;
+}
+
+interface WarehouseFormModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (warehouseData: WarehouseData) => void;
+}
+
+const WarehouseFormModal: React.FC<WarehouseFormModalProps> = ({
+  isOpen,
+  onClose,
+  onSave,
+}) => {
+  const [country, setCountry] = useState<LocationItem["country"]>("Vietnam");
+  const [factory, setFactory] = useState(FACTORIES_BY_COUNTRY["Vietnam"][0]);
+  const [warehouseName, setWarehouseName] = useState("");
+  const [purpose, setPurpose] = useState<"fabric" | "accessories" | "packaging">("fabric");
+  const [description, setDescription] = useState("");
+  const [enabled, setEnabled] = useState(true);
+
+  useEffect(() => {
+    if (isOpen) {
+      setCountry("Vietnam");
+      setFactory(FACTORIES_BY_COUNTRY["Vietnam"][0]);
+      setWarehouseName("");
+      setPurpose("fabric");
+      setDescription("");
+      setEnabled(true);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen) {
+      const factories = FACTORIES_BY_COUNTRY[country];
+      if (!factories.includes(factory)) setFactory(factories[0]);
+    }
+  }, [country, isOpen, factory]);
+
+  if (!isOpen) return null;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (warehouseName === "") {
+      alert("Please fill in all required fields.");
+      return;
+    }
+
+    onSave({
+      id: warehouseName,
+      name: warehouseName,
+      country,
+      factory,
+      purpose,
+      description,
+      enabled,
+    });
+
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-lg m-4">
+        <form onSubmit={handleSubmit}>
+          <div className="flex justify-between items-center p-4 border-b">
+            <h2 className="text-lg font-semibold">Create New Warehouse</h2>
+            <Button variant="ghost" size="icon" type="button" onClick={onClose}>
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <div className="p-6 grid grid-cols-2 gap-4">
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Warehouse Name *
+              </label>
+              <input
+                required
+                type="text"
+                value={warehouseName}
+                onChange={(e) => setWarehouseName(e.target.value)}
+                placeholder="e.g., F1, F2, WH-A"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Enter a unique warehouse identifier
+              </p>
+            </div>
+
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Purpose *
+              </label>
+              <select
+                value={purpose}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                  setPurpose(e.target.value as LocationItem["purpose"])
+                }
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+              >
+                <option value="fabric">Fabric</option>
+                <option value="accessories">Accessories</option>
+                <option value="packaging">Packaging</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Country *
+              </label>
+              <select
+                value={country}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                  setCountry(e.target.value as LocationItem["country"])
+                }
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+              >
+                {COUNTRIES.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Factory *
+              </label>
+              <select
+                value={factory}
+                onChange={(e) => setFactory(e.target.value)}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+              >
+                {FACTORIES_BY_COUNTRY[country].map((f) => (
+                  <option key={f} value={f}>
+                    {f}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Description
+              </label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={2}
+                placeholder="Add warehouse description..."
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+              ></textarea>
+            </div>
+
+            <div className="col-span-2 flex items-center p-2 border border-gray-100 rounded bg-gray-50">
+              <input
+                type="checkbox"
+                id="enabled-warehouse"
+                checked={enabled}
+                onChange={(e) => setEnabled(e.target.checked)}
+                className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+              />
+              <label
+                htmlFor="enabled-warehouse"
+                className="ml-2 block text-sm font-medium text-gray-900 cursor-pointer"
+              >
+                Enable warehouse
+              </label>
+            </div>
+          </div>
+
+          <div className="flex justify-end items-center p-4 border-t space-x-2">
+            <Button variant="outline" type="button" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button type="submit">Create Warehouse</Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
 };
 
 interface LocationFormModalProps {
@@ -815,6 +1015,7 @@ const LocationManagementPage = () => {
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingLoc, setEditingLoc] = useState<LocationItem | null>(null);
+  const [isWarehouseFormOpen, setIsWarehouseFormOpen] = useState(false);
 
   useEffect(() => {
     setTimeout(() => {
@@ -834,6 +1035,13 @@ const LocationManagementPage = () => {
     });
     setIsFormOpen(false);
     setEditingLoc(null);
+  };
+
+  const handleWarehouseSave = (data: WarehouseData) => {
+    // In a real application, you would save the warehouse to the backend
+    // For now, we'll just show a success message
+    alert(`Warehouse "${data.name}" created successfully!\n\nDetails:\n- Purpose: ${data.purpose}\n- Country: ${data.country}\n- Factory: ${data.factory}\n- Enabled: ${data.enabled ? 'Yes' : 'No'}`);
+    setIsWarehouseFormOpen(false);
   };
 
   const handleDelete = (id: string) => {
@@ -918,6 +1126,7 @@ const LocationManagementPage = () => {
           setEditingLoc(null);
           setIsFormOpen(true);
         }}
+        onCreateWarehouse={() => setIsWarehouseFormOpen(true)}
         onDeleteSelected={handleBulkDelete}
         onPrintSelected={handlePrintSelected}
         selectedCount={selectedIds.size}
@@ -986,6 +1195,12 @@ const LocationManagementPage = () => {
         onSave={handleSave}
         initialData={editingLoc}
         defaultPurpose={activeTab}
+      />
+
+      <WarehouseFormModal
+        isOpen={isWarehouseFormOpen}
+        onClose={() => setIsWarehouseFormOpen(false)}
+        onSave={handleWarehouseSave}
       />
     </div>
   );

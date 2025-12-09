@@ -68,9 +68,7 @@ import EMSPage from "./pages/SewwingLine/EMSPage";
 import CuttingWeeklyDailyPlanPage from "./pages/Cutting/CuttingWeeklyDailyPlanPage";
 import OverallDashboardPage from "./pages/overall-dashboard/OverallDashboardPage";
 import RepairRequestListPage from "./pages/Decoration/RepairRequestListPage";
-import CreateRepairRequestPage from "./pages/Decoration/CreateRepairRequestPage";
-import ApproveRepairRequestPage from "./pages/Decoration/ApproveRepairRequestPage";
-import RecordReworkResultPage from "./pages/Decoration/RecordReworkResultPage";
+
 import AllScreens from "./pages/all-screen/AllScreen";
 import ImportPackingListFormPage from "./pages/Warehouse/ImportPackingListFormPage";
 import FabricRelaxScreen from "./pages/Warehouse/FabricRelaxScreen";
@@ -279,18 +277,7 @@ function App() {
             path="productivity/repair-request-list"
             element={<RepairRequestListPage />}
           />
-          <Route
-            path="productivity/create-data-entry"
-            element={<CreateRepairRequestPage />}
-          />
-          <Route
-            path="productivity/approve-data"
-            element={<ApproveRepairRequestPage />}
-          />
-          <Route
-            path="productivity/record-result-information"
-            element={<RecordReworkResultPage />}
-          />
+          
 
           {/* Quality Routes */}
           <Route
