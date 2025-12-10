@@ -40,11 +40,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-// --- IMPORTS ---
-// Giả định component này nằm cùng thư mục hoặc chỉnh lại đường dẫn cho đúng
 import ImportPackingListFormPage from "./ImportPackingListFormPage";
 
-// --- CONSTANTS ---
 const FACTORY_OPTIONS = [
   { value: "Factory A", label: "Factory A" },
   { value: "Factory B", label: "Factory B" },
@@ -52,24 +49,28 @@ const FACTORY_OPTIONS = [
   { value: "Factory D", label: "Factory D" },
 ];
 
-// --- TYPES ---
 export type PrintStatus = "NOT_PRINTED" | "PRINTED";
 
+// --- INTERFACE (Cập nhật đủ cột) ---
 export interface FabricRollItem {
   id: string;
-  poNumber: string;
-  itemCode: string;
-  factory: string;
-  invoiceNo: string;
-  supplier: string;
-  color: string;
-  rollNo: number | string;
-  lotNo: string;
-  yards: number;
-  netWeightKgs: number;
-  width: string;
-  dateInHouse: string;
-  qcCheck: boolean;
+  factory: string;     // Cột Factory thêm vào
+  p: string;           // p
+  invoiceNo: string;   // INVOICE
+  supplier: string;    // SUP
+  poNumber: string;    // Po
+  itemCode: string;    // Item
+  color: string;       // Color
+  lotNo: string;       // Batch
+  rollNo: string;      // ROLL
+  yards: number;       // YDS
+  netWeight: number;   // N.W
+  width: string;       // Width Sticker
+  foc: string;         // FOC
+  qc: string;          // QC
+  netWeight2: number;  // N.W2
+  grossWeight: number; // G.W
+  dateInHouse: string; // Date
   printStatus: PrintStatus;
 }
 
@@ -77,198 +78,151 @@ export interface FabricRollItem {
 const mockFabricRolls: FabricRollItem[] = [
   {
     id: uuidv4(),
-    poNumber: "PO-1001",
-    itemCode: "ITM-001",
     factory: "Factory A",
-    invoiceNo: "INV-2023-01",
-    supplier: "Sup A",
-    color: "Black",
-    rollNo: 1,
-    lotNo: "LOT-A",
-    yards: 50,
-    netWeightKgs: 12.5,
-    width: '60"',
-    dateInHouse: "2023-10-15",
-    qcCheck: false,
+    p: "",
+    invoiceNo: "A2507403",
+    supplier: "LITTLE",
+    poNumber: "POAD000068764",
+    itemCode: "70029659-64",
+    color: "ADFE TEAM LIGHT GREY",
+    lotNo: "NO.003",
+    rollNo: "KQ0001",
+    yards: 55,
+    netWeight: 18.6,
+    width: '64"',
+    foc: "",
+    qc: "",
+    netWeight2: 18.6,
+    grossWeight: 18.8,
+    dateInHouse: "2023-12-10",
     printStatus: "NOT_PRINTED",
   },
   {
     id: uuidv4(),
-    poNumber: "PO-1002",
-    itemCode: "ITM-002",
     factory: "Factory B",
-    invoiceNo: "INV-2023-02",
-    supplier: "Sup B",
-    color: "Red",
-    rollNo: 2,
-    lotNo: "LOT-B",
-    yards: 100,
-    netWeightKgs: 25.0,
-    width: '58"',
-    dateInHouse: "2023-10-20",
-    qcCheck: true,
+    p: "",
+    invoiceNo: "A2507403",
+    supplier: "LITTLE",
+    poNumber: "POAD000068764",
+    itemCode: "70029659-64",
+    color: "ADFE TEAM LIGHT GREY",
+    lotNo: "NO.003",
+    rollNo: "KQ0002",
+    yards: 51,
+    netWeight: 17.2,
+    width: '64"',
+    foc: "",
+    qc: "",
+    netWeight2: 17.2,
+    grossWeight: 17.4,
+    dateInHouse: "2023-12-10",
     printStatus: "PRINTED",
-  },
-  {
-    id: uuidv4(),
-    poNumber: "PO-1001",
-    itemCode: "ITM-001",
-    factory: "Factory A",
-    invoiceNo: "INV-2023-01",
-    supplier: "Sup A",
-    color: "Black",
-    rollNo: 3,
-    lotNo: "LOT-A",
-    yards: 48,
-    netWeightKgs: 11.8,
-    width: '60"',
-    dateInHouse: "2023-10-15",
-    qcCheck: false,
-    printStatus: "NOT_PRINTED",
   },
 ];
 
-// --- COMPONENTS ---
-
-interface StatusBadgeProps {
-  status: PrintStatus;
-}
-const StatusBadge: FC<StatusBadgeProps> = ({ status }) => {
-  if (status === "PRINTED") {
-    return (
-      <Badge
-        variant="outline"
-        className="bg-green-100 text-green-800 border-green-200"
-      >
-        <CheckCircle className="w-3.5 h-3.5 mr-1.5" />
-        Printed
-      </Badge>
-    );
-  }
-  return (
+// --- BADGE STATUS ---
+const StatusBadge: FC<{ status: PrintStatus }> = ({ status }) => {
+  return status === "PRINTED" ? (
+    <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">
+      <CheckCircle className="w-3.5 h-3.5 mr-1.5" /> Printed
+    </Badge>
+  ) : (
     <Badge variant="secondary">
-      <Printer className="w-3.5 h-3.5 mr-1.5" />
-      Not Printed
+      <Printer className="w-3.5 h-3.5 mr-1.5" /> Not Printed
     </Badge>
   );
 };
 
-// --- FILTER COMPONENT ---
+// --- FILTERS ---
 interface FilterState {
   invoice: string;
   po: string;
+  // batch: string;
   date: string;
   factory: string;
 }
 
-interface PackingListFiltersProps {
-  onSearch: (filters: FilterState) => void;
+const PackingListFilters: FC<{
+  onSearch: (f: FilterState) => void;
   onReset: () => void;
-}
-
-const PackingListFilters: FC<PackingListFiltersProps> = ({
-  onSearch,
-  onReset,
-}) => {
-  const [localFilters, setLocalFilters] = useState<FilterState>({
+}> = ({ onSearch, onReset }) => {
+  const [local, setLocal] = useState<FilterState>({
     invoice: "",
     po: "",
+    // batch: "",
     date: "",
     factory: "all",
   });
 
-  const handleChange = (key: keyof FilterState, value: string) => {
-    setLocalFilters((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const handleSearchClick = () => {
-    onSearch(localFilters);
-  };
-
-  const handleResetClick = () => {
-    const resetState = {
-      invoice: "",
-      po: "",
-      date: "",
-      factory: "all",
-    };
-    setLocalFilters(resetState);
-    onReset();
-  };
+  const handleChange = (k: keyof FilterState, v: string) =>
+    setLocal((p) => ({ ...p, [k]: v }));
 
   return (
     <Card className="mb-4">
       <CardContent className="pt-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <div>
-            <Label htmlFor="f-invoice" className="mb-1.5 block">
-              Invoice No
-            </Label>
+            <Label className="mb-1.5 block">Invoice No</Label>
             <Input
-              id="f-invoice"
               placeholder="Search Invoice..."
-              value={localFilters.invoice}
+              value={local.invoice}
               onChange={(e) => handleChange("invoice", e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSearchClick()}
             />
           </div>
-
           <div>
-            <Label htmlFor="f-po" className="mb-1.5 block">
-              PO Number
-            </Label>
+            <Label className="mb-1.5 block">PO Number</Label>
             <Input
-              id="f-po"
               placeholder="Search PO..."
-              value={localFilters.po}
+              value={local.po}
               onChange={(e) => handleChange("po", e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSearchClick()}
             />
           </div>
-
-          <div>
-            <Label htmlFor="f-date" className="mb-1.5 block">
-              Date (In House)
-            </Label>
+          {/* <div>
+            <Label className="mb-1.5 block">Batch</Label>
             <Input
-              id="f-date"
+              placeholder="Search Batch..."
+              value={local.batch}
+              onChange={(e) => handleChange("batch", e.target.value)}
+            />
+          </div> */}
+          <div>
+            <Label className="mb-1.5 block">Date</Label>
+            <Input
               type="date"
-              value={localFilters.date}
+              value={local.date}
               onChange={(e) => handleChange("date", e.target.value)}
             />
           </div>
-
           <div>
-            <Label htmlFor="f-factory" className="mb-1.5 block">
-              Factory
-            </Label>
+            <Label className="mb-1.5 block">Factory</Label>
             <Select
-              value={localFilters.factory}
-              onValueChange={(val) => handleChange("factory", val)}
+              value={local.factory}
+              onValueChange={(v) => handleChange("factory", v)}
             >
-              <SelectTrigger id="f-factory">
-                <SelectValue placeholder="All Factories" />
+              <SelectTrigger>
+                <SelectValue placeholder="All" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Factories</SelectItem>
-                {FACTORY_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
+                {FACTORY_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>
+                    {o.label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
         </div>
-
         <div className="mt-4 flex justify-end gap-2">
-          <Button variant="outline" onClick={handleResetClick}>
-            <Undo2 className="w-4 h-4 mr-2" />
-            Reset
+          <Button variant="outline" onClick={() => {
+              const reset = { invoice: "", po: "", batch: "", date: "", factory: "all" };
+              setLocal(reset);
+              onReset();
+          }}>
+            <Undo2 className="w-4 h-4 mr-2" /> Reset
           </Button>
-          <Button onClick={handleSearchClick}>
-            <Search className="w-4 h-4 mr-2" />
-            Search
+          <Button onClick={() => onSearch(local)}>
+            <Search className="w-4 h-4 mr-2" /> Search
           </Button>
         </div>
       </CardContent>
@@ -276,33 +230,14 @@ const PackingListFilters: FC<PackingListFiltersProps> = ({
   );
 };
 
-// --- LOADING SKELETON ---
-const TableSkeleton: FC = () => (
-  <Card>
-    <CardHeader>
-      <div className="flex justify-between items-center">
-        <Skeleton className="h-6 w-32" />
-        <Skeleton className="h-10 w-48" />
-      </div>
-    </CardHeader>
-    <CardContent>
-      <Skeleton className="h-[300px] w-full" />
-    </CardContent>
-  </Card>
-);
-
-// --- MAIN COMPONENT ---
+// --- MAIN PAGE ---
 const PackingListManagementPage = () => {
-  const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<FabricRollItem[]>([]);
   const [selectedItems, setSelectedItems] = useState<FabricRollItem[]>([]);
-  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-
-  const [activeFilters, setActiveFilters] = useState<FilterState>({
-    invoice: "",
-    po: "",
-    date: "",
-    factory: "all",
+  const [isImportOpen, setIsImportOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState<FilterState>({
+    invoice: "", po: "", date: "", factory: "all",
   });
 
   const fetchData = useCallback(() => {
@@ -310,110 +245,64 @@ const PackingListManagementPage = () => {
     setTimeout(() => {
       setItems(mockFabricRolls);
       setLoading(false);
-    }, 800);
+    }, 500);
   }, []);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  const handleImportSuccess = useCallback(() => {
-    fetchData();
-  }, [fetchData]);
-
-  const handleSearch = (filters: FilterState) => {
-    setActiveFilters(filters);
-  };
-
-  const handleReset = () => {
-    setActiveFilters({
-      invoice: "",
-      po: "",
-      date: "",
-      factory: "all",
-    });
-  };
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const filteredItems = useMemo(() => {
-    return items.filter((item) => {
-      const matchInvoice = item.invoiceNo
-        .toLowerCase()
-        .includes(activeFilters.invoice.toLowerCase());
-      const matchPO = item.poNumber
-        .toLowerCase()
-        .includes(activeFilters.po.toLowerCase());
-      const matchDate =
-        activeFilters.date === "" || item.dateInHouse === activeFilters.date;
-      const matchFactory =
-        activeFilters.factory === "all" ||
-        item.factory === activeFilters.factory;
-
-      return matchInvoice && matchPO && matchDate && matchFactory;
+    return items.filter((i) => {
+      const mInv = i.invoiceNo.toLowerCase().includes(filters.invoice.toLowerCase());
+      const mPo = i.poNumber.toLowerCase().includes(filters.po.toLowerCase());
+      // const mBatch = i.lotNo.toLowerCase().includes(filters.batch.toLowerCase());
+      const mDate = filters.date === "" || i.dateInHouse === filters.date;
+      const mFac = filters.factory === "all" || i.factory === filters.factory;
+      return mInv && mPo  && mDate && mFac;
     });
-  }, [items, activeFilters]);
+  }, [items, filters]);
 
-  const handlePrintItems = useCallback((itemIds: Set<string>) => {
-    setItems((prevItems) =>
-      prevItems.map((item) =>
-        itemIds.has(item.id) ? { ...item, printStatus: "PRINTED" } : item
-      )
-    );
-    setSelectedItems([]);
-  }, []);
-
-  // --- DEFINED COLUMNS WITH CUSTOM SELECT LOGIC ---
+  // --- COLUMN DEFINITION (Updated Order + Factory) ---
   const columns: ColumnDef<FabricRollItem>[] = useMemo(
     () => [
-      // 1. Cột Checkbox tuỳ chỉnh
       {
         id: "select",
         header: ({ table }) => (
           <Checkbox
-            // Checkbox Header
-            checked={
-              table.getIsAllPageRowsSelected() ||
-              (table.getIsSomePageRowsSelected() && "indeterminate")
-            }
-            onCheckedChange={(value) => {
-              if (value) {
-                // LOGIC: Khi bấm Select All, chỉ tick những dòng "NOT_PRINTED"
-                // Những dòng PRINTED sẽ không được tick tự động
-                const rows = table.getRowModel().rows;
-                rows.forEach((row) => {
-                  if (row.original.printStatus === "NOT_PRINTED") {
-                    row.toggleSelected(true);
-                  }
-                });
-              } else {
-                // Khi bỏ chọn thì reset hết
-                table.resetRowSelection();
-              }
+            checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
+            onCheckedChange={(val) => {
+              if (val) {
+                  table.getRowModel().rows.forEach(row => {
+                      if (row.original.printStatus === "NOT_PRINTED") row.toggleSelected(true);
+                  });
+              } else table.resetRowSelection();
             }}
-            aria-label="Select all"
           />
         ),
         cell: ({ row }) => (
           <Checkbox
-            // Checkbox từng dòng
             checked={row.getIsSelected()}
-            onCheckedChange={(value) => row.toggleSelected(!!value)}
-            aria-label="Select row"
-            // QUAN TRỌNG: Không dùng disabled để cho phép chọn tay kể cả đã in
-            // disabled={row.original.printStatus === "PRINTED"}
+            onCheckedChange={(val) => row.toggleSelected(!!val)}
           />
         ),
-        enableSorting: false,
-        enableHiding: false,
       },
-      // 2. Các cột dữ liệu
-      { accessorKey: "poNumber", header: "PO Number" },
-      { accessorKey: "invoiceNo", header: "Invoice No" },
-      { accessorKey: "factory", header: "Factory" },
-      { accessorKey: "itemCode", header: "Item Code" },
+      // Order: p -> Factory -> Invoice -> ...
+      { accessorKey: "p", header: "p" },
+      { accessorKey: "factory", header: "Factory" }, // ADDED FACTORY
+      { accessorKey: "invoiceNo", header: "INVOICE" },
+      { accessorKey: "supplier", header: "SUP" },
+      { accessorKey: "poNumber", header: "Po" },
+      { accessorKey: "itemCode", header: "Item" },
       { accessorKey: "color", header: "Color" },
-      { accessorKey: "rollNo", header: "Roll No" },
-      { accessorKey: "yards", header: "Yards" },
-      { accessorKey: "dateInHouse", header: "Date In House" },
+      { accessorKey: "lotNo", header: "Batch" },
+      { accessorKey: "rollNo", header: "ROLL" },
+      { accessorKey: "yards", header: "YDS", cell: ({row}) => row.original.yards.toFixed(2) },
+      { accessorKey: "netWeight", header: "N.W", cell: ({row}) => row.original.netWeight.toFixed(2) },
+      { accessorKey: "width", header: "Width Sticker" },
+      { accessorKey: "foc", header: "FOC" },
+      { accessorKey: "qc", header: "QC" },
+      { accessorKey: "netWeight2", header: "N.W2", cell: ({row}) => row.original.netWeight2.toFixed(2) },
+      { accessorKey: "grossWeight", header: "G.W", cell: ({row}) => row.original.grossWeight.toFixed(2) },
+      { accessorKey: "dateInHouse", header: "Date" },
       {
         accessorKey: "printStatus",
         header: "Status",
@@ -421,93 +310,78 @@ const PackingListManagementPage = () => {
       },
       {
         id: "actions",
-        header: "Actions",
-        cell: ({ row }) => {
-          const item = row.original;
-          return (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-8 w-8 p-0">
-                  <span className="sr-only">Open menu</span>
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onClick={() => handlePrintItems(new Set([item.id]))}
-                >
-                  <QrCode className="w-4 h-4 mr-2" />
-                  Print QR
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          );
-        },
+        header: "Action",
+        cell: () => (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem>
+                <QrCode className="w-4 h-4 mr-2" /> Print QR
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ),
       },
     ],
-    [handlePrintItems]
+    []
   );
 
   return (
-    <div className="p-4 md:p-6 lg:p-8 bg-gray-50 min-h-screen">
+    <div className="p-6 bg-gray-50 min-h-screen">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Packing List Management</h1>
-        <Button onClick={() => setIsImportModalOpen(true)}>
-          <Plus className="mr-2 h-5 w-5" />
-          Import Packing List
+        <Button onClick={() => setIsImportOpen(true)}>
+          <Plus className="mr-2 h-5 w-5" /> Import Packing List
         </Button>
       </div>
 
-      <PackingListFilters onSearch={handleSearch} onReset={handleReset} />
+      <PackingListFilters onSearch={setFilters} onReset={() => fetchData()} />
 
       {loading ? (
-        <TableSkeleton />
+        <Skeleton className="h-[300px] w-full" />
       ) : (
         <Card>
           <CardHeader>
-            <div className="flex justify-between items-center">
-              <CardTitle>Item List ({filteredItems.length})</CardTitle>
-              <Button
-                onClick={() =>
-                  handlePrintItems(new Set(selectedItems.map((i) => i.id)))
-                }
-                disabled={selectedItems.length === 0}
-              >
-                <QrCode className="w-4 h-4 mr-2" />
-                Print Selected ({selectedItems.length})
-              </Button>
-            </div>
+             <div className="flex justify-between items-center">
+                <CardTitle>Item List ({filteredItems.length})</CardTitle>
+                <Button disabled={selectedItems.length === 0}>
+                  <QrCode className="w-4 h-4 mr-2" /> Print Selected
+                </Button>
+             </div>
           </CardHeader>
           <CardContent>
-            {filteredItems.length > 0 ? (
-              <CustomTable
-                data={filteredItems}
-                columns={columns}
-                onSelectionChange={setSelectedItems}
-                showCheckbox={false} // Tắt cột checkbox mặc định của CustomTable vì chúng ta đã define cột custom
-              />
-            ) : (
-              <div className="text-center py-10 text-muted-foreground">
-                No items found matching filters.
-              </div>
-            )}
+            <CustomTable 
+                data={filteredItems} 
+                columns={columns} 
+                onSelectionChange={setSelectedItems} 
+                showCheckbox={false} 
+                initialColumnVisibility={{
+                  p: false,
+                  supplier: false,
+                  lotNo: false,
+                  netWeight: false,
+                  width: false,
+                  foc: false,
+                  qc: false,
+                  netWeight2: false,
+                  grossWeight: false,
+                }}
+            />
           </CardContent>
         </Card>
       )}
 
-      {/* MODAL IMPORT */}
-      <Dialog open={isImportModalOpen} onOpenChange={setIsImportModalOpen}>
-        <DialogContent className="max-w-7xl h-[90vh] flex flex-col p-0 gap-0 bg-gray-50/50">
-          <DialogHeader className="p-6 border-b bg-background flex-shrink-0">
+      <Dialog open={isImportOpen} onOpenChange={setIsImportOpen}>
+        <DialogContent className="max-w-7xl h-[90vh] flex flex-col p-0">
+          <DialogHeader className="p-6 border-b">
             <DialogTitle>Import Packing List</DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-hidden">
-            <ImportPackingListFormPage
-              onSuccess={() => {
-                setIsImportModalOpen(false);
-                handleImportSuccess();
-              }}
-            />
+            <ImportPackingListFormPage onSuccess={() => { setIsImportOpen(false); fetchData(); }} />
           </div>
         </DialogContent>
       </Dialog>

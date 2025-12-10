@@ -61,6 +61,7 @@ interface CustomTableProps<TData, TValue> {
   showColumnVisibility?: boolean;
   onSelectionChange?: (selectedRows: TData[]) => void;
   enableRowSelection?: (row: Row<TData>) => boolean;
+  initialColumnVisibility?: VisibilityState;
 }
 
 // --- COMPONENT ---
@@ -72,13 +73,14 @@ export function CustomTable<TData, TValue>({
   showColumnVisibility = true,
   onSelectionChange,
   enableRowSelection,
+  initialColumnVisibility = {},
 }: CustomTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
   );
   const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({});
+    React.useState<VisibilityState>(initialColumnVisibility);
   const [rowSelection, setRowSelection] = React.useState({});
 
   const tableColumns = React.useMemo(() => {

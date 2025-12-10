@@ -152,7 +152,7 @@ const PrintQRModal = ({ isOpen, onOpenChange }: PrintQRModalProps) => {
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
-          <DialogTitle>Print QR Code</DialogTitle>
+          <DialogTitle>Print Barcode</DialogTitle>
         </DialogHeader>
 
         <div className="grid gap-6 py-4">
@@ -165,7 +165,7 @@ const PrintQRModal = ({ isOpen, onOpenChange }: PrintQRModalProps) => {
             <div className="flex items-center space-x-2 border p-3 rounded-lg hover:bg-accent/50 cursor-pointer transition-colors">
               <RadioGroupItem value="both" id="r1" />
               <Label htmlFor="r1" className="cursor-pointer font-normal">
-                Print buffer and supermarket
+                Print buffer and decoration
               </Label>
             </div>
             <div className="flex items-center space-x-2 border p-3 rounded-lg hover:bg-accent/50 cursor-pointer transition-colors">
@@ -177,7 +177,7 @@ const PrintQRModal = ({ isOpen, onOpenChange }: PrintQRModalProps) => {
             <div className="flex items-center space-x-2 border p-3 rounded-lg hover:bg-accent/50 cursor-pointer transition-colors">
               <RadioGroupItem value="decoration" id="r3" />
               <Label htmlFor="r3" className="cursor-pointer font-normal">
-                Print supermarket
+                Print decoration
               </Label>
             </div>
           </RadioGroup>
@@ -283,7 +283,7 @@ const PrintQRModal = ({ isOpen, onOpenChange }: PrintQRModalProps) => {
           </Button>
           <Button onClick={() => onOpenChange(false)}>
             <Printer className="mr-2 h-4 w-4" />
-            Print QR Code
+            Print Barcode
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -442,7 +442,7 @@ const BundleManagementPage = () => {
     () => [
       { accessorKey: "jobNo", header: "JOB NO" },
       { accessorKey: "subNo", header: "SUB NO" },
-      { accessorKey: "qrCode", header: "QR Code" },
+      { accessorKey: "qrCode", header: "Barcode" },
       { accessorKey: "jobDate", header: "JOB DATE" },
       { accessorKey: "requireDate", header: "REQUIRE DATE" },
       { accessorKey: "shipmentDate", header: "SHIPMENT DATE" },
@@ -488,10 +488,10 @@ const BundleManagementPage = () => {
                 </DropdownMenuItem>
 
                 <DropdownMenuItem onClick={() => setPrintModalOpen(true)}>
-                  <QrCode className="mr-2 h-4 w-4" /> Generate QR Code
+                  <QrCode className="mr-2 h-4 w-4" /> Generate Barcode
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setPrintModalOpen(true)}>
-                  <Printer className="mr-2 h-4 w-4" /> Print QR Code
+                  <Printer className="mr-2 h-4 w-4" /> Print Barcode
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -531,14 +531,14 @@ const BundleManagementPage = () => {
           />
         </div>
         <div className="flex items-center gap-2 w-full md:w-auto">
-          {/* REPLACED "Import File" WITH "Print QR code" */}
+          {/* REPLACED "Import File" WITH "Print Barcode" */}
           <Button
             onClick={() => setPrintModalOpen(true)}
             variant="default" // Using default (primary) variant to stand out
             className="w-full sm:w-auto"
           >
             <Printer className="mr-2 h-5 w-5" />
-            Print QR code
+            Print Barcode
           </Button>
         </div>
       </div>

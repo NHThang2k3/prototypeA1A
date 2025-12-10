@@ -5,13 +5,12 @@ import {
   FileText,
   Loader2,
   XCircle,
-  AlertCircle,
-  CheckCircle2,
+
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { ColumnDef } from "@tanstack/react-table";
 
-// --- UI COMPONENTS (Giả định đường dẫn) ---
+// --- UI COMPONENTS ---
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -25,7 +24,7 @@ import { CustomTable } from "@/components/ui/custom-table";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-// --- CONSTANTS (Định nghĩa nội bộ để tránh lỗi Fast Refresh) ---
+// --- CONSTANTS ---
 const FACTORY_OPTIONS = [
   { value: "Factory A", label: "Factory A" },
   { value: "Factory B", label: "Factory B" },
@@ -33,40 +32,35 @@ const FACTORY_OPTIONS = [
   { value: "Factory D", label: "Factory D" },
 ];
 
-// --- TYPE DEFINITIONS (Export type vẫn an toàn với Fast Refresh) ---
+// --- TYPE DEFINITIONS ---
 export interface PackingListItem {
   id: string;
-  poNumber: string;
-  itemCode: string;
   factory: string;
-  supplier: string;
-  invoiceNo: string;
-  colorCode: string;
-  color: string;
-  rollNo: string;
-  lotNo: string;
-  yards: number;
-  netWeight: number;
-  grossWeight: number;
-  width: string;
-  location: string;
-  qrCode: string;
-  dateInHouse: string;
-  description: string;
+  // Các cột theo yêu cầu
+  p: string;           // p
+  invoiceNo: string;   // INVOICE
+  supplier: string;    // SUP
+  poNumber: string;    // Po
+  itemCode: string;    // Item
+  color: string;       // Color
+  lotNo: string;       // Batch
+  rollNo: string;      // ROLL
+  yards: number;       // YDS
+  netWeight: number;   // N.W
+  width: string;       // Width Sticker
+  foc: string;         // FOC
+  qc: string;          // QC
+  netWeight2: number;  // N.W2
+  grossWeight: number; // G.W
+  dateInHouse: string; // Date
 }
 
 // --- SUB-COMPONENT: ACTION TOOLBAR ---
-interface ActionToolbarProps {
+const ActionToolbar: React.FC<{
   onSubmit: () => void;
   isSubmitting: boolean;
   totalItems: number;
-}
-
-const ActionToolbar: React.FC<ActionToolbarProps> = ({
-  onSubmit,
-  isSubmitting,
-  totalItems,
-}) => {
+}> = ({ onSubmit, isSubmitting, totalItems }) => {
   return (
     <div className="sticky bottom-0 bg-background/95 backdrop-blur-sm border-t p-4 z-10 mt-auto">
       <div className="flex justify-between items-center">
@@ -83,53 +77,34 @@ const ActionToolbar: React.FC<ActionToolbarProps> = ({
   );
 };
 
-// --- SUB-COMPONENT: FILE UPLOAD ZONE ---
-type FileStatus = "parsing" | "success" | "error";
+// --- CONFIG MAPPING ---
+// Key: Tên biến - Value: Mảng các tên header trong Excel có thể chấp nhận
+const columnConfig: Record<keyof Omit<PackingListItem, "id" | "factory">, string[]> = {
+  p: ["p", "P"],
+  invoiceNo: ["INVOICE", "Invoice No"],
+  supplier: ["SUP", "Supplier"],
+  poNumber: ["Po", "PO", "Po No"],
+  itemCode: ["Item", "Item Code"],
+  color: ["Color", "Colour"],
+  lotNo: ["Batch", "Lot No", "Lot"],
+  rollNo: ["ROLL", "Roll No"],
+  yards: ["YDS", "Yds", "Yards"],
+  netWeight: ["N.W", "Net Weight"],
+  width: ["Width Sticker", "Width", "WIDTH"],
+  foc: ["FOC", "Foc"],
+  qc: ["QC", "Qc"],
+  netWeight2: ["N.W2", "NW2"],
+  grossWeight: ["G.W", "Gross Weight"],
+  dateInHouse: ["Date", "Date In House"],
+};
 
-interface ProcessedFile {
-  file: File;
-  status: FileStatus;
-  error?: string;
-  parsedItems: PackingListItem[];
-}
-
-interface FileUploadZoneProps {
+const FileUploadZone: React.FC<{
   onFileAdded: (items: PackingListItem[]) => void;
   onFileRemoved: (fileName: string) => void;
   selectedFactory: string;
-}
+}> = ({ onFileAdded, onFileRemoved, selectedFactory }) => {
+  const [processedFiles, setProcessedFiles] = useState<any[]>([]);
 
-const headerMapping: {
-  [key: string]: keyof Omit<PackingListItem, "id" | "factory">;
-} = {
-  "PO Number": "poNumber",
-  "Item Code": "itemCode",
-  Supplier: "supplier",
-  "Invoice No": "invoiceNo",
-  "Color Code": "colorCode",
-  Color: "color",
-  "Roll No": "rollNo",
-  "Lot No": "lotNo",
-  Yards: "yards",
-  "Net Weight (Kgs)": "netWeight",
-  "Gross Weight (Kgs)": "grossWeight",
-  Width: "width",
-  Location: "location",
-  "QR Code": "qrCode",
-  "Date In House": "dateInHouse",
-  Description: "description",
-};
-
-const requiredHeaders = Object.keys(headerMapping);
-
-const FileUploadZone: React.FC<FileUploadZoneProps> = ({
-  onFileAdded,
-  onFileRemoved,
-  selectedFactory,
-}) => {
-  const [processedFiles, setProcessedFiles] = useState<ProcessedFile[]>([]);
-
-  // Fix ESLint: Truyền factory vào tham số để hàm không phụ thuộc state bên ngoài
   const parseFile = useCallback(
     async (file: File, factoryToUse: string): Promise<PackingListItem[]> => {
       return new Promise((resolve, reject) => {
@@ -140,98 +115,84 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({
             if (!data) throw new Error("Could not read file.");
             const workbook = XLSX.read(data, { type: "array" });
             const sheetName = workbook.SheetNames[0];
-            if (!sheetName) throw new Error("Excel file has no sheets.");
             const worksheet = workbook.Sheets[sheetName];
 
-            // Fix ESLint: Loại bỏ eslint-disable thừa
-            const json: Record<string, unknown>[] = XLSX.utils.sheet_to_json(
-              worksheet,
-              {
-                raw: false,
-                defval: "",
-              }
-            );
+            const json: any[] = XLSX.utils.sheet_to_json(worksheet, {
+              raw: false,
+              defval: "",
+            });
 
-            if (json.length === 0) {
-              throw new Error("File has no data or the first sheet is empty.");
-            }
+            if (json.length === 0) throw new Error("File has no data.");
+
             const fileHeaders = Object.keys(json[0] || {});
-            const missingHeaders = requiredHeaders.filter(
-              (h) => !fileHeaders.includes(h)
-            );
 
-            if (missingHeaders.length > 0) {
-              throw new Error(
-                `Missing required columns: ${missingHeaders.join(", ")}`
+            // Helper tìm header
+            const findHeaderInFile = (possibleHeaders: string[]) => {
+              return fileHeaders.find(
+                (fh) =>
+                  possibleHeaders.some(
+                    (ph) => fh.trim().toLowerCase() === ph.toLowerCase()
+                  ) ||
+                  (possibleHeaders.includes("Width Sticker") &&
+                    fh.includes("Width"))
               );
-            }
+            };
 
             const parsedItems: PackingListItem[] = json
-              .map((row, index) => {
-                if (Object.values(row).every((val) => val === "")) return null;
+              .map((row: any, index) => {
+                // Bỏ qua dòng trống
+                if (Object.values(row).every((val) => !val)) return null;
 
-                const newItem: Partial<PackingListItem> = {
+                const newItem: any = {
                   id: `${file.name}-${index}-${Date.now()}`,
                   factory: factoryToUse,
                 };
 
-                for (const header of requiredHeaders) {
-                  const key = headerMapping[header] as keyof PackingListItem;
-                  const value = row[header];
+                // Mapping fields
+                (Object.keys(columnConfig) as (keyof typeof columnConfig)[]).forEach(
+                  (key) => {
+                    const headerInFile = findHeaderInFile(columnConfig[key]);
+                    const value = headerInFile ? row[headerInFile] : "";
 
-                  if (
-                    key === "yards" ||
-                    key === "netWeight" ||
-                    key === "grossWeight"
-                  ) {
-                    const numValue = parseFloat(String(value));
-                    newItem[key] = isNaN(numValue) ? 0 : numValue;
-                  } else {
-                    newItem[key] = String(value ?? "");
+                    // Xử lý dữ liệu số
+                    if (
+                      ["yards", "netWeight", "netWeight2", "grossWeight"].includes(key)
+                    ) {
+                      const numValue = parseFloat(String(value).replace(/,/g, ""));
+                      newItem[key] = isNaN(numValue) ? 0 : numValue;
+                    } else {
+                      newItem[key] = String(value ?? "").trim();
+                    }
                   }
-                }
+                );
+
                 return newItem as PackingListItem;
               })
               .filter((item): item is PackingListItem => item !== null);
 
-            if (parsedItems.length === 0) {
-              throw new Error("No valid data found in the file.");
-            }
             resolve(parsedItems);
           } catch (e: unknown) {
-            let message = "An error occurred while processing the file.";
-            if (e instanceof Error) message = e.message;
-            reject(new Error(message));
+            reject(new Error(e instanceof Error ? e.message : "Error parsing file"));
           }
-        };
-        reader.onerror = () => {
-          reject(new Error("Could not read the file. Please try again."));
         };
         reader.readAsArrayBuffer(file);
       });
     },
-    [] // Không còn phụ thuộc vào selectedFactory
+    []
   );
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
-      if (!selectedFactory) {
-        return;
-      }
-
-      const newFilesToProcess = acceptedFiles.filter(
-        (file) =>
-          !processedFiles.some(
-            (processedFile) => processedFile.file.name === file.name
-          )
+      if (!selectedFactory) return;
+      const newFiles = acceptedFiles.filter(
+        (f) => !processedFiles.some((pf) => pf.file.name === f.name)
       );
 
-      newFilesToProcess.forEach((file) => {
+      newFiles.forEach((file) => {
         setProcessedFiles((prev) => [
           ...prev,
           { file, status: "parsing", parsedItems: [] },
         ]);
-        // Truyền selectedFactory vào hàm parseFile tại thời điểm gọi
         parseFile(file, selectedFactory)
           .then((parsedItems) => {
             setProcessedFiles((prev) =>
@@ -243,7 +204,7 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({
             );
             onFileAdded(parsedItems);
           })
-          .catch((error: Error) => {
+          .catch((error) => {
             setProcessedFiles((prev) =>
               prev.map((pf) =>
                 pf.file.name === file.name
@@ -265,13 +226,12 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({
         ".xlsx",
       ],
     },
-    multiple: true,
     disabled: !selectedFactory,
   });
 
-  const handleRemoveFile = (fileName: string) => {
-    setProcessedFiles((prev) => prev.filter((pf) => pf.file.name !== fileName));
-    onFileRemoved(fileName);
+  const handleRemove = (name: string) => {
+    setProcessedFiles((prev) => prev.filter((pf) => pf.file.name !== name));
+    onFileRemoved(name);
   };
 
   return (
@@ -283,8 +243,7 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({
           !selectedFactory ? "cursor-not-allowed opacity-50" : "cursor-pointer",
           isDragActive && selectedFactory
             ? "border-primary bg-primary/10"
-            : "border-input hover:border-primary/50",
-          processedFiles.length > 0 && "mb-0"
+            : "border-input hover:border-primary/50"
         )}
       >
         <input {...getInputProps()} />
@@ -292,54 +251,37 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({
           <UploadCloud className="w-10 h-10 mb-3" />
           <p className="font-semibold text-foreground">
             {!selectedFactory
-              ? "Please select a Factory first"
-              : "Drag & drop files here, or click to select"}
+              ? "Select Factory first"
+              : "Drag & drop Excel file here"}
           </p>
-          <p className="text-xs mt-1">Supports .xlsx, .xls</p>
         </div>
       </div>
-
       {processedFiles.length > 0 && (
-        <div className="w-full space-y-3">
+        <div className="w-full space-y-2">
           {processedFiles.map(({ file, status, error }) => (
             <div
               key={file.name}
               className={cn(
-                "w-full p-3 rounded-md border flex items-center justify-between text-sm",
-                status === "success" && "bg-green-50/50 border-green-200",
-                status === "error" && "bg-red-50/50 border-red-200"
+                "w-full p-2 px-3 rounded-md border flex items-center justify-between text-sm",
+                status === "error" && "bg-red-50 border-red-200",
+                status === "success" && "bg-green-50 border-green-200"
               )}
             >
-              <div className="flex items-center overflow-hidden gap-3">
-                <FileText className="w-5 h-5 text-muted-foreground flex-shrink-0" />
-                <div className="flex-grow overflow-hidden">
-                  <p className="font-medium truncate" title={file.name}>
-                    {file.name}
-                  </p>
-                  {status === "error" && (
-                    <p className="text-xs text-red-600 mt-0.5">{error}</p>
-                  )}
-                </div>
-              </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                {status === "parsing" && (
-                  <Loader2 className="w-4 h-4 text-primary animate-spin" />
-                )}
-                {status === "success" && (
-                  <CheckCircle2 className="w-4 h-4 text-green-600" />
-                )}
+              <div className="flex items-center gap-2 overflow-hidden">
+                <FileText className="w-4 h-4 text-muted-foreground" />
+                <span className="truncate">{file.name}</span>
                 {status === "error" && (
-                  <AlertCircle className="w-4 h-4 text-red-600" />
+                  <span className="text-red-600 text-xs">({error})</span>
                 )}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
-                  onClick={() => handleRemoveFile(file.name)}
-                >
-                  <XCircle className="w-4 h-4" />
-                </Button>
               </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6"
+                onClick={() => handleRemove(file.name)}
+              >
+                <XCircle className="w-4 h-4" />
+              </Button>
             </div>
           ))}
         </div>
@@ -348,45 +290,43 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({
   );
 };
 
-// --- PREVIEW TABLE ---
+// --- PREVIEW TABLE (Strict Order) ---
 const columns: ColumnDef<PackingListItem>[] = [
-  { accessorKey: "poNumber", header: "PO Number" },
-  { accessorKey: "itemCode", header: "Item Code" },
-  { accessorKey: "factory", header: "Factory" },
-  { accessorKey: "invoiceNo", header: "Invoice No" },
+  { accessorKey: "p", header: "p" },
+  { accessorKey: "invoiceNo", header: "INVOICE" },
+  { accessorKey: "supplier", header: "SUP" },
+  { accessorKey: "poNumber", header: "Po" },
+  { accessorKey: "itemCode", header: "Item" },
   { accessorKey: "color", header: "Color" },
+  { accessorKey: "lotNo", header: "Batch" },
+  { accessorKey: "rollNo", header: "ROLL" },
   {
     accessorKey: "yards",
-    header: "Yards",
+    header: "YDS",
     cell: ({ row }) => row.original.yards.toFixed(2),
   },
   {
     accessorKey: "netWeight",
-    header: "Net (Kgs)",
+    header: "N.W",
     cell: ({ row }) => row.original.netWeight.toFixed(2),
   },
-  { accessorKey: "dateInHouse", header: "Date In House" },
+  { accessorKey: "width", header: "Width Sticker" },
+  { accessorKey: "foc", header: "FOC" },
+  { accessorKey: "qc", header: "QC" },
+  {
+    accessorKey: "netWeight2",
+    header: "N.W2",
+    cell: ({ row }) => row.original.netWeight2.toFixed(2),
+  },
+  {
+    accessorKey: "grossWeight",
+    header: "G.W",
+    cell: ({ row }) => row.original.grossWeight.toFixed(2),
+  },
+  { accessorKey: "dateInHouse", header: "Date" },
 ];
 
-const PreviewTable: React.FC<{ items: PackingListItem[] }> = ({ items }) => {
-  return (
-    <Card className="border-0 shadow-none">
-      <CardHeader className="px-0 pt-0">
-        <CardTitle className="text-lg">Data Preview</CardTitle>
-      </CardHeader>
-      <CardContent className="px-0">
-        <CustomTable columns={columns} data={items} showCheckbox={false} />
-      </CardContent>
-    </Card>
-  );
-};
-
-// --- MAIN PAGE COMPONENT ---
-interface ImportPackingListFormPageProps {
-  onSuccess?: () => void;
-}
-
-const ImportPackingListFormPage: React.FC<ImportPackingListFormPageProps> = ({
+const ImportPackingListFormPage: React.FC<{ onSuccess?: () => void }> = ({
   onSuccess,
 }) => {
   const [items, setItems] = useState<PackingListItem[]>([]);
@@ -394,28 +334,25 @@ const ImportPackingListFormPage: React.FC<ImportPackingListFormPageProps> = ({
   const [selectedFactory, setSelectedFactory] = useState<string>("");
 
   const handleFileAdded = useCallback((newItems: PackingListItem[]) => {
-    setItems((prevItems) => [...prevItems, ...newItems]);
+    setItems((prev) => [...prev, ...newItems]);
   }, []);
 
   const handleFileRemoved = useCallback((fileName: string) => {
-    setItems((prevItems) =>
-      prevItems.filter((item) => !item.id.startsWith(`${fileName}-`))
+    setItems((prev) =>
+      prev.filter((item) => !item.id.startsWith(`${fileName}-`))
     );
   }, []);
 
   const handleSubmit = () => {
     if (items.length === 0) return;
-
     setIsSubmitting(true);
     setTimeout(() => {
-      console.log("Submitting items to API:", items);
+      console.log(items);
       setIsSubmitting(false);
       setItems([]);
-      alert(
-        `Successfully imported ${items.length} items for ${selectedFactory}!`
-      );
+      alert("Import Success!");
       if (onSuccess) onSuccess();
-    }, 1500);
+    }, 1000);
   };
 
   return (
@@ -425,11 +362,8 @@ const ImportPackingListFormPage: React.FC<ImportPackingListFormPageProps> = ({
           <h2 className="text-lg font-semibold mb-4">
             1. Select Factory & Upload
           </h2>
-
           <div className="mb-4 max-w-xs space-y-2">
-            <Label>
-              Target Factory <span className="text-red-500">*</span>
-            </Label>
+            <Label>Target Factory *</Label>
             <Select value={selectedFactory} onValueChange={setSelectedFactory}>
               <SelectTrigger>
                 <SelectValue placeholder="Select a factory..." />
@@ -443,21 +377,23 @@ const ImportPackingListFormPage: React.FC<ImportPackingListFormPageProps> = ({
               </SelectContent>
             </Select>
           </div>
-
           <FileUploadZone
             onFileAdded={handleFileAdded}
             onFileRemoved={handleFileRemoved}
             selectedFactory={selectedFactory}
           />
         </div>
-
         {items.length > 0 && (
-          <div>
-            <PreviewTable items={items} />
-          </div>
+          <Card className="border-0 shadow-none">
+            <CardHeader className="px-0 pt-0">
+              <CardTitle className="text-lg">Data Preview</CardTitle>
+            </CardHeader>
+            <CardContent className="px-0">
+              <CustomTable columns={columns} data={items} showCheckbox={false} />
+            </CardContent>
+          </Card>
         )}
       </div>
-
       <ActionToolbar
         onSubmit={handleSubmit}
         isSubmitting={isSubmitting}

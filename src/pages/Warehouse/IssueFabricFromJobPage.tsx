@@ -157,11 +157,11 @@ const MOCK_CUTTING_PLAN_JOBS: CuttingPlanJob[] = [
     RequestQuantity: 200,
     IssuedQuantity: 150,
     Status: "In Progress",
-    QCStatus: "Pass",
+    QCStatus: "Fail",
     CreatedBy: "bao.tran",
     Remarks: "Fabric received fully.",
     erpChecked: false,
-    qcChecked: true,
+    qcChecked: false,
   },
   {
     ID: "CP004",
