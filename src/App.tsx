@@ -70,6 +70,7 @@ import BondingOutputPage from "./pages/Decoration/BondingOutputPage";
 import ToolStatusDashboardPage from "./pages/SewwingLine/ToolStatusDashboardPage";
 import EMSPage from "./pages/SewwingLine/EMSPage";
 import CuttingWeeklyDailyPlanPage from "./pages/Cutting/CuttingWeeklyDailyPlanPage";
+import DailyCutting from "./pages/Cutting/DailyCutting";
 import OverallDashboardPage from "./pages/overall-dashboard/OverallDashboardPage";
 import RepairRequestListPage from "./pages/Decoration/RepairRequestListPage";
 
@@ -219,6 +220,10 @@ function App() {
           <Route
             path="bundle-data/bundle-management"
             element={<BundleManagementPage />}
+          />
+          <Route
+            path="bundle-data/daily-cutting"
+            element={<DailyCutting />}
           />
           <Route path="quality/action-plan" element={<ActionPlanPage />} />
           <Route

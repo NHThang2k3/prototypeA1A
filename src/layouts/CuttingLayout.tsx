@@ -22,6 +22,7 @@ import {
   Gauge,
   Tv,
   Hammer,
+  ClipboardList,
   type LucideIcon,
 } from "lucide-react";
 
@@ -71,6 +72,12 @@ const sidebarNavItems: NavItem[] = [
             path: "/cutting/bundle-data/bundle-management",
             icon: Upload,
             key: "bundle-management",
+          },
+          {
+            title: "Daily Cutting",
+            path: "/cutting/bundle-data/daily-cutting",
+            icon: ClipboardList,
+            key: "daily-cutting",
           },
         ],
       },

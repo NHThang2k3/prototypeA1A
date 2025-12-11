@@ -26,6 +26,7 @@ export interface FabricRoll {
   dateInHouse: string;
   description: string;
   qcStatus: QCStatus;
+  qcMark: boolean;  // Added: QC mark field
   qcDate: string;
   qcBy: string;
   comment: string;
@@ -70,6 +71,7 @@ const DUMMY_FABRIC_DATA: FabricRoll[] = [
     dateInHouse: "2023-02-18",
     description: "Polyester Blend",
     qcStatus: "Failed",
+    qcMark: false,  // No QC mark
     qcDate: "2023-04-29",
     qcBy: "John Doe",
     comment: "Minor defect on edge",
@@ -112,6 +114,7 @@ const DUMMY_FABRIC_DATA: FabricRoll[] = [
     dateInHouse: "2023-03-16",
     description: "Silk Blend",
     qcStatus: "Passed",
+    qcMark: true,  // Has QC mark
     qcDate: "2023-08-05",
     qcBy: "Jane Smith",
     comment: "No issues found",
@@ -147,6 +150,7 @@ const DUMMY_FABRIC_DATA: FabricRoll[] = [
     dateInHouse: "2023-11-22",
     description: "Polyester Blend",
     qcStatus: "Failed",
+    qcMark: true,  // Has QC mark
     qcDate: "2023-03-18",
     qcBy: "Peter Jones",
     comment: "Approved for production",
@@ -182,6 +186,7 @@ const DUMMY_FABRIC_DATA: FabricRoll[] = [
     dateInHouse: "2023-12-08",
     description: "Cotton Fabric",
     qcStatus: "Failed",
+    qcMark: false,  // No QC mark
     qcDate: "2023-02-27",
     qcBy: "John Doe",
     comment: "No issues found",
@@ -217,6 +222,7 @@ const DUMMY_FABRIC_DATA: FabricRoll[] = [
     dateInHouse: "2023-05-05",
     description: "Denim Material",
     qcStatus: "Pending",
+    qcMark: true,  // Has QC mark
     qcDate: "2023-03-12",
     qcBy: "Peter Jones",
     comment: "Rework required",
@@ -892,9 +898,22 @@ const InventoryListPage = () => {
         cell: ({ row }) => <StatusBadge status={row.original.qcStatus} />,
       },
       {
+        accessorKey: "qcMark",
+        header: "QC mark",
+        cell: ({ row }) => (
+          <div className="flex items-center justify-center">
+            {row.original.qcMark ? (
+              <span className="text-green-600 text-xl" title="QC Marked">✓</span>
+            ) : (
+              <span className="text-gray-300">-</span>
+            )}
+          </div>
+        ),
+      },
+      {
         accessorKey: "comment",
         header: "Remark",
-        cell: ({ row }) => (
+        cell: ({ row}) => (
           <div className="max-w-[80px] truncate" title={row.original.comment}>
             {row.original.comment || ""}
           </div>
