@@ -1,12 +1,11 @@
 // src/pages/BufferScanOutPage/BufferScanOutPage.tsx
 
 import React, { useState, useEffect, useRef } from "react";
-import { QrCode, AlertTriangle } from "lucide-react";
+import { QrCode, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -15,199 +14,246 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-type Bundle = {
-  id: string;
-  po: string;
-  style: string;
-  qty: number;
+// Giả lập dữ liệu QC cho các barcode
+const mockQCData: Record<string, { qcStatus: "pass" | "fail"; reason?: string }> = {
+  "QC-PASS-001": { qcStatus: "pass" },
+  "QC-PASS-002": { qcStatus: "pass" },
+  "QC-FAIL-001": { qcStatus: "fail", reason: "Wrong Color" },
+  "QC-FAIL-002": { qcStatus: "fail", reason: "Stain Detected" },
+  "QC-FAIL-003": { qcStatus: "fail", reason: "Broken Thread" },
+  "QC-FAIL-004": { qcStatus: "fail", reason: "Missed Stitches" },
+  "QC-FAIL-005": { qcStatus: "fail", reason: "Incorrect Placement" },
 };
 
-const mockBundleData: Bundle = {
-  id: "BNDL-001",
-  po: "PO12345",
-  style: "STYLE-A01",
-  qty: 100,
+type ScanResult = {
+  barcode: string;
+  qcStatus: "pass" | "fail";
+  reason?: string;
+  timestamp: Date;
 };
-
-const defectTypes = [
-  "Wrong Color",
-  "Stain",
-  "Broken Thread",
-  "Missed Stitches",
-  "Incorrect Placement",
-  "Other",
-];
 
 const BufferScanOutPage = () => {
   const [scanInput, setScanInput] = useState("");
-  const [scannedBundle, setScannedBundle] = useState<Bundle | null>(null);
-  const [goodQty, setGoodQty] = useState<number | string>("");
-  const [defectQty, setDefectQty] = useState<number | string>("");
-  const [selectedDefects, setSelectedDefects] = useState<string[]>([]);
+  const [scanResult, setScanResult] = useState<ScanResult | null>(null);
+  const [scanHistory, setScanHistory] = useState<ScanResult[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (!scannedBundle) {
-      inputRef.current?.focus();
-    }
-  }, [scannedBundle]);
+    // Auto focus input khi component mount hoặc sau khi scan
+    inputRef.current?.focus();
+  }, [scanResult]);
 
   const handleScan = (e: React.FormEvent) => {
     e.preventDefault();
-    if (scanInput.toUpperCase() === "BNDL-001") {
-      setScannedBundle(mockBundleData);
-      setGoodQty(mockBundleData.qty);
-      setDefectQty(0);
-    } else {
-      alert("Bundle not found!");
+    
+    if (!scanInput.trim()) {
+      return;
     }
+
+    processBarcodeScan(scanInput.toUpperCase());
     setScanInput("");
   };
 
-  const handleConfirm = () => {
-    if (!scannedBundle) return;
-    const total = Number(goodQty) + Number(defectQty);
-    if (total !== scannedBundle.qty) {
-      alert(
-        `Total quantity (${total}) must match bundle quantity (${scannedBundle.qty})!`
-      );
-      return;
+  const processBarcodeScan = (barcode: string) => {
+    // Kiểm tra barcode trong mock data
+    const qcData = mockQCData[barcode];
+    
+    if (qcData) {
+      const result: ScanResult = {
+        barcode: barcode,
+        qcStatus: qcData.qcStatus,
+        reason: qcData.reason,
+        timestamp: new Date(),
+      };
+      
+      setScanResult(result);
+      setScanHistory(prev => [result, ...prev].slice(0, 10)); // Giữ 10 kết quả gần nhất
+    } else {
+      // Barcode không tồn tại trong hệ thống
+      const result: ScanResult = {
+        barcode: barcode,
+        qcStatus: "fail",
+        reason: "Barcode not found in system",
+        timestamp: new Date(),
+      };
+      setScanResult(result);
+      setScanHistory(prev => [result, ...prev].slice(0, 10));
     }
-    if (Number(defectQty) > 0 && selectedDefects.length === 0) {
-      alert("Please select at least one defect type.");
-      return;
-    }
-    console.log({
-      bundleId: scannedBundle.id,
-      goodQty,
-      defectQty,
-      defects: selectedDefects,
-    });
-    alert("Scan-out successful!");
-    setScannedBundle(null);
-    setGoodQty("");
-    setDefectQty("");
-    setSelectedDefects([]);
   };
 
-  const handleCancel = () => {
-    setScannedBundle(null);
-    setGoodQty("");
-    setDefectQty("");
-    setSelectedDefects([]);
+  const handleNewScan = () => {
+    setScanResult(null);
+    setScanInput("");
+    inputRef.current?.focus();
   };
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-4xl mx-auto space-y-6">
+      {/* Main Scan Card */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-3xl font-bold">Scan-Out Bundle</CardTitle>
+          <CardTitle className="text-3xl font-bold">Decoration Buffer Scan-Out</CardTitle>
           <CardDescription>
-            Scan a completed bundle and record the output quantities.
+            Scan barcode to check QC status. Use "QC-PASS-XXX" for pass or "QC-FAIL-XXX" for fail simulation.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {!scannedBundle ? (
-            <form onSubmit={handleScan}>
-              <Label htmlFor="scan-input" className="mb-1">
-                Bundle QR Code
-              </Label>
-              <div className="relative">
-                <QrCode className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 text-muted-foreground" />
-                <Input
-                  ref={inputRef}
-                  id="scan-input"
-                  type="text"
-                  value={scanInput}
-                  onChange={(e) => setScanInput(e.target.value)}
-                  placeholder="Waiting for scan..."
-                  className="pl-14 pr-4 py-7 text-lg"
-                />
+          {/* Scan Input Form */}
+          {!scanResult ? (
+            <form onSubmit={handleScan} className="space-y-4">
+              <div>
+                <Label htmlFor="scan-input" className="text-lg mb-2">
+                  Scan Barcode
+                </Label>
+                <div className="relative">
+                  <QrCode className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 text-muted-foreground" />
+                  <Input
+                    ref={inputRef}
+                    id="scan-input"
+                    type="text"
+                    value={scanInput}
+                    onChange={(e) => setScanInput(e.target.value)}
+                    placeholder="Waiting for scan..."
+                    className="pl-14 pr-4 py-8 text-xl font-mono"
+                    autoComplete="off"
+                  />
+                </div>
+              </div>
+
+              {/* Quick Test Buttons */}
+              <div className="border-t pt-4">
+                <p className="text-sm text-muted-foreground mb-3">Quick Test:</p>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => processBarcodeScan("QC-PASS-001")}
+                    className="text-green-600 border-green-300 hover:bg-green-50"
+                  >
+                    <CheckCircle2 className="w-4 h-4 mr-1" />
+                    QC Pass
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => processBarcodeScan("QC-FAIL-001")}
+                    className="text-red-600 border-red-300 hover:bg-red-50"
+                  >
+                    <XCircle className="w-4 h-4 mr-1" />
+                    QC Fail
+                  </Button>
+                </div>
               </div>
             </form>
           ) : (
-            <>
-              <Alert className="bg-blue-50 border-blue-200">
-                <AlertTitle className="font-bold text-blue-800">
-                  {scannedBundle.id}
-                </AlertTitle>
-                <AlertDescription className="text-blue-700">
-                  {scannedBundle.style} - Total Quantity: {scannedBundle.qty}
-                </AlertDescription>
-              </Alert>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="good-qty">Good Quantity</Label>
-                  <Input
-                    type="number"
-                    id="good-qty"
-                    value={goodQty}
-                    onChange={(e) => setGoodQty(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="defect-qty">Defect Quantity</Label>
-                  <Input
-                    type="number"
-                    id="defect-qty"
-                    value={defectQty}
-                    onChange={(e) => setDefectQty(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              {Number(goodQty) + Number(defectQty) !== scannedBundle.qty && (
-                <Alert variant="destructive">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertTitle>Quantity Mismatch</AlertTitle>
-                  <AlertDescription>
-                    Total quantity must equal {scannedBundle.qty}.
+            /* Scan Result Display */
+            <div className="space-y-6">
+              {scanResult.qcStatus === "pass" ? (
+                /* QC Pass Alert */
+                <Alert className="bg-green-50 border-green-300">
+                  <CheckCircle2 className="h-6 w-6 text-green-600" />
+                  <AlertTitle className="text-2xl font-bold text-green-800">
+                    QC Pass - Scan Successful!
+                  </AlertTitle>
+                  <AlertDescription className="text-green-700 mt-2">
+                    <div className="space-y-1">
+                      <p className="text-lg">Barcode: <span className="font-mono font-semibold">{scanResult.barcode}</span></p>
+                      <p className="text-sm text-green-600">
+                        Scanned at: {scanResult.timestamp.toLocaleTimeString()}
+                      </p>
+                      <p className="mt-3 text-base">
+                        ✓ Quality check passed. Bundle is ready for next process.
+                      </p>
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                /* QC Fail Alert */
+                <Alert variant="destructive" className="bg-red-50 border-red-300">
+                  <XCircle className="h-6 w-6 text-red-600" />
+                  <AlertTitle className="text-2xl font-bold text-red-800">
+                    QC Fail - Scan Failed!
+                  </AlertTitle>
+                  <AlertDescription className="text-red-700 mt-2">
+                    <div className="space-y-1">
+                      <p className="text-lg">Barcode: <span className="font-mono font-semibold">{scanResult.barcode}</span></p>
+                      <p className="text-sm text-red-600">
+                        Scanned at: {scanResult.timestamp.toLocaleTimeString()}
+                      </p>
+                      <div className="mt-4 p-3 bg-red-100 rounded-md">
+                        <p className="font-semibold flex items-center gap-2">
+                          <AlertTriangle className="w-5 h-5" />
+                          Failure Reason:
+                        </p>
+                        <p className="mt-1 text-base font-medium">
+                          {scanResult.reason || "Unknown defect"}
+                        </p>
+                      </div>
+                      <p className="mt-3 text-sm italic">
+                        ✗ This bundle requires repair or rework before proceeding.
+                      </p>
+                    </div>
                   </AlertDescription>
                 </Alert>
               )}
 
-              {Number(defectQty) > 0 && (
-                <div>
-                  <h3 className="text-md font-medium text-gray-800 mb-2">
-                    Defect Reason(s)
-                  </h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {defectTypes.map((defect) => (
-                      <Button
-                        key={defect}
-                        variant={
-                          selectedDefects.includes(defect)
-                            ? "destructive"
-                            : "outline"
-                        }
-                        onClick={() =>
-                          setSelectedDefects((prev) =>
-                            prev.includes(defect)
-                              ? prev.filter((d) => d !== defect)
-                              : [...prev, defect]
-                          )
-                        }
-                        className="text-sm"
-                      >
-                        {defect}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </>
+              {/* Action Button */}
+              <div className="flex justify-center">
+                <Button 
+                  onClick={handleNewScan}
+                  size="lg"
+                  className="px-8"
+                >
+                  Scan Next Item
+                </Button>
+              </div>
+            </div>
           )}
         </CardContent>
-        {scannedBundle && (
-          <CardFooter className="flex justify-end gap-3">
-            <Button variant="ghost" onClick={handleCancel}>
-              Cancel
-            </Button>
-            <Button onClick={handleConfirm}>Confirm & Scan Out</Button>
-          </CardFooter>
-        )}
       </Card>
+
+      {/* Scan History */}
+      {scanHistory.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl">Recent Scans</CardTitle>
+            <CardDescription>Last {scanHistory.length} scan results</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {scanHistory.map((item, index) => (
+                <div
+                  key={index}
+                  className={`flex items-center justify-between p-3 rounded-lg border ${
+                    item.qcStatus === "pass"
+                      ? "bg-green-50 border-green-200"
+                      : "bg-red-50 border-red-200"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    {item.qcStatus === "pass" ? (
+                      <CheckCircle2 className="w-5 h-5 text-green-600" />
+                    ) : (
+                      <XCircle className="w-5 h-5 text-red-600" />
+                    )}
+                    <div>
+                      <p className="font-mono font-semibold">{item.barcode}</p>
+                      {item.reason && (
+                        <p className="text-sm text-muted-foreground">{item.reason}</p>
+                      )}
+                    </div>
+                  </div>
+                  <span className="text-sm text-muted-foreground">
+                    {item.timestamp.toLocaleTimeString()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

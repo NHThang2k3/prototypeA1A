@@ -93,7 +93,7 @@ const BufferScanInPage = () => {
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl mx-auto">
       <Card>
         <CardHeader>
-          <CardTitle className="text-3xl font-bold">Scan-In Bundle</CardTitle>
+          <CardTitle className="text-3xl font-bold">Decoration Buffer Scan-In</CardTitle>
           <CardDescription>
             Scan the QR code on the fabric bundle to record its entry.
           </CardDescription>

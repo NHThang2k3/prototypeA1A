@@ -79,7 +79,7 @@ const sidebarNavItems: NavItem[] = [
         path: "/decoration/productivity/bonding-opl",
       },
       {
-        title: "Buffer Management",
+        title: "Decoration Buffer Management",
         icon: Boxes,
         key: "productivity-buffer",
         children: [
@@ -135,17 +135,37 @@ const sidebarNavItems: NavItem[] = [
         path: "/decoration/productivity/bonding-output",
       },
       {
-        title: "Dashboard (Decoration)",
+        title: "Dashboard Decoration",
         icon: Gauge,
         key: "productivity-decoration-dashboard",
-        path: "/decoration/productivity/decoration-dashboard",
+        children: [
+          {
+            title: "Bonding Dashboard",
+            path: "/decoration/productivity/bonding-dashboard",
+            icon: Gauge,
+            key: "bonding-dashboard",
+          },
+          {
+            title: "Embroidery Dashboard",
+            path: "/decoration/productivity/embroidery-dashboard",
+            icon: Gauge,
+            key: "embroidery-dashboard",
+          },
+          {
+            title: "Pad-Printing Dashboard",
+            path: "/decoration/productivity/pad-printing-dashboard",
+            icon: Gauge,
+            key: "pad-printing-dashboard",
+          },
+          {
+            title: "Heat Press Dashboard",
+            path: "/decoration/productivity/heat-press-dashboard",
+            icon: Gauge,
+            key: "heat-press-dashboard",
+          },
+        ],
       },
-      {
-        title: "Bonding Dashboard",
-        icon: Gauge,
-        key: "productivity-bonding-dashboard",
-        path: "/decoration/productivity/bonding-dashboard",
-      },
+      
       {
         title: "Damaged goods repair",
         icon: BarChart3,

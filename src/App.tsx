@@ -38,6 +38,10 @@ import WorkPlanPage from "./pages/Decoration/WorkPlanPage";
 import BufferScanInPage from "./pages/Decoration/BufferScanInPage";
 import BufferScanOutPage from "./pages/Decoration/BufferScanOutPage";
 import DecorationDashboardPage from "./pages/Decoration/DecorationDashboardPage";
+import BondingDashboardPage from "./pages/Decoration/BondingDashboardPage";
+import EmbroideryDashboardPage from "./pages/Decoration/EmbroideryDashboardPage";
+import PadPrintingDashboardPage from "./pages/Decoration/PadPrintingDashboardPage";
+import HeatPressDashboardPage from "./pages/Decoration/HeatPressDashboardPage";
 import ActionPlanPage from "./pages/Warehouse/ActionPlanPage";
 import MachineLocationPage from "./pages/Decoration/MachineLocationPage";
 import DowntimeDashboardPage from "./pages/Decoration/DowntimeDashboardPage";
@@ -274,7 +278,19 @@ function App() {
           />
           <Route
             path="productivity/bonding-dashboard"
-            element={<DecorationDashboardPage />} // Có thể tái sử dụng
+            element={<BondingDashboardPage />}
+          />
+          <Route
+            path="productivity/embroidery-dashboard"
+            element={<EmbroideryDashboardPage />}
+          />
+          <Route
+            path="productivity/pad-printing-dashboard"
+            element={<PadPrintingDashboardPage />}
+          />
+          <Route
+            path="productivity/heat-press-dashboard"
+            element={<HeatPressDashboardPage />}
           />
           <Route
             path="productivity/repair-request-list"
