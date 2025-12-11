@@ -1,7 +1,7 @@
 // src/pages/BufferScanOutPage/BufferScanOutPage.tsx
 
-import React, { useState, useEffect, useRef } from "react";
-import { QrCode, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
+import { useState } from "react";
+import {  CheckCircle2, XCircle, AlertTriangle, History } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -9,10 +9,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 // Giả lập dữ liệu QC cho các barcode
 const mockQCData: Record<string, { qcStatus: "pass" | "fail"; reason?: string }> = {
@@ -33,178 +39,254 @@ type ScanResult = {
 };
 
 const BufferScanOutPage = () => {
-  const [scanInput, setScanInput] = useState("");
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [scanHistory, setScanHistory] = useState<ScanResult[]>([]);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    // Auto focus input khi component mount hoặc sau khi scan
-    inputRef.current?.focus();
-  }, [scanResult]);
-
-  const handleScan = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!scanInput.trim()) {
-      return;
-    }
-
-    processBarcodeScan(scanInput.toUpperCase());
-    setScanInput("");
-  };
+  const [isScanning, setIsScanning] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
 
   const processBarcodeScan = (barcode: string) => {
-    // Kiểm tra barcode trong mock data
-    const qcData = mockQCData[barcode];
+    setIsScanning(true);
     
-    if (qcData) {
-      const result: ScanResult = {
-        barcode: barcode,
-        qcStatus: qcData.qcStatus,
-        reason: qcData.reason,
-        timestamp: new Date(),
-      };
+    // Giả lập thời gian scanning
+    setTimeout(() => {
+      // Kiểm tra barcode trong mock data
+      const qcData = mockQCData[barcode];
       
-      setScanResult(result);
-      setScanHistory(prev => [result, ...prev].slice(0, 10)); // Giữ 10 kết quả gần nhất
-    } else {
-      // Barcode không tồn tại trong hệ thống
-      const result: ScanResult = {
-        barcode: barcode,
-        qcStatus: "fail",
-        reason: "Barcode not found in system",
-        timestamp: new Date(),
-      };
-      setScanResult(result);
-      setScanHistory(prev => [result, ...prev].slice(0, 10));
-    }
+      if (qcData) {
+        const result: ScanResult = {
+          barcode: barcode,
+          qcStatus: qcData.qcStatus,
+          reason: qcData.reason,
+          timestamp: new Date(),
+        };
+        
+        setScanResult(result);
+        setScanHistory(prev => [result, ...prev].slice(0, 10));
+      } else {
+        const result: ScanResult = {
+          barcode: barcode,
+          qcStatus: "fail",
+          reason: "Barcode not found in system",
+          timestamp: new Date(),
+        };
+        setScanResult(result);
+        setScanHistory(prev => [result, ...prev].slice(0, 10));
+      }
+      
+      setIsScanning(false);
+    }, 800);
   };
 
   const handleNewScan = () => {
     setScanResult(null);
-    setScanInput("");
-    inputRef.current?.focus();
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
+      {/* Header with History Button */}
+      <div className="max-w-full md:max-w-3xl mx-auto mb-4 flex justify-between items-center">
+        <h1 className="text-2xl md:text-3xl font-bold">Buffer Scan-Out</h1>
+        
+        {/* Recent Scans Dialog */}
+        <Dialog open={showHistory} onOpenChange={setShowHistory}>
+          <DialogTrigger asChild>
+            <Button variant="outline" size="lg" className="h-12 md:h-14 px-4 md:px-6">
+              <History className="w-6 h-6 mr-2" />
+              Recent Scans ({scanHistory.length})
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-2xl">Recent Scans</DialogTitle>
+              <DialogDescription>
+                Last {scanHistory.length} scan results
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3 mt-4">
+              {scanHistory.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">No scan history yet</p>
+              ) : (
+                scanHistory.map((item, index) => (
+                  <div
+                    key={index}
+                    className={`flex items-center justify-between p-4 rounded-lg border-2 ${
+                      item.qcStatus === "pass"
+                        ? "bg-green-50 border-green-300"
+                        : "bg-red-50 border-red-300"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 flex-1">
+                      {item.qcStatus === "pass" ? (
+                        <CheckCircle2 className="w-7 h-7 text-green-600 flex-shrink-0" />
+                      ) : (
+                        <XCircle className="w-7 h-7 text-red-600 flex-shrink-0" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-mono font-bold text-lg truncate">{item.barcode}</p>
+                        {item.reason && (
+                          <p className="text-sm text-muted-foreground truncate">{item.reason}</p>
+                        )}
+                      </div>
+                    </div>
+                    <span className="text-sm text-muted-foreground flex-shrink-0 ml-2">
+                      {item.timestamp.toLocaleTimeString()}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+
       {/* Main Scan Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-3xl font-bold">Decoration Buffer Scan-Out</CardTitle>
-          <CardDescription>
-            Scan barcode to check QC status. Use "QC-PASS-XXX" for pass or "QC-FAIL-XXX" for fail simulation.
+      <Card className="max-w-full md:max-w-3xl mx-auto shadow-lg">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-2xl md:text-4xl font-bold text-center">
+            Decoration Buffer Scan-Out
+          </CardTitle>
+          <CardDescription className="text-center text-base md:text-lg mt-2">
+            Position barcode in front of camera
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Scan Input Form */}
+        <CardContent className="space-y-6 md:space-y-8">
+          {/* Camera Scanner */}
           {!scanResult ? (
-            <form onSubmit={handleScan} className="space-y-4">
-              <div>
-                <Label htmlFor="scan-input" className="text-lg mb-2">
-                  Scan Barcode
-                </Label>
-                <div className="relative">
-                  <QrCode className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 text-muted-foreground" />
-                  <Input
-                    ref={inputRef}
-                    id="scan-input"
-                    type="text"
-                    value={scanInput}
-                    onChange={(e) => setScanInput(e.target.value)}
-                    placeholder="Waiting for scan..."
-                    className="pl-14 pr-4 py-8 text-xl font-mono"
-                    autoComplete="off"
-                  />
+            /* Camera Scanner View */
+            <div className="space-y-6">
+              {/* Camera Preview Area */}
+              <div className="relative bg-black rounded-lg overflow-hidden aspect-video">
+                {/* Simulated Camera Feed */}
+                <div className="absolute inset-0 bg-black">
+                  
+                  {/* Scanning Frame */}
+                  <div className="absolute inset-0 flex items-center justify-center p-8">
+                    <div className={`relative w-full max-w-md aspect-[3/1] border-4 rounded-lg transition-colors duration-300 ${
+                      isScanning ? 'border-blue-500 animate-pulse' : 'border-white'
+                    }`}>
+                      {/* Corner markers */}
+                      <div className="absolute top-0 left-0 w-8 h-8 border-t-8 border-l-8 border-white"></div>
+                      <div className="absolute top-0 right-0 w-8 h-8 border-t-8 border-r-8 border-white"></div>
+                      <div className="absolute bottom-0 left-0 w-8 h-8 border-b-8 border-l-8 border-white"></div>
+                      <div className="absolute bottom-0 right-0 w-8 h-8 border-b-8 border-r-8 border-white"></div>
+                      
+                      {/* Scanning line animation */}
+                      {isScanning && (
+                        <div className="absolute inset-0 overflow-hidden">
+                          <div className="h-1 w-full bg-blue-500 animate-scan"></div>
+                        </div>
+                      )}
+                      
+                      {/* Instruction text */}
+                      <div className="absolute -bottom-12 left-0 right-0 text-center">
+                        <p className="text-white text-lg md:text-xl font-medium">
+                          {isScanning ? 'Scanning...' : 'Position barcode here'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               {/* Quick Test Buttons */}
-              <div className="border-t pt-4">
-                <p className="text-sm text-muted-foreground mb-3">Quick Test:</p>
-                <div className="flex flex-wrap gap-2">
+              <div className="border-t-2 pt-6">
+                <p className="text-lg md:text-xl text-muted-foreground mb-4 font-medium">Quick Test (Simulate Scan):</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Button
                     type="button"
                     variant="outline"
-                    size="sm"
+                    size="lg"
                     onClick={() => processBarcodeScan("QC-PASS-001")}
-                    className="text-green-600 border-green-300 hover:bg-green-50"
+                    disabled={isScanning}
+                    className="h-20 md:h-24 text-xl md:text-2xl font-semibold text-green-700 border-green-400 border-2 hover:bg-green-100 bg-green-50"
                   >
-                    <CheckCircle2 className="w-4 h-4 mr-1" />
+                    <CheckCircle2 className="w-8 h-8 md:w-10 md:h-10 mr-3" />
                     QC Pass
                   </Button>
                   <Button
                     type="button"
                     variant="outline"
-                    size="sm"
+                    size="lg"
                     onClick={() => processBarcodeScan("QC-FAIL-001")}
-                    className="text-red-600 border-red-300 hover:bg-red-50"
+                    disabled={isScanning}
+                    className="h-20 md:h-24 text-xl md:text-2xl font-semibold text-red-700 border-red-400 border-2 hover:bg-red-100 bg-red-50"
                   >
-                    <XCircle className="w-4 h-4 mr-1" />
+                    <XCircle className="w-8 h-8 md:w-10 md:h-10 mr-3" />
                     QC Fail
                   </Button>
                 </div>
               </div>
-            </form>
+            </div>
           ) : (
             /* Scan Result Display */
-            <div className="space-y-6">
+            <div className="space-y-6 md:space-y-8">
               {scanResult.qcStatus === "pass" ? (
                 /* QC Pass Alert */
-                <Alert className="bg-green-50 border-green-300">
-                  <CheckCircle2 className="h-6 w-6 text-green-600" />
-                  <AlertTitle className="text-2xl font-bold text-green-800">
-                    QC Pass - Scan Successful!
-                  </AlertTitle>
-                  <AlertDescription className="text-green-700 mt-2">
-                    <div className="space-y-1">
-                      <p className="text-lg">Barcode: <span className="font-mono font-semibold">{scanResult.barcode}</span></p>
-                      <p className="text-sm text-green-600">
-                        Scanned at: {scanResult.timestamp.toLocaleTimeString()}
-                      </p>
-                      <p className="mt-3 text-base">
-                        ✓ Quality check passed. Bundle is ready for next process.
-                      </p>
+                <Alert className="bg-green-50 border-green-400 border-2 p-6 md:p-8">
+                  <div className="flex items-start gap-4">
+                    <CheckCircle2 className="h-12 w-12 md:h-16 md:w-16 text-green-600 flex-shrink-0 mt-1" />
+                    <div className="flex-1">
+                      <AlertTitle className="text-2xl md:text-4xl font-bold text-green-800 mb-3">
+                        QC Pass - Scan Successful!
+                      </AlertTitle>
+                      <AlertDescription className="text-green-700">
+                        <div className="space-y-3">
+                          <p className="text-xl md:text-2xl">
+                            Barcode: <span className="font-mono font-bold">{scanResult.barcode}</span>
+                          </p>
+                          <p className="text-base md:text-lg text-green-600">
+                            Scanned at: {scanResult.timestamp.toLocaleTimeString()}
+                          </p>
+                          <p className="mt-4 text-lg md:text-xl font-medium">
+                            ✓ Quality check passed. Bundle is ready for next process.
+                          </p>
+                        </div>
+                      </AlertDescription>
                     </div>
-                  </AlertDescription>
+                  </div>
                 </Alert>
               ) : (
                 /* QC Fail Alert */
-                <Alert variant="destructive" className="bg-red-50 border-red-300">
-                  <XCircle className="h-6 w-6 text-red-600" />
-                  <AlertTitle className="text-2xl font-bold text-red-800">
-                    QC Fail - Scan Failed!
-                  </AlertTitle>
-                  <AlertDescription className="text-red-700 mt-2">
-                    <div className="space-y-1">
-                      <p className="text-lg">Barcode: <span className="font-mono font-semibold">{scanResult.barcode}</span></p>
-                      <p className="text-sm text-red-600">
-                        Scanned at: {scanResult.timestamp.toLocaleTimeString()}
-                      </p>
-                      <div className="mt-4 p-3 bg-red-100 rounded-md">
-                        <p className="font-semibold flex items-center gap-2">
-                          <AlertTriangle className="w-5 h-5" />
-                          Failure Reason:
-                        </p>
-                        <p className="mt-1 text-base font-medium">
-                          {scanResult.reason || "Unknown defect"}
-                        </p>
-                      </div>
-                      <p className="mt-3 text-sm italic">
-                        ✗ This bundle requires repair or rework before proceeding.
-                      </p>
+                <Alert variant="destructive" className="bg-red-50 border-red-400 border-2 p-6 md:p-8">
+                  <div className="flex items-start gap-4">
+                    <XCircle className="h-12 w-12 md:h-16 md:w-16 text-red-600 flex-shrink-0 mt-1" />
+                    <div className="flex-1">
+                      <AlertTitle className="text-2xl md:text-4xl font-bold text-red-800 mb-3">
+                        QC Fail - Scan Failed!
+                      </AlertTitle>
+                      <AlertDescription className="text-red-700">
+                        <div className="space-y-3">
+                          <p className="text-xl md:text-2xl">
+                            Barcode: <span className="font-mono font-bold">{scanResult.barcode}</span>
+                          </p>
+                          <p className="text-base md:text-lg text-red-600">
+                            Scanned at: {scanResult.timestamp.toLocaleTimeString()}
+                          </p>
+                          <div className="mt-5 p-4 md:p-6 bg-red-100 rounded-lg border-2 border-red-300">
+                            <p className="font-bold flex items-center gap-2 text-lg md:text-xl mb-2">
+                              <AlertTriangle className="w-6 h-6 md:w-7 md:h-7" />
+                              Failure Reason:
+                            </p>
+                            <p className="text-xl md:text-2xl font-bold">
+                              {scanResult.reason || "Unknown defect"}
+                            </p>
+                          </div>
+                          <p className="mt-4 text-base md:text-lg italic">
+                            ✗ This bundle requires repair or rework before proceeding.
+                          </p>
+                        </div>
+                      </AlertDescription>
                     </div>
-                  </AlertDescription>
+                  </div>
                 </Alert>
               )}
 
               {/* Action Button */}
-              <div className="flex justify-center">
+              <div className="flex justify-center pt-4">
                 <Button 
                   onClick={handleNewScan}
                   size="lg"
-                  className="px-8"
+                  className="h-16 md:h-20 px-12 md:px-16 text-xl md:text-2xl font-bold"
                 >
                   Scan Next Item
                 </Button>
@@ -214,46 +296,21 @@ const BufferScanOutPage = () => {
         </CardContent>
       </Card>
 
-      {/* Scan History */}
-      {scanHistory.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-xl">Recent Scans</CardTitle>
-            <CardDescription>Last {scanHistory.length} scan results</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {scanHistory.map((item, index) => (
-                <div
-                  key={index}
-                  className={`flex items-center justify-between p-3 rounded-lg border ${
-                    item.qcStatus === "pass"
-                      ? "bg-green-50 border-green-200"
-                      : "bg-red-50 border-red-200"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    {item.qcStatus === "pass" ? (
-                      <CheckCircle2 className="w-5 h-5 text-green-600" />
-                    ) : (
-                      <XCircle className="w-5 h-5 text-red-600" />
-                    )}
-                    <div>
-                      <p className="font-mono font-semibold">{item.barcode}</p>
-                      {item.reason && (
-                        <p className="text-sm text-muted-foreground">{item.reason}</p>
-                      )}
-                    </div>
-                  </div>
-                  <span className="text-sm text-muted-foreground">
-                    {item.timestamp.toLocaleTimeString()}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Add scanning animation keyframes to global styles */}
+      <style>{`
+        @keyframes scan {
+          0% {
+            transform: translateY(0);
+          }
+          100% {
+            transform: translateY(400%);
+          }
+        }
+        
+        .animate-scan {
+          animation: scan 2s linear infinite;
+        }
+      `}</style>
     </div>
   );
 };

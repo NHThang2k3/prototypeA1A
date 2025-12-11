@@ -118,6 +118,69 @@ const mockFabricRolls: FabricRollItem[] = [
     dateInHouse: "2023-12-10",
     printStatus: "PRINTED",
   },
+  {
+    id: uuidv4(),
+    factory: "Factory A",
+    p: "",
+    invoiceNo: "A2507404",
+    supplier: "VIETNAM TEXTILE",
+    poNumber: "POAD000068765",
+    itemCode: "70029660-60",
+    color: "NAVY BLUE",
+    lotNo: "NO.004",
+    rollNo: "KQ0003",
+    yards: 48,
+    netWeight: 16.5,
+    width: '60"',
+    foc: "",
+    qc: "",
+    netWeight2: 16.5,
+    grossWeight: 16.7,
+    dateInHouse: "2023-12-11",
+    printStatus: "NOT_PRINTED",
+  },
+  {
+    id: uuidv4(),
+    factory: "Factory C",
+    p: "",
+    invoiceNo: "A2507405",
+    supplier: "ASIA FABRIC",
+    poNumber: "POAD000068766",
+    itemCode: "70029661-58",
+    color: "BLACK",
+    lotNo: "NO.005",
+    rollNo: "KQ0004",
+    yards: 62,
+    netWeight: 20.1,
+    width: '58"',
+    foc: "",
+    qc: "",
+    netWeight2: 20.1,
+    grossWeight: 20.3,
+    dateInHouse: "2023-12-11",
+    printStatus: "PRINTED",
+  },
+  {
+    id: uuidv4(),
+    factory: "Factory B",
+    p: "",
+    invoiceNo: "A2507406",
+    supplier: "LITTLE",
+    poNumber: "POAD000068767",
+    itemCode: "70029662-64",
+    color: "WHITE",
+    lotNo: "NO.006",
+    rollNo: "KQ0005",
+    yards: 53,
+    netWeight: 17.8,
+    width: '64"',
+    foc: "",
+    qc: "",
+    netWeight2: 17.8,
+    grossWeight: 18.0,
+    dateInHouse: "2023-12-12",
+    printStatus: "NOT_PRINTED",
+  },
 ];
 
 // --- BADGE STATUS ---
@@ -239,6 +302,8 @@ const PackingListManagementPage = () => {
   const [filters, setFilters] = useState<FilterState>({
     invoice: "", po: "", date: "", factory: "all",
   });
+  // State to track if Select All is active with mixed status (to disable PRINTED rows)
+  const [isSelectAllMixedMode, setIsSelectAllMixedMode] = useState(false);
 
   const fetchData = useCallback(() => {
     setLoading(true);
@@ -247,6 +312,23 @@ const PackingListManagementPage = () => {
       setLoading(false);
     }, 500);
   }, []);
+
+  const handlePrintSelected = () => {
+    // Update printStatus của các items đã chọn thành PRINTED
+    setItems(prevItems => 
+      prevItems.map(item => {
+        const isSelected = selectedItems.some(selected => selected.id === item.id);
+        if (isSelected) {
+          return { ...item, printStatus: "PRINTED" as PrintStatus };
+        }
+        return item;
+      })
+    );
+    
+    // Reset selection và mixed mode
+    setSelectedItems([]);
+    setIsSelectAllMixedMode(false);
+  };
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -266,24 +348,60 @@ const PackingListManagementPage = () => {
     () => [
       {
         id: "select",
-        header: ({ table }) => (
-          <Checkbox
-            checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
-            onCheckedChange={(val) => {
-              if (val) {
-                  table.getRowModel().rows.forEach(row => {
-                      if (row.original.printStatus === "NOT_PRINTED") row.toggleSelected(true);
-                  });
-              } else table.resetRowSelection();
-            }}
-          />
-        ),
-        cell: ({ row }) => (
-          <Checkbox
-            checked={row.getIsSelected()}
-            onCheckedChange={(val) => row.toggleSelected(!!val)}
-          />
-        ),
+        header: ({ table }) => {
+          // Kiểm tra xem table có cả NOT_PRINTED và PRINTED không
+          const allRows = table.getRowModel().rows;
+          const hasNotPrinted = allRows.some(row => row.original.printStatus === "NOT_PRINTED");
+          const hasPrinted = allRows.some(row => row.original.printStatus === "PRINTED");
+          const hasMixedStatus = hasNotPrinted && hasPrinted;
+          
+          // Nếu có cả 2 loại, chỉ check những row NOT_PRINTED
+          // Nếu chỉ có PRINTED, check tất cả
+          const selectableRows = hasMixedStatus 
+            ? allRows.filter(row => row.original.printStatus === "NOT_PRINTED")
+            : allRows;
+          
+          const isAllSelectableSelected = selectableRows.length > 0 && 
+            selectableRows.every(row => row.getIsSelected());
+          const isSomeSelectableSelected = selectableRows.some(row => row.getIsSelected()) && 
+            !isAllSelectableSelected;
+
+          return (
+            <Checkbox
+              checked={isAllSelectableSelected || (isSomeSelectableSelected && "indeterminate")}
+              onCheckedChange={(val) => {
+                if (val) {
+                  // Chỉ select những row có thể chọn được
+                  selectableRows.forEach(row => row.toggleSelected(true));
+                  // Nếu mixed status, enable disable mode cho PRINTED rows
+                  if (hasMixedStatus) {
+                    setIsSelectAllMixedMode(true);
+                  }
+                } else {
+                  // Uncheck: reset selection và re-enable tất cả rows
+                  table.resetRowSelection();
+                  setIsSelectAllMixedMode(false);
+                }
+              }}
+            />
+          );
+        },
+        cell: ({ row }) => {
+          // Disable PRINTED rows khi Select All mixed mode active
+          const isDisabled = isSelectAllMixedMode && row.original.printStatus === "PRINTED";
+          
+          return (
+            <Checkbox
+              checked={row.getIsSelected()}
+              disabled={isDisabled}
+              onCheckedChange={(val) => {
+                if (!isDisabled) {
+                  row.toggleSelected(!!val);
+                }
+              }}
+            />
+          );
+        },
       },
       // Order: p -> Factory -> Invoice -> ...
       { accessorKey: "p", header: "p" },
@@ -327,7 +445,7 @@ const PackingListManagementPage = () => {
         ),
       },
     ],
-    []
+    [isSelectAllMixedMode]
   );
 
   return (
@@ -348,7 +466,10 @@ const PackingListManagementPage = () => {
           <CardHeader>
              <div className="flex justify-between items-center">
                 <CardTitle>Item List ({filteredItems.length})</CardTitle>
-                <Button disabled={selectedItems.length === 0}>
+                <Button 
+                  disabled={selectedItems.length === 0}
+                  onClick={handlePrintSelected}
+                >
                   <QrCode className="w-4 h-4 mr-2" /> Print Selected
                 </Button>
              </div>

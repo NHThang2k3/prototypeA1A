@@ -606,10 +606,10 @@ const IssueFabricFromJobPage: React.FC = () => {
         ),
       },
       {
-        accessorKey: "ItemCode",
-        header: "Item Code",
+        accessorKey: "PONumber",
+        header: "PO Number",
         cell: ({ row }) =>
-          row.original.erpChecked ? row.original.ItemCode : "-",
+          row.original.erpChecked ? row.original.PONumber : "-",
       },
       {
         accessorKey: "Color",
@@ -1070,12 +1070,7 @@ const IssueFabricFromJobPage: React.FC = () => {
                     </span>
                     <p className="text-sm font-medium">{viewingJob.Lot}</p>
                   </div>
-                  <div className="space-y-1">
-                    <span className="text-sm font-medium text-muted-foreground">
-                      Item Code
-                    </span>
-                    <p className="text-sm font-medium">{viewingJob.ItemCode}</p>
-                  </div>
+                  
 
                   <div className="space-y-1">
                     <span className="text-sm font-medium text-muted-foreground">
