@@ -389,7 +389,7 @@ const ImportPackingListFormPage: React.FC<{ onSuccess?: () => void }> = ({
               <CardTitle className="text-lg">Data Preview</CardTitle>
             </CardHeader>
             <CardContent className="px-0">
-              <CustomTable columns={columns} data={items} showCheckbox={false} />
+              <CustomTable columns={columns} data={items} showCheckbox={false} showPagination={false} />
             </CardContent>
           </Card>
         )}

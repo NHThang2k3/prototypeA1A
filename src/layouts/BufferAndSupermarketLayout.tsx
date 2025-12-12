@@ -86,7 +86,7 @@ const sidebarNavItems: NavItem[] = [
         key: "productivity-supermarket-monitoring",
         children: [
           {
-            title: "Scan In/Out",
+            title: "Scan Out Supermarket",
             path: "/buffer-supermarket/productivity/supermarket-scan",
             icon: ScanLine,
             key: "supermarket-scan",
